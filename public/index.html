@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Optimisations PWA & Mobile Plein écran -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Pins Caisse">
@@ -145,11 +144,11 @@
 
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
     .modal-overlay.open { display: flex; }
-    .modal-card { background: #fff; width: 100%; max-width: 470px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: pop 0.2s ease; }
+    .modal-card { background: #fff; width: 100%; max-width: 480px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: pop 0.2s ease; }
     @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     .modal-head { background: var(--primary); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
-    .modal-body { padding: 18px; max-height: 80vh; overflow-y: auto; }
+    .modal-body { padding: 18px; max-height: 85vh; overflow-y: auto; }
 
     /* TICKET IMPRESSION */
     .receipt-container { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-family: 'Courier New', Courier, monospace; color: #111; }
@@ -166,6 +165,7 @@
     .receipt-split-box { display: none; justify-content: space-between; border-top: 1px dashed #000; margin-top: 6px; padding-top: 4px; font-size: 0.85rem; font-weight: 700; }
     .receipt-footer { text-align: center; font-size: 0.75rem; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; }
 
+    /* MULTI-PAIEMENT & POURBOIRES */
     .caisse-controls-box { margin-top: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
     .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .control-row:last-child { margin-bottom: 0; }
@@ -175,17 +175,32 @@
     .btn-disc { padding: 5px 10px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
     .btn-disc.active { background: #b91c1c; color: #fff; border-color: #b91c1c; }
 
+    .btn-tip { padding: 5px 10px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+    .btn-tip.active { background: #059669; color: #fff; border-color: #059669; }
+
     .split-stepper { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
     .btn-split-q { border: none; background: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; color: var(--primary); }
     .split-val { font-size: 0.88rem; font-weight: 800; min-width: 20px; text-align: center; }
 
-    .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 10px 0; }
-    .btn-pay-method { padding: 10px 4px; border: 1.5px solid var(--border); background: #f8fafc; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-align: center; }
-    .btn-pay-method.active { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+    /* PANACHAGE STYLES */
+    .multi-pay-card { margin-top: 14px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 12px; }
+    .reste-a-payer-box { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; font-weight: 800; color: #1e3a8a; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #bfdbfe; }
+    .registered-payments-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .registered-pay-row { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; }
+    
+    .pay-input-group { display: flex; gap: 6px; margin-bottom: 8px; }
+    .pay-amount-input { flex: 1; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.95rem; font-weight: 800; outline: none; }
+    .btn-add-partial-pay { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 800; font-size: 0.82rem; cursor: pointer; }
+    .btn-add-partial-pay:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+    .btn-pay-method { padding: 8px 4px; border: 1.5px solid var(--border); background: #fff; border-radius: 6px; font-weight: 700; font-size: 0.78rem; cursor: pointer; text-align: center; }
+    .btn-pay-method.active { border-color: var(--accent); background: #dbeafe; color: #1e40af; }
 
     .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
     .btn-print { flex: 1; background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
     .btn-encaisser { flex: 2; background: var(--success); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+    .btn-encaisser:disabled { background: #94a3b8; cursor: not-allowed; }
 
     @media print {
       body * { visibility: hidden; }
@@ -293,7 +308,7 @@
 
   </div>
 
-  <!-- MODAL RÉCLAMER LA SUITE (NOUVEAU) -->
+  <!-- MODAL RÉCLAMER LA SUITE -->
   <div class="modal-overlay" id="suite-modal">
     <div class="modal-card" style="max-width: 400px;">
       <div class="modal-head" style="background:#ea580c;">
@@ -390,7 +405,7 @@
     </div>
   </div>
 
-  <!-- MODAL ADDITION -->
+  <!-- MODAL ADDITION & ENCAISSEMENT MULTI-RÈGLEMENTS -->
   <div class="modal-overlay" id="addition-modal">
     <div class="modal-card">
       <div class="modal-head">
@@ -444,6 +459,11 @@
               <span>Partage (<span id="receipt-split-count">1</span> pers.) :</span>
               <span id="receipt-split-val">0,00 € / pers.</span>
             </div>
+            <div id="receipt-tip-line" style="display:none; justify-content:space-between; border-top:1px dashed #000; margin-top:6px; padding-top:4px; font-weight:700; color:#059669;">
+              <span>Pourboire (Service) :</span>
+              <span id="receipt-tip-val">0,00 €</span>
+            </div>
+            <div id="receipt-payments-list-print" style="margin-top:6px; border-top:1px dashed #000; padding-top:4px; font-size:0.75rem;"></div>
           </div>
 
           <div class="receipt-footer">
@@ -454,7 +474,7 @@
 
         <div class="caisse-controls-box no-print">
           <div class="control-row">
-            <span class="control-label">✂️ Remise / Réduction :</span>
+            <span class="control-label">✂️ Remise :</span>
             <div class="discount-btn-group">
               <button class="btn-disc active" onclick="appliquerRemise(0, this)">0%</button>
               <button class="btn-disc" onclick="appliquerRemise(10, this)">-10%</button>
@@ -462,8 +482,19 @@
               <button class="btn-disc" onclick="appliquerRemise(100, this)">Offert</button>
             </div>
           </div>
+          
           <div class="control-row">
-            <span class="control-label">👥 Partager la note :</span>
+            <span class="control-label">💚 Pourboire (Tip) :</span>
+            <div class="discount-btn-group">
+              <button class="btn-tip active" onclick="choisirPourboire(0, this)">0 €</button>
+              <button class="btn-tip" onclick="choisirPourboire(1, this)">+1 €</button>
+              <button class="btn-tip" onclick="choisirPourboire(2, this)">+2 €</button>
+              <button class="btn-tip" onclick="choisirPourboire(5, this)">+5 €</button>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <span class="control-label">👥 Partager note :</span>
             <div class="split-stepper">
               <button class="btn-split-q" onclick="modifierParts(-1)">-</button>
               <span class="split-val" id="split-display">1</span>
@@ -472,19 +503,31 @@
           </div>
         </div>
 
-        <div class="no-print" style="margin-top:14px;">
-          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Moyen de règlement</div>
+        <!-- BLOC DE MULTI-RÈGLEMENTS / PAIEMENT PANACHÉ -->
+        <div class="multi-pay-card no-print">
+          <div class="reste-a-payer-box">
+            <span>Reste à régler :</span>
+            <span id="multi-pay-reste-val" style="font-size:1.15rem;">0,00 €</span>
+          </div>
+
+          <div class="registered-payments-list" id="registered-payments-container"></div>
+
           <div class="payment-methods">
-            <button class="btn-pay-method active" onclick="choisirPaiement(this, 'CB')">💳 Carte</button>
-            <button class="btn-pay-method" onclick="choisirPaiement(this, 'Espèces')">💵 Espèces</button>
-            <button class="btn-pay-method" onclick="choisirPaiement(this, 'Titre Resto')">🎫 Titre Resto</button>
+            <button class="btn-pay-method active" onclick="choisirModeActif(this, 'CB')">💳 Carte</button>
+            <button class="btn-pay-method" onclick="choisirModeActif(this, 'Espèces')">💵 Espèces</button>
+            <button class="btn-pay-method" onclick="choisirModeActif(this, 'Titre Resto')">🎫 Titre Resto</button>
+          </div>
+
+          <div class="pay-input-group">
+            <input type="number" step="0.01" id="partial-pay-amount" class="pay-amount-input" placeholder="Montant">
+            <button class="btn-add-partial-pay" id="btn-add-partial" onclick="ajouterVersement()">➕ Enregistrer</button>
           </div>
         </div>
 
         <div class="modal-actions no-print">
           <button class="btn-print" onclick="imprimerTicketClient()">🖨️ Imprimer</button>
-          <button class="btn-encaisser" id="btn-valider-encaissement" onclick="validerEncaissement()">
-            ✔ Encaisser & Libérer
+          <button class="btn-encaisser" id="btn-valider-encaissement" onclick="validerEncaissementComplet()">
+            ✔ Clôturer la table
           </button>
         </div>
       </div>
@@ -500,14 +543,17 @@
     let tableStatuses = {};
     let dynamicPlan = [];
     let indisponibles = [];
-    let selectedModePaiement = 'CB';
 
     let currentServeur = localStorage.getItem('hdp_serveur_nom') || null;
     let enteredPin = '';
 
     let rawTotalTTC = 0;
     let discountPercent = 0;
+    let tipAmount = 0;
     let splitParts = 1;
+
+    let selectedMode = 'CB';
+    let versements = []; // [{ mode: 'CB', montant: 20 }]
 
     let currentPendingPlat = null;
     let selectedCuisson = 'Saignant';
@@ -577,19 +623,12 @@
     ];
 
     // --- HORS-LIGNE & SYNCHRO ---
-    function getOfflineQueue() {
-      return JSON.parse(localStorage.getItem('hdp_offline_orders') || '[]');
-    }
-
-    function saveOfflineQueue(queue) {
-      localStorage.setItem('hdp_offline_orders', JSON.stringify(queue));
-      updateNetworkBadge();
-    }
+    function getOfflineQueue() { return JSON.parse(localStorage.getItem('hdp_offline_orders') || '[]'); }
+    function saveOfflineQueue(queue) { localStorage.setItem('hdp_offline_orders', JSON.stringify(queue)); updateNetworkBadge(); }
 
     function updateNetworkBadge() {
       const badge = document.getElementById('network-status-badge');
       const queue = getOfflineQueue();
-
       if (!navigator.onLine) {
         badge.className = 'network-badge network-offline';
         badge.innerText = `🔴 Hors-ligne (${queue.length} en attente)`;
@@ -606,7 +645,6 @@
       if (!navigator.onLine) return;
       const queue = getOfflineQueue();
       if (queue.length === 0) return;
-
       const remainingQueue = [];
       for (const cmd of queue) {
         try {
@@ -616,16 +654,10 @@
             body: JSON.stringify(cmd)
           });
           if (!res.ok) remainingQueue.push(cmd);
-        } catch (e) {
-          remainingQueue.push(cmd);
-        }
+        } catch (e) { remainingQueue.push(cmd); }
       }
-
       saveOfflineQueue(remainingQueue);
-      if (remainingQueue.length === 0) {
-        updateNetworkBadge();
-        chargerPlanSalle();
-      }
+      if (remainingQueue.length === 0) { updateNetworkBadge(); chargerPlanSalle(); }
     }
 
     window.addEventListener('online', () => { updateNetworkBadge(); synchroniserCommandesHorsLigne(); });
@@ -649,15 +681,8 @@
       }
     }
 
-    function deletePin() {
-      enteredPin = enteredPin.slice(0, -1);
-      updatePinDots();
-    }
-
-    function clearPin() {
-      enteredPin = '';
-      updatePinDots();
-    }
+    function deletePin() { enteredPin = enteredPin.slice(0, -1); updatePinDots(); }
+    function clearPin() { enteredPin = ''; updatePinDots(); }
 
     function updatePinDots() {
       for (let i = 0; i < 4; i++) {
@@ -854,7 +879,7 @@
       });
     }
 
-    // --- GESTION DU CLIC PLAT ET MODAL OPTIONS ---
+    // --- MODAL CUISSON / OPTIONS ---
     function clicPlat(platId) {
       const plat = menuData.find(d => d.id === platId);
       if (!plat) return;
@@ -862,7 +887,6 @@
         alert("Ce plat est actuellement épuisé en cuisine !");
         return;
       }
-
       if (plat.hasOptions) {
         ouvrirModalOptions(plat);
       } else {
@@ -873,7 +897,6 @@
     function ouvrirModalOptions(plat) {
       currentPendingPlat = plat;
       document.getElementById('opt-modal-title').innerText = `Options : ${plat.nom}`;
-      
       selectedCuisson = 'Saignant';
       selectedGarnitures = ['Frites'];
       document.getElementById('opt-custom-note').value = '';
@@ -915,7 +938,6 @@
 
     function confirmerAjoutAvecOptions() {
       if (!currentPendingPlat) return;
-
       const customNote = document.getElementById('opt-custom-note').value.trim();
       const parts = [];
       if (selectedCuisson) parts.push(selectedCuisson);
@@ -949,7 +971,6 @@
     function diminuerDernierPlat(platId) {
       const items = cart.filter(it => it.platId === platId);
       if (items.length === 0) return;
-
       const lastItem = items[items.length - 1];
       if (lastItem.quantite > 1) {
         lastItem.quantite -= 1;
@@ -963,7 +984,6 @@
     function modifierLignePanier(cartId, delta) {
       const item = cart.find(it => it.cartId === cartId);
       if (!item) return;
-
       item.quantite += delta;
       if (item.quantite <= 0) {
         cart = cart.filter(it => it.cartId !== cartId);
@@ -1052,7 +1072,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
         if (!res.ok) throw new Error('Erreur HTTP');
 
         alert(`✅ Commande Table ${currentTable} envoyée en cuisine !`);
@@ -1073,26 +1092,21 @@
       }
     }
 
-    // --- NOUVEAU : RÉCLAMER LA SUITE ---
+    // --- RÉCLAMER LA SUITE ---
     function ouvrirModalSuite() {
       document.getElementById('suite-modal-table-num').innerText = currentTable;
       document.getElementById('suite-modal-table-bold').innerText = currentTable;
       document.getElementById('suite-modal').classList.add('open');
     }
 
-    function fermerModalSuite() {
-      document.getElementById('suite-modal').classList.remove('open');
-    }
+    function fermerModalSuite() { document.getElementById('suite-modal').classList.remove('open'); }
 
     async function envoyerSuite(course) {
       try {
         const res = await fetch(`/api/tables/${currentTable}/suite`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            course: course,
-            serveur_nom: currentServeur || 'Salle'
-          })
+          body: JSON.stringify({ course: course, serveur_nom: currentServeur || 'Salle' })
         });
         const data = await res.json();
         if (res.ok) {
@@ -1101,12 +1115,10 @@
         } else {
           alert(`❌ ${data.error || "Impossible d'envoyer la suite."}`);
         }
-      } catch (e) {
-        alert("Erreur de connexion.");
-      }
+      } catch (e) { alert("Erreur de connexion."); }
     }
 
-    // --- ADDITION & ENCAISSEMENT ---
+    // --- ADDITION & MULTI-PAIEMENT PANACHÉ ---
     async function ouvrirModalAddition() {
       document.getElementById('modal-table-num').innerText = currentTable;
       document.getElementById('receipt-table-num').innerText = currentTable;
@@ -1115,9 +1127,17 @@
       document.getElementById('receipt-ticket-id').innerText = `TICK #${Date.now().toString().slice(-4)}`;
 
       discountPercent = 0;
+      tipAmount = 0;
       splitParts = 1;
+      versements = [];
+      selectedMode = 'CB';
+
       document.getElementById('split-display').innerText = '1';
       document.querySelectorAll('.btn-disc').forEach((b, i) => {
+        if (i === 0) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+      document.querySelectorAll('.btn-tip').forEach((b, i) => {
         if (i === 0) b.classList.add('active');
         else b.classList.remove('active');
       });
@@ -1140,6 +1160,7 @@
           rawTotalTTC = 0;
           recalculerAddition();
           document.getElementById('btn-valider-encaissement').disabled = true;
+          document.getElementById('btn-add-partial').disabled = true;
           return;
         }
 
@@ -1156,7 +1177,6 @@
         });
 
         recalculerAddition();
-        document.getElementById('btn-valider-encaissement').disabled = false;
       } catch (e) {
         container.innerHTML = '<div style="color:red; text-align:center; padding:15px;">Connexion requise pour générer l\'addition.</div>';
       }
@@ -1164,9 +1184,10 @@
 
     function recalculerAddition() {
       const discountAmount = (rawTotalTTC * discountPercent) / 100;
-      const netTotalTTC = Math.max(0, rawTotalTTC - discountAmount);
-      const totalHT = netTotalTTC / 1.10;
-      const totalTVA = netTotalTTC - totalHT;
+      const netTotalPlatsTTC = Math.max(0, rawTotalTTC - discountAmount);
+      const totalHT = netTotalPlatsTTC / 1.10;
+      const totalTVA = netTotalPlatsTTC - totalHT;
+      const totalGlobalAEncaisser = netTotalPlatsTTC + tipAmount;
 
       const subRow = document.getElementById('receipt-subtotal-row');
       const discRow = document.getElementById('receipt-discount-row');
@@ -1181,14 +1202,34 @@
         discRow.style.display = 'none';
       }
 
-      document.getElementById('modal-total-ttc').innerText = `${netTotalTTC.toFixed(2)} €`;
+      document.getElementById('modal-total-ttc').innerText = `${netTotalPlatsTTC.toFixed(2)} €`;
       document.getElementById('modal-total-ht').innerText = `${totalHT.toFixed(2)} €`;
       document.getElementById('modal-total-tva').innerText = `${totalTVA.toFixed(2)} €`;
 
+      // Affichage du pourboire sur le ticket
+      const tipRow = document.getElementById('receipt-tip-line');
+      if (tipAmount > 0) {
+        tipRow.style.display = 'flex';
+        document.getElementById('receipt-tip-val').innerText = `+${tipAmount.toFixed(2)} €`;
+      } else {
+        tipRow.style.display = 'none';
+      }
+
+      // Calcul du reste à payer
+      const totalVerse = versements.reduce((sum, v) => sum + v.montant, 0);
+      const reste = Math.max(0, totalGlobalAEncaisser - totalVerse);
+
+      document.getElementById('multi-pay-reste-val').innerText = `${reste.toFixed(2)} €`;
+      document.getElementById('partial-pay-amount').value = reste > 0 ? reste.toFixed(2) : '';
+
+      // Mise à jour de la liste des versements
+      renderVersements(totalGlobalAEncaisser);
+
+      // Partage
       const splitBox = document.getElementById('receipt-split-box');
-      if (splitParts > 1 && netTotalTTC > 0) {
+      if (splitParts > 1 && totalGlobalAEncaisser > 0) {
         splitBox.style.display = 'flex';
-        const perPerson = netTotalTTC / splitParts;
+        const perPerson = totalGlobalAEncaisser / splitParts;
         document.getElementById('receipt-split-count').innerText = splitParts;
         document.getElementById('receipt-split-val').innerText = `${perPerson.toFixed(2)} € / pers.`;
       } else {
@@ -1196,9 +1237,89 @@
       }
     }
 
+    function renderVersements(totalGlobal) {
+      const container = document.getElementById('registered-payments-container');
+      const printContainer = document.getElementById('receipt-payments-list-print');
+      
+      if (versements.length === 0) {
+        container.innerHTML = '<div style="font-size:0.75rem; color:#64748b; font-style:italic;">Aucun versement enregistré. Choisissez le mode et validez.</div>';
+        printContainer.innerHTML = '';
+      } else {
+        container.innerHTML = versements.map((v, i) => `
+          <div class="registered-pay-row">
+            <span>🔹 ${v.mode}</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <strong>${v.montant.toFixed(2)} €</strong>
+              <button style="background:none; border:none; color:#ef4444; font-weight:800; cursor:pointer;" onclick="supprimerVersement(${i})">✕</button>
+            </div>
+          </div>
+        `).join('');
+
+        printContainer.innerHTML = versements.map(v => `
+          <div style="display:flex; justify-content:space-between;">
+            <span>Règlement ${v.mode} :</span>
+            <strong>${v.montant.toFixed(2)} €</strong>
+          </div>
+        `).join('');
+      }
+
+      const totalVerse = versements.reduce((sum, v) => sum + v.montant, 0);
+      const estComplet = (totalVerse >= (totalGlobal - 0.001) && totalGlobal > 0);
+      
+      document.getElementById('btn-valider-encaissement').disabled = !estComplet;
+      document.getElementById('btn-add-partial').disabled = (totalVerse >= totalGlobal);
+    }
+
+    function choisirModeActif(btn, mode) {
+      document.querySelectorAll('.btn-pay-method').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedMode = mode;
+    }
+
+    function ajouterVersement() {
+      const discountAmount = (rawTotalTTC * discountPercent) / 100;
+      const netTotalPlatsTTC = Math.max(0, rawTotalTTC - discountAmount);
+      const totalGlobalAEncaisser = netTotalPlatsTTC + tipAmount;
+
+      const input = document.getElementById('partial-pay-amount');
+      let montant = parseFloat(input.value);
+
+      if (isNaN(montant) || montant <= 0) {
+        alert("Veuillez saisir un montant valide.");
+        return;
+      }
+
+      const totalVerse = versements.reduce((sum, v) => sum + v.montant, 0);
+      const reste = totalGlobalAEncaisser - totalVerse;
+
+      if (montant > reste + 0.01) {
+        montant = reste; // Ajuste automatiquement au montant exact restant
+      }
+
+      versements.push({
+        mode: selectedMode,
+        montant: parseFloat(montant.toFixed(2))
+      });
+
+      recalculerAddition();
+    }
+
+    function supprimerVersement(index) {
+      versements.splice(index, 1);
+      recalculerAddition();
+    }
+
     function appliquerRemise(pct, btn) {
       discountPercent = pct;
       document.querySelectorAll('.btn-disc').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      versements = []; // Reset des versements pour recalculer le bon solde
+      recalculerAddition();
+    }
+
+    function choisirPourboire(montant, btn) {
+      tipAmount = montant;
+      document.querySelectorAll('.btn-tip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       recalculerAddition();
     }
@@ -1212,27 +1333,17 @@
       }
     }
 
-    function fermerModalAddition() {
-      document.getElementById('addition-modal').classList.remove('open');
-    }
+    function fermerModalAddition() { document.getElementById('addition-modal').classList.remove('open'); }
+    function imprimerTicketClient() { window.print(); }
 
-    function choisirPaiement(btn, mode) {
-      document.querySelectorAll('.btn-pay-method').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedModePaiement = mode;
-    }
-
-    function imprimerTicketClient() {
-      window.print();
-    }
-
-    async function validerEncaissement() {
+    async function validerEncaissementComplet() {
       const discountAmount = (rawTotalTTC * discountPercent) / 100;
-      const netTotalTTC = Math.max(0, rawTotalTTC - discountAmount);
+      const netTotalPlatsTTC = Math.max(0, rawTotalTTC - discountAmount);
 
-      let msg = `Confirmer l'encaissement Table ${currentTable} par ${currentServeur || 'Salle'} ?\n- Mode : ${selectedModePaiement}\n- Total : ${netTotalTTC.toFixed(2)} €`;
-      if (discountPercent > 0) msg += ` (Remise: ${discountPercent}%)`;
-      if (splitParts > 1) msg += `\n- Partage : ${splitParts} pers. (${(netTotalTTC / splitParts).toFixed(2)} €/pers.)`;
+      let resumeReglements = versements.map(v => `${v.mode}: ${v.montant.toFixed(2)}€`).join(', ');
+
+      let msg = `Confirmer l'encaissement Table ${currentTable} par ${currentServeur || 'Salle'} ?\n- Règlements : ${resumeReglements}\n- CA Net : ${netTotalPlatsTTC.toFixed(2)} €`;
+      if (tipAmount > 0) msg += `\n- Pourboire : +${tipAmount.toFixed(2)} €`;
 
       if (!confirm(msg)) return;
 
@@ -1241,14 +1352,17 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            mode_paiement: selectedModePaiement,
+            paiements: versements,
+            mode_paiement: selectedMode,
             remise_montant: discountAmount,
-            total_paye: netTotalTTC,
+            pourboire: tipAmount,
+            total_paye: netTotalPlatsTTC,
             serveur_nom: currentServeur || 'Salle'
           })
         });
+
         if (res.ok) {
-          alert(`✅ Table ${currentTable} encaissée avec succès (${selectedModePaiement} - ${netTotalTTC.toFixed(2)} €). Table libérée !`);
+          alert(`✅ Table ${currentTable} encaissée et libérée avec succès !`);
           fermerModalAddition();
           await chargerPlanSalle();
         }
@@ -1294,9 +1408,7 @@
       document.getElementById('transfer-modal').classList.add('open');
     }
 
-    function fermerModalTransfert() {
-      document.getElementById('transfer-modal').classList.remove('open');
-    }
+    function fermerModalTransfert() { document.getElementById('transfer-modal').classList.remove('open'); }
 
     async function validerTransfertTable() {
       const targetTable = document.getElementById('transfer-target-select').value;
@@ -1308,10 +1420,7 @@
         const res = await fetch(`/api/tables/${currentTable}/transfer`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            target_table: targetTable,
-            serveur_nom: currentServeur || 'Salle'
-          })
+          body: JSON.stringify({ target_table: targetTable, serveur_nom: currentServeur || 'Salle' })
         });
 
         const data = await res.json();
@@ -1323,9 +1432,7 @@
         } else {
           alert(`❌ ${data.error || "Erreur lors du transfert."}`);
         }
-      } catch (e) {
-        alert("Erreur de connexion lors du transfert.");
-      }
+      } catch (e) { alert("Erreur de connexion lors du transfert."); }
     }
 
     // RÉCEPTION TEMPS RÉEL
@@ -1348,13 +1455,11 @@
 
     init();
 
-    // Anti-mise en veille automatique (Wake Lock)
+    // Anti-mise en veille
     let wakeLock = null;
     async function requestWakeLock() {
       try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
-        }
+        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
       } catch (err) {}
     }
     requestWakeLock();

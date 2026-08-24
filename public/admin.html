@@ -47,12 +47,13 @@
     .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
     /* Grille KPI */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
     .kpi-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; }
-    .kpi-value { font-size: 1.9rem; font-weight: 800; color: var(--primary); }
+    .kpi-value { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
     .kpi-value.green { color: var(--success); }
     .kpi-value.blue { color: var(--accent); }
+    .kpi-value.emerald { color: #059669; }
     .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
     /* Surveillance & Audit Serveurs */
@@ -123,7 +124,7 @@
   <div class="lock-overlay" id="admin-lock-overlay">
     <div class="pin-card">
       <div class="pin-title">Accès Direction</div>
-      <div class="pin-subtitle">Saisissez le code PIN Direction pour accéder au panneau de contrôle</div>
+      <div class="pin-subtitle">Saisissez le code PIN Direction</div>
 
       <div class="pin-dots">
         <div class="pin-dot" id="dot-0"></div>
@@ -157,9 +158,9 @@
         <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Surveillance de l'activité du personnel et pilotage financier</p>
       </div>
       <div class="header-actions">
-        <a href="/api/admin/backup-db" class="btn-export" style="background:#4338ca; text-decoration:none;">💾 Sauvegarder la Base</a>
-        <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter Excel (CSV)</button>
-        <button class="btn-print-z" onclick="imprimerZCaisse()">🖨️ Imprimer le Z</button>
+        <a href="/api/admin/backup-db" class="btn-export" style="background:#4338ca; text-decoration:none;">💾 Sauvegarder</a>
+        <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter CSV</button>
+        <button class="btn-print-z" onclick="imprimerZCaisse()">🖨️ Imprimer Z</button>
         <button class="btn-logout" onclick="verrouillerAdmin()">🔒 Verrouiller</button>
       </div>
     </header>
@@ -172,6 +173,11 @@
         <div class="kpi-sub">Dont TVA (10%) : <span id="kpi-tva">0,00 €</span></div>
       </div>
       <div class="kpi-card">
+        <div class="kpi-title">Pourboires Collectés</div>
+        <div class="kpi-value emerald" id="kpi-pourboires">0,00 €</div>
+        <div class="kpi-sub">Attribués au personnel</div>
+      </div>
+      <div class="kpi-card">
         <div class="kpi-title">Tables Encaissées</div>
         <div class="kpi-value blue" id="kpi-encaissees">0</div>
         <div class="kpi-sub">Panier moyen : <span id="kpi-panier-moyen">0,00 €</span></div>
@@ -181,18 +187,13 @@
         <div class="kpi-value" id="kpi-actives" style="color:var(--warning);">0</div>
         <div class="kpi-sub">En cuisine ou salle</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-title">Temps Moyen Service</div>
-        <div class="kpi-value" id="kpi-temps-moyen">0 min</div>
-        <div class="kpi-sub">Commande $\rightarrow$ Service</div>
-      </div>
     </div>
 
-    <!-- 🕵️ MODULE DE SURVEILLANCE & PERFORMANCE DES SERVEURS -->
+    <!-- TABLEAU D'AUDIT SERVEURS & POURBOIRES -->
     <div class="panel-card">
       <div class="panel-title">
         <span>🕵️ Tableau d'Audit & Surveillance des Serveurs</span>
-        <span style="font-size:0.75rem; color:var(--text-muted);">Suivi de l'efficacité et des temps de réaction</span>
+        <span style="font-size:0.75rem; color:var(--text-muted);">Suivi des performances et des pourboires individuels</span>
       </div>
       <table class="audit-table">
         <thead>
@@ -200,22 +201,23 @@
             <th>Serveur</th>
             <th>Statut en direct</th>
             <th>Dernière commande</th>
-            <th>Commandes prises</th>
-            <th>Tables encaissées</th>
+            <th>Commandes</th>
+            <th>Tables</th>
             <th>CA Net Généré</th>
-            <th>Temps moyen de service</th>
+            <th>Pourboires</th>
+            <th>Temps moyen</th>
           </tr>
         </thead>
         <tbody id="servers-audit-tbody">
-          <tr><td colspan="7" style="text-align:center; padding:20px;">Chargement de l'audit...</td></tr>
+          <tr><td colspan="8" style="text-align:center; padding:20px;">Chargement de l'audit...</td></tr>
         </tbody>
       </table>
     </div>
 
-    <!-- MODULES CONFIGURATION & RAPPORTS -->
+    <!-- CONFIGURATION & MODES DE PAIEMENT -->
     <div class="dashboard-split">
       
-      <!-- 📐 CONFIGURATION DU PLAN DE SALLE -->
+      <!-- CONFIG PLAN DE SALLE -->
       <div class="panel-card" style="grid-column: 1 / -1;">
         <div class="panel-title">
           <span>📐 Configuration du Plan de Salle (Zones & Tables)</span>
@@ -227,7 +229,7 @@
         </div>
       </div>
 
-      <!-- 👥 MODULE GESTION DES SERVEURS -->
+      <!-- GESTION DE L'ÉQUIPE -->
       <div class="panel-card">
         <div class="panel-title">
           <span>👥 Équipe & Codes PIN</span>
@@ -241,11 +243,11 @@
         </div>
       </div>
 
-      <!-- 💳 MODES DE PAIEMENT -->
+      <!-- MODES DE PAIEMENT & ENCAISSEMENTS RÉELS -->
       <div class="panel-card">
-        <div class="panel-title">💳 Règlements Nets</div>
+        <div class="panel-title">💳 Encaissements réels par mode</div>
         <div class="breakdown-row">
-          <span class="tag-bold">💳 Carte Bancaire</span>
+          <span class="tag-bold">💳 Cartes Bancaires</span>
           <strong id="pay-total-cb">0,00 €</strong>
         </div>
         <div class="breakdown-row">
@@ -253,16 +255,20 @@
           <strong id="pay-total-esp">0,00 €</strong>
         </div>
         <div class="breakdown-row">
-          <span class="tag-bold">🎫 Titres Resto</span>
+          <span class="tag-bold">🎫 Titres Restaurant</span>
           <strong id="pay-total-tr">0,00 €</strong>
+        </div>
+        <div class="breakdown-row" style="background:#ecfdf5; padding:9px 10px; border-radius:6px; margin-top:8px;">
+          <span class="tag-bold" style="color:#059669;">💚 Total Pourboires (Tips)</span>
+          <strong id="pay-total-tips" style="color:#059669;">0,00 €</strong>
         </div>
       </div>
 
     </div>
 
-    <!-- TABLEAU JOURNAL COMPLET -->
+    <!-- JOURNAL DES COMMANDES -->
     <div class="panel-card">
-      <div class="panel-title">📋 Journal détaillé des commandes</div>
+      <div class="panel-title">📋 Journal détaillé des commandes & encaissements</div>
       <table class="audit-table">
         <thead>
           <tr>
@@ -270,13 +276,14 @@
             <th>Serveur</th>
             <th>Heure</th>
             <th>Statut</th>
-            <th>Paiement</th>
+            <th>Paiement / Panachage</th>
+            <th>Pourboire</th>
             <th>Total TTC</th>
             <th>Détail</th>
           </tr>
         </thead>
         <tbody id="orders-table-body">
-          <tr><td colspan="7" style="text-align:center; padding:30px;">Chargement...</td></tr>
+          <tr><td colspan="8" style="text-align:center; padding:30px;">Chargement...</td></tr>
         </tbody>
       </table>
     </div>
@@ -293,13 +300,14 @@
       <div style="display:flex; justify-content:space-between;"><span>Total CA Net TTC :</span><strong id="print-z-ca">0,00 €</strong></div>
       <div style="display:flex; justify-content:space-between;"><span>Total HT :</span><span id="print-z-ht">0,00 €</span></div>
       <div style="display:flex; justify-content:space-between;"><span>TVA (10%) :</span><span id="print-z-tva">0,00 €</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>Pourboires collectés :</span><strong id="print-z-tips">0,00 €</strong></div>
       <div style="display:flex; justify-content:space-between;"><span>Tables Encaissées :</span><span id="print-z-tables">0</span></div>
     </div>
     <div style="border-top:1px dashed #000; padding-top:6px; margin-bottom:8px; line-height:1.4;">
-      <div style="font-weight:700; margin-bottom:4px;">MODES DE PAIEMENT :</div>
+      <div style="font-weight:700; margin-bottom:4px;">VENTILATION DES RÈGLEMENTS :</div>
       <div style="display:flex; justify-content:space-between;"><span>- Cartes Bancaires :</span><span id="print-z-cb">0,00 €</span></div>
       <div style="display:flex; justify-content:space-between;"><span>- Espèces :</span><span id="print-z-esp">0,00 €</span></div>
-      <div style="display:flex; justify-content:space-between;"><span>- Titres Resto :</span><span id="print-z-tr">0,00 €</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>- Titres Restaurant :</span><span id="print-z-tr">0,00 €</span></div>
     </div>
     <div style="text-align:center; border-top:1px dashed #000; padding-top:6px; font-size:10px;">
       *** Clôture Journalière de Caisse ***
@@ -309,19 +317,17 @@
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
     let allOrders = [];
+    let allPaiements = [];
     let allServeurs = [];
     let planData = [];
     let enteredAdminPin = '';
 
-    // Utilitaire de conversion universelle de date (Résout les décalages horaires UTC vs France)
     function parseSqliteDate(dateStr) {
       if (!dateStr) return null;
       if (dateStr.includes('T')) return new Date(dateStr);
-      // Format SQLite standard "YYYY-MM-DD HH:MM:SS" -> interprété en UTC
       return new Date(dateStr.replace(' ', 'T') + 'Z');
     }
 
-    // --- AUTHENTIFICATION DIRECTION ---
     function checkAdminAuth() {
       const isAuth = sessionStorage.getItem('hdp_admin_auth');
       if (isAuth === 'true') {
@@ -344,15 +350,8 @@
       }
     }
 
-    function deleteAdminPin() {
-      enteredAdminPin = enteredAdminPin.slice(0, -1);
-      updateAdminPinDots();
-    }
-
-    function clearAdminPin() {
-      enteredAdminPin = '';
-      updateAdminPinDots();
-    }
+    function deleteAdminPin() { enteredAdminPin = enteredAdminPin.slice(0, -1); updateAdminPinDots(); }
+    function clearAdminPin() { enteredAdminPin = ''; updateAdminPinDots(); }
 
     function updateAdminPinDots() {
       for (let i = 0; i < 4; i++) {
@@ -376,7 +375,7 @@
           clearAdminPin();
           checkAdminAuth();
         } else {
-          alert("⛔ Accès refusé : Ce code n'a pas les droits de Direction !");
+          alert("⛔ Accès refusé : Code Direction requis !");
           clearAdminPin();
         }
       } catch (e) {
@@ -390,11 +389,11 @@
       checkAdminAuth();
     }
 
-    // --- AUDIT & SURVEILLANCE SERVEURS (CORRIGÉ) ---
-    function calculerAuditServeurs(commandes, serveurs) {
+    // --- AUDIT SERVEURS & POURBOIRES ---
+    function calculerAuditServeurs(commandes, serveurs, paiements) {
       const tbody = document.getElementById('servers-audit-tbody');
       if (!serveurs || serveurs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Aucun serveur configuré</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px;">Aucun serveur configuré</td></tr>';
         return;
       }
 
@@ -405,6 +404,7 @@
         const enCours = cmdsServeur.filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
 
         let caNet = 0;
+        let tipsTotal = 0;
         let tempsTotal = 0;
         let tempsCount = 0;
         let derniereDate = null;
@@ -418,6 +418,7 @@
             let brut = 0;
             if (c.items) c.items.forEach(it => brut += (it.prix || 0) * (it.quantite || 1));
             caNet += (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+            tipsTotal += (c.pourboire || 0);
           }
           if (c.date_creation && c.date_fin) {
             const dStart = parseSqliteDate(c.date_creation);
@@ -429,24 +430,18 @@
           }
         });
 
-        // Calcul précis de l'activité
-        let statutBadge = '<span class="badge-perf perf-neutre">⚪ Aucune activité</span>';
+        let statutBadge = '<span class="badge-perf perf-neutre">⚪ Inactif</span>';
         let derniereHeureStr = '-';
 
         if (derniereDate) {
           derniereHeureStr = derniereDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
           const diffMinutes = Math.max(0, Math.round((now - derniereDate) / 60000));
 
-          // 1. Si le serveur a des tables occupées en cours -> IMMÉDIATEMENT VERT
           if (enCours.length > 0) {
             statutBadge = `<span class="badge-perf perf-actif">🟢 En service (${enCours.length} table${enCours.length > 1 ? 's' : ''})</span>`;
-          } 
-          // 2. Si sa dernière commande date de moins de 45 minutes -> ACTIF
-          else if (diffMinutes <= 45) {
-            statutBadge = `<span class="badge-perf perf-actif">🟢 Actif (Il y a ${diffMinutes === 0 ? '1 min' : diffMinutes + ' min'})</span>`;
-          } 
-          // 3. Sinon -> INACTIF
-          else {
+          } else if (diffMinutes <= 45) {
+            statutBadge = `<span class="badge-perf perf-actif">🟢 Actif (${diffMinutes === 0 ? '1 min' : diffMinutes + ' min'})</span>`;
+          } else {
             statutBadge = `<span class="badge-perf perf-inactif">🟡 Inactif (${diffMinutes} min)</span>`;
           }
         }
@@ -458,50 +453,68 @@
             <td><strong>👤 ${serv.nom}</strong></td>
             <td>${statutBadge}</td>
             <td><strong>${derniereHeureStr}</strong></td>
-            <td>${cmdsServeur.length} commande${cmdsServeur.length > 1 ? 's' : ''}</td>
-            <td>${encaissees.length} table${encaissees.length > 1 ? 's' : ''}</td>
+            <td>${cmdsServeur.length}</td>
+            <td>${encaissees.length}</td>
             <td><strong style="color:var(--accent);">${caNet.toFixed(2)} €</strong></td>
+            <td><strong style="color:#059669;">+${tipsTotal.toFixed(2)} €</strong></td>
             <td>${tempsMoyenStr}</td>
           </tr>
         `;
       }).join('');
     }
 
-    // --- CHARGEMENT DES DONNÉES GLOBALES ---
+    // --- CHARGEMENT GLOBAL ---
     async function chargerDonneesAdmin() {
       try {
-        const [resCmds, resServs] = await Promise.all([
+        const [resCmds, resServs, resPaiements] = await Promise.all([
           fetch('/api/admin/commandes'),
-          fetch('/api/admin/serveurs')
+          fetch('/api/admin/serveurs'),
+          fetch('/api/admin/paiements')
         ]);
-        if (resCmds.ok && resServs.ok) {
+        if (resCmds.ok && resServs.ok && resPaiements.ok) {
           allOrders = await resCmds.json();
           allServeurs = await resServs.json();
-          calculerKPIsEtAfficher(allOrders);
-          calculerAuditServeurs(allOrders, allServeurs);
+          allPaiements = await resPaiements.json();
+          calculerKPIsEtAfficher(allOrders, allPaiements);
+          calculerAuditServeurs(allOrders, allServeurs, allPaiements);
         }
       } catch (err) {}
     }
 
-    function calculerKPIsEtAfficher(commandes) {
+    function calculerKPIsEtAfficher(commandes, paiements) {
       const actives = commandes.filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
       const encaissees = commandes.filter(c => c.statut === 'encaisse');
 
       let totalCA = 0;
-      let totalCB = 0;
-      let totalEsp = 0;
-      let totalTR = 0;
+      let totalPourboires = 0;
 
       encaissees.forEach(c => {
         let brut = 0;
         if (c.items) c.items.forEach(it => brut += (it.prix || 0) * (it.quantite || 1));
         const montantNet = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
         totalCA += montantNet;
-
-        if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += montantNet;
-        else if (c.mode_paiement === 'Espèces') totalEsp += montantNet;
-        else if (c.mode_paiement === 'Titre Resto') totalTR += montantNet;
+        totalPourboires += (c.pourboire || 0);
       });
+
+      // Ventilation précise basée sur les versements réels
+      let totalCB = 0;
+      let totalEsp = 0;
+      let totalTR = 0;
+
+      if (paiements && paiements.length > 0) {
+        paiements.forEach(p => {
+          if (p.mode_paiement === 'CB') totalCB += p.montant;
+          else if (p.mode_paiement === 'Espèces') totalEsp += p.montant;
+          else if (p.mode_paiement === 'Titre Resto') totalTR += p.montant;
+        });
+      } else {
+        encaissees.forEach(c => {
+          const m = (c.total_paye || 0);
+          if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += m;
+          else if (c.mode_paiement === 'Espèces') totalEsp += m;
+          else if (c.mode_paiement === 'Titre Resto') totalTR += m;
+        });
+      }
 
       const totalHT = totalCA / 1.10;
       const totalTVA = totalCA - totalHT;
@@ -509,6 +522,7 @@
 
       document.getElementById('kpi-ca').innerText = `${totalCA.toFixed(2)} €`;
       document.getElementById('kpi-tva').innerText = `${totalTVA.toFixed(2)} €`;
+      document.getElementById('kpi-pourboires').innerText = `+${totalPourboires.toFixed(2)} €`;
       document.getElementById('kpi-encaissees').innerText = encaissees.length;
       document.getElementById('kpi-panier-moyen').innerText = `${panierMoyen.toFixed(2)} €`;
       document.getElementById('kpi-actives').innerText = actives.length;
@@ -516,24 +530,11 @@
       document.getElementById('pay-total-cb').innerText = `${totalCB.toFixed(2)} €`;
       document.getElementById('pay-total-esp').innerText = `${totalEsp.toFixed(2)} €`;
       document.getElementById('pay-total-tr').innerText = `${totalTR.toFixed(2)} €`;
-
-      let durees = 0;
-      let countValides = 0;
-      encaissees.forEach(c => {
-        if (c.date_creation && c.date_fin) {
-          const dStart = parseSqliteDate(c.date_creation);
-          const dEnd = parseSqliteDate(c.date_fin);
-          if (dStart && dEnd) {
-            const diff = Math.round((dEnd - dStart) / 60000);
-            if (diff >= 0) { durees += diff; countValides++; }
-          }
-        }
-      });
-      document.getElementById('kpi-temps-moyen').innerText = countValides > 0 ? `${Math.round(durees / countValides)} min` : '0 min';
+      document.getElementById('pay-total-tips').innerText = `+${totalPourboires.toFixed(2)} €`;
 
       const tbody = document.getElementById('orders-table-body');
       if (commandes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
         return;
       }
 
@@ -556,7 +557,8 @@
             <td><strong>👤 ${c.serveur_nom || 'Salle'}</strong></td>
             <td>${heure}</td>
             <td><span class="badge-stat stat-${c.statut}">${getLibelleStatut(c.statut)}</span></td>
-            <td>${c.mode_paiement ? `<strong>${c.mode_paiement}</strong>` : '-'}</td>
+            <td><strong style="font-size:0.85rem;">${c.mode_paiement || '-'}</strong></td>
+            <td><strong style="color:#059669;">${c.pourboire > 0 ? '+' + c.pourboire.toFixed(2) + ' €' : '-'}</strong></td>
             <td><strong>${montantAffiche > 0 ? montantAffiche.toFixed(2) + ' €' : '0,00 €'}</strong></td>
             <td><div style="font-size:0.82rem; color:#475569;">${detailsHtml}</div></td>
           </tr>
@@ -611,7 +613,7 @@
 
     async function ajouterNouvelleZone() {
       const nom = document.getElementById('new-zone-name').value.trim();
-      if (!nom) return alert("Veuillez indiquer un nom pour la zone.");
+      if (!nom) return alert("Nom de zone requis.");
       try {
         const res = await fetch('/api/admin/zones', {
           method: 'POST',
@@ -626,7 +628,7 @@
     }
 
     async function supprimerZone(id, nom) {
-      if (!confirm(`Supprimer la zone « ${nom} » et toutes ses tables ?`)) return;
+      if (!confirm(`Supprimer la zone « ${nom} » ?`)) return;
       try {
         await fetch(`/api/admin/zones/${id}`, { method: 'DELETE' });
         chargerPlanAdmin();
@@ -657,7 +659,7 @@
       } catch (e) {}
     }
 
-    // --- GESTION DES SERVEURS & MODIFICATION DE PIN ---
+    // --- SERVEURS ---
     async function chargerServeurs() {
       try {
         const res = await fetch('/api/admin/serveurs');
@@ -677,39 +679,27 @@
         <div class="breakdown-row">
           <span class="tag-bold">👤 ${s.nom} <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b;">PIN: <strong>${s.pin}</strong></span></span>
           <div class="action-icons-group">
-            <button class="btn-edit-pin" title="Modifier le code PIN" onclick="modifierPinServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}', '${s.pin}')">✏️ Changer PIN</button>
-            <button class="btn-del" title="Supprimer le serveur" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
+            <button class="btn-edit-pin" onclick="modifierPinServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}', '${s.pin}')">✏️ Changer PIN</button>
+            <button class="btn-del" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
           </div>
         </div>
       `).join('');
     }
 
     async function modifierPinServeur(id, nom, currentPin) {
-      const nouveauPin = prompt(`Entrez le nouveau code PIN à 4 chiffres pour ${nom} :`, currentPin);
-      if (nouveauPin === null) return;
-
-      if (!nouveauPin || nouveauPin.trim().length !== 4 || !/^\d{4}$/.test(nouveauPin.trim())) {
-        alert("❌ Erreur : Le code PIN doit comporter exactement 4 chiffres.");
-        return;
-      }
-
+      const nouveauPin = prompt(`Nouveau code PIN à 4 chiffres pour ${nom} :`, currentPin);
+      if (!nouveauPin || nouveauPin.trim().length !== 4 || !/^\d{4}$/.test(nouveauPin.trim())) return alert("Code PIN 4 chiffres invalide.");
       try {
         const res = await fetch(`/api/admin/serveurs/${id}/pin`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pin: nouveauPin.trim() })
         });
-        const data = await res.json();
-
         if (res.ok) {
-          alert(`✅ Le code PIN de ${nom} a été mis à jour avec succès (${nouveauPin.trim()}).`);
+          alert(`✅ Code PIN mis à jour pour ${nom}.`);
           chargerServeurs();
-        } else {
-          alert(`❌ ${data.error || "Erreur lors de la modification."}`);
         }
-      } catch (e) {
-        alert("Erreur de connexion.");
-      }
+      } catch (e) {}
     }
 
     async function ajouterNouveauServeur() {
@@ -743,13 +733,12 @@
     // --- EXPORT CSV & IMPRESSION Z ---
     function exporterExcelCSV() {
       if (allOrders.length === 0) return alert("Aucune donnée.");
-      let csv = "\uFEFFID;Table;Serveur;Date_Creation;Date_Cloture;Statut;Paiement;Articles;Remise_EUR;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
+      let csv = "\uFEFFID;Table;Serveur;Date_Creation;Date_Cloture;Statut;Paiement;Pourboire_EUR;Remise_EUR;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
       allOrders.forEach(c => {
         let brut = 0;
-        const articles = [];
-        if (c.items) c.items.forEach(it => { brut += (it.prix || 0) * (it.quantite || 1); articles.push(`${it.quantite || 1}x ${it.article_nom}`); });
+        if (c.items) c.items.forEach(it => { brut += (it.prix || 0) * (it.quantite || 1); });
         const net = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
-        csv += `${c.id};Table ${c.table_num};${c.serveur_nom || 'Salle'};${c.date_creation || ''};${c.date_fin || ''};${c.statut};${c.mode_paiement || ''};"${articles.join(', ')}";${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${(net/1.1).toFixed(2)};${(net-(net/1.1)).toFixed(2)}\n`;
+        csv += `${c.id};Table ${c.table_num};${c.serveur_nom || 'Salle'};${c.date_creation || ''};${c.date_fin || ''};${c.statut};"${c.mode_paiement || ''}";${(c.pourboire || 0).toFixed(2)};${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${(net/1.1).toFixed(2)};${(net-(net/1.1)).toFixed(2)}\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
@@ -763,6 +752,7 @@
     function imprimerZCaisse() {
       const encaissees = allOrders.filter(c => c.statut === 'encaisse');
       let totalCA = 0;
+      let totalTips = 0;
       let totalCB = 0;
       let totalEsp = 0;
       let totalTR = 0;
@@ -772,15 +762,22 @@
         if (c.items) c.items.forEach(it => brut += (it.prix || 0) * (it.quantite || 1));
         const net = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
         totalCA += net;
-        if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += net;
-        else if (c.mode_paiement === 'Espèces') totalEsp += net;
-        else if (c.mode_paiement === 'Titre Resto') totalTR += net;
+        totalTips += (c.pourboire || 0);
       });
+
+      if (allPaiements && allPaiements.length > 0) {
+        allPaiements.forEach(p => {
+          if (p.mode_paiement === 'CB') totalCB += p.montant;
+          else if (p.mode_paiement === 'Espèces') totalEsp += p.montant;
+          else if (p.mode_paiement === 'Titre Resto') totalTR += p.montant;
+        });
+      }
 
       document.getElementById('print-z-date').innerText = new Date().toLocaleString('fr-FR');
       document.getElementById('print-z-ca').innerText = `${totalCA.toFixed(2)} €`;
       document.getElementById('print-z-ht').innerText = `${(totalCA / 1.10).toFixed(2)} €`;
       document.getElementById('print-z-tva').innerText = `${(totalCA - (totalCA / 1.10)).toFixed(2)} €`;
+      document.getElementById('print-z-tips').innerText = `+${totalTips.toFixed(2)} €`;
       document.getElementById('print-z-tables').innerText = `${encaissees.length}`;
       document.getElementById('print-z-cb').innerText = `${totalCB.toFixed(2)} €`;
       document.getElementById('print-z-esp').innerText = `${totalEsp.toFixed(2)} €`;

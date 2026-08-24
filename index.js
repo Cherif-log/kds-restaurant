@@ -40,7 +40,9 @@ db.exec(`
     serveur_nom TEXT DEFAULT 'Salle',
     mode_paiement TEXT,
     remise_montant REAL DEFAULT 0,
+    pourboire REAL DEFAULT 0,
     total_paye REAL,
+    paiements_details TEXT,
     remarques TEXT,
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
     date_fin DATETIME
@@ -60,6 +62,16 @@ db.exec(`
     article_id TEXT PRIMARY KEY,
     article_nom TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS paiements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    table_num INTEGER NOT NULL,
+    serveur_nom TEXT DEFAULT 'Salle',
+    mode_paiement TEXT NOT NULL,
+    montant REAL NOT NULL,
+    pourboire REAL DEFAULT 0,
+    date_paiement DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Migrations automatiques
@@ -68,6 +80,8 @@ try { db.exec(`ALTER TABLE commandes ADD COLUMN mode_paiement TEXT`); } catch (e
 try { db.exec(`ALTER TABLE commandes ADD COLUMN remise_montant REAL DEFAULT 0`); } catch (e) {}
 try { db.exec(`ALTER TABLE commandes ADD COLUMN total_paye REAL`); } catch (e) {}
 try { db.exec(`ALTER TABLE commandes ADD COLUMN serveur_nom TEXT DEFAULT 'Salle'`); } catch (e) {}
+try { db.exec(`ALTER TABLE commandes ADD COLUMN pourboire REAL DEFAULT 0`); } catch (e) {}
+try { db.exec(`ALTER TABLE commandes ADD COLUMN paiements_details TEXT`); } catch (e) {}
 
 // Initialisation Serveurs par défaut
 const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
@@ -366,25 +380,57 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 9. Encaisser Table
+// 👉 9. ENCAISSER TABLE (AVEC MULTI-RÈGLEMENTS & POURBOIRES)
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
-    const { mode_paiement, remise_montant, total_paye, serveur_nom } = req.body;
+    const { paiements, mode_paiement, remise_montant, pourboire, total_paye, serveur_nom } = req.body;
     const nowIso = new Date().toISOString();
 
+    const tipAmount = parseFloat(pourboire) || 0;
+    const discountAmount = parseFloat(remise_montant) || 0;
+    const netPaye = parseFloat(total_paye) || 0;
+    const sNom = serveur_nom || 'Salle';
+
+    // Construire le détail et le résumé des modes de paiement
+    let paiementsList = [];
+    if (paiements && Array.isArray(paiements) && paiements.length > 0) {
+      paiementsList = paiements;
+    } else {
+      paiementsList = [{ mode: mode_paiement || 'CB', montant: netPaye }];
+    }
+
+    const modeResume = paiementsList.length === 1 
+      ? paiementsList[0].mode 
+      : 'Panaché (' + paiementsList.map(p => `${p.mode}: ${p.montant.toFixed(2)}€`).join(', ') + ')';
+
+    const paiementsJson = JSON.stringify(paiementsList);
+
+    // Enregistrer chaque transaction dans la table paiements
+    const insertPaiement = db.prepare(`
+      INSERT INTO paiements (table_num, serveur_nom, mode_paiement, montant, pourboire, date_paiement) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    paiementsList.forEach((p, index) => {
+      // On associe le pourboire sur le premier versement
+      const pTip = (index === 0) ? tipAmount : 0;
+      insertPaiement.run(table_num, sNom, p.mode, p.montant, pTip, nowIso);
+    });
+
+    // Mettre à jour les commandes de la table
     const update = db.prepare(`
       UPDATE commandes 
-      SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, total_paye = ?, serveur_nom = COALESCE(?, serveur_nom), date_fin = ? 
+      SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, pourboire = ?, total_paye = ?, paiements_details = ?, serveur_nom = COALESCE(?, serveur_nom), date_fin = ? 
       WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
     `);
-    update.run(mode_paiement || 'CB', remise_montant || 0, total_paye || 0, serveur_nom || null, nowIso, table_num);
+    update.run(modeResume, discountAmount, tipAmount, netPaye, paiementsJson, sNom, nowIso, table_num);
 
     io.emit('table_status_change');
     io.emit('statut_mis_a_jour');
-    res.json({ success: true });
+    res.json({ success: true, modeResume, total_paye: netPaye, pourboire: tipAmount });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur encaissement' });
+    res.status(500).json({ error: 'Erreur lors de l\'encaissement.' });
   }
 });
 
@@ -433,7 +479,7 @@ app.post('/api/tables/:table_num/transfer', (req, res) => {
   }
 });
 
-// 👉 9quater. NOUVEAU : RÉCLAMER LA SUITE (ENTRÉES -> PLATS -> DESSERTS)
+// 9quater. Réclamer la suite
 app.post('/api/tables/:table_num/suite', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
@@ -480,7 +526,7 @@ app.put('/api/commandes/:id/statut', (req, res) => {
   }
 });
 
-// 11. Admin historique
+// 11. Admin historique & paiements
 app.get('/api/admin/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
@@ -488,6 +534,14 @@ app.get('/api/admin/commandes', (req, res) => {
     res.json(commandes.map(cmd => ({ ...cmd, items: getItems.all(cmd.id) })));
   } catch (err) {
     res.status(500).json({ error: 'Erreur admin' });
+  }
+});
+
+app.get('/api/admin/paiements', (req, res) => {
+  try {
+    res.json(db.prepare(`SELECT * FROM paiements ORDER BY id DESC`).all());
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur paiements' });
   }
 });
 
