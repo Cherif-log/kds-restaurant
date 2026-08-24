@@ -21,12 +21,15 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; }
 
+    /* Bannière de déverrouillage audio au chargement */
+    #audio-banner { display: none; background: #dc2626; color: #fff; text-align: center; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: 700; cursor: pointer; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { opacity: 0.85; } 50% { opacity: 1; } 100% { opacity: 0.85; } }
+
     header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
     h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
     .header-controls { display: flex; align-items: center; gap: 12px; }
-    .btn-sound { background: #3b82f6; color: #fff; border: none; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    .btn-sound.enabled { background: #16a34a; }
+    .badge-audio { background: #16a34a; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
     .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
 
     .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
@@ -62,12 +65,16 @@
     .btn-done { background: #475569; color: #fff; }
   </style>
 </head>
-<body onclick="debloquerAudio()">
+<body onclick="debloquerAudioAutomatique()">
+
+  <div id="audio-banner" onclick="debloquerAudioAutomatique()">
+    🔔 Alarme en attente : cliquez ici pour autoriser la sonnerie automatique du KDS
+  </div>
 
   <header>
     <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
     <div class="header-controls">
-      <button id="btn-sound-toggle" class="btn-sound" onclick="activerSon(event)">🔔 Activer le son</button>
+      <span class="badge-audio" id="badge-audio">🔊 Alarme prête</span>
       <span id="active-count" style="font-weight:700; font-size:0.9rem;">0 en cours</span>
       <span class="badge-status" id="socket-status">En direct</span>
     </div>
@@ -81,9 +88,9 @@
     const socket = typeof io !== 'undefined' ? io() : null;
     let commandes = [];
     let audioCtx = null;
-    let sonActive = false;
 
-    function initialiserAudio() {
+    // Initialisation du contexte audio
+    function initAudioContext() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
@@ -92,49 +99,43 @@
       }
     }
 
-    function activerSon(e) {
-      if (e) e.stopPropagation();
-      initialiserAudio();
-      sonActive = true;
-      const btn = document.getElementById('btn-sound-toggle');
-      btn.classList.add('enabled');
-      btn.innerText = '🔊 Son activé';
-      jouerAlarme5s();
-    }
-
-    function debloquerAudio() {
-      if (!sonActive) {
-        initialiserAudio();
-        sonActive = true;
-        const btn = document.getElementById('btn-sound-toggle');
-        btn.classList.add('enabled');
-        btn.innerText = '🔊 Son activé';
+    // Déverrouillage automatique dès le premier contact avec l'écran
+    function debloquerAudioAutomatique() {
+      initAudioContext();
+      if (audioCtx && audioCtx.state === 'running') {
+        document.getElementById('audio-banner').style.display = 'none';
+        document.getElementById('badge-audio').innerText = '🔊 Alarme active';
       }
     }
 
-    // ALARME FORTE DE 5 SECONDES
+    // ALARME FORTE, TRÈS AIGUË & STRIDENTE (5 SECONDES)
     function jouerAlarme5s() {
       try {
-        initialiserAudio();
+        initAudioContext();
+        if (!audioCtx || audioCtx.state !== 'running') {
+          document.getElementById('audio-banner').style.display = 'block';
+          return;
+        }
+
         const now = audioCtx.currentTime;
-        const duration = 5.0; // 5 secondes complètes
+        const duration = 5.0; // 5 secondes
 
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
 
-        // Type "sawtooth" pour un son d'alerte très percutant en cuisine
-        osc.type = 'sawtooth';
+        // Onde "square" (carrée) : timbre strident perçant le bruit
+        osc.type = 'square';
 
-        // Alternance de tons aigus toutes les 250ms pendant 5 secondes
-        for (let t = 0; t < duration; t += 0.5) {
-          osc.frequency.setValueAtTime(950, now + t);
-          osc.frequency.setValueAtTime(750, now + t + 0.25);
+        // Alternance de fréquences aiguës (2 200 Hz et 1 600 Hz)
+        for (let t = 0; t < duration; t += 0.25) {
+          osc.frequency.setValueAtTime(2200, now + t);
+          osc.frequency.setValueAtTime(1600, now + t + 0.12);
         }
 
-        // Modulation de volume fort (bips répétés)
-        for (let t = 0; t < duration; t += 0.5) {
-          gain.gain.setValueAtTime(0.8, now + t);
-          gain.gain.setValueAtTime(0.05, now + t + 0.45);
+        // Bips rapides et puissants au volume maximum (gain = 1.0)
+        for (let t = 0; t < duration; t += 0.25) {
+          gain.gain.setValueAtTime(1.0, now + t);
+          gain.gain.setValueAtTime(0.01, now + t + 0.20);
         }
         gain.gain.setValueAtTime(0, now + duration);
 
@@ -148,6 +149,7 @@
       }
     }
 
+    // Chargement API
     async function chargerCommandes() {
       try {
         const res = await fetch('/api/commandes');
@@ -161,6 +163,7 @@
       }
     }
 
+    // Réception Socket.io
     if (socket) {
       socket.on('nouvelle_commande', () => {
         jouerAlarme5s();
@@ -244,6 +247,14 @@
         chargerCommandes();
       } catch (e) {}
     }
+
+    // Vérification du statut audio au chargement
+    window.addEventListener('load', () => {
+      initAudioContext();
+      if (!audioCtx || audioCtx.state !== 'running') {
+        document.getElementById('audio-banner').style.display = 'block';
+      }
+    });
 
     setInterval(chargerCommandes, 5000);
     chargerCommandes();
