@@ -2,305 +2,216 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hôtel des Pins — Prise de commande</title>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #f4f5f7;
-      color: #1a1a1a;
-      padding: 16px;
-      padding-bottom: 120px;
-    }
-    header {
-      margin-bottom: 16px;
-    }
-    h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f4f6f9; color: #333; padding-bottom: 90px; }
     
-    .table-section {
-      background: #fff;
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      margin-bottom: 16px;
-    }
-    .table-label { font-size: 13px; font-weight: 600; color: #666; margin-bottom: 8px; display: block; }
-    .tables-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 6px;
-    }
-    .btn-table {
-      padding: 10px 0;
-      border: 1px solid #ddd;
-      background: #fafafa;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .btn-table.active {
-      background: #007aff;
-      color: #fff;
-      border-color: #007aff;
-    }
+    header { background: #1a252f; color: #fff; padding: 14px 20px; font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
+    .status-badge { font-size: 0.8rem; background: #27ae60; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
 
-    .categories {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      margin-bottom: 16px;
-      scrollbar-width: none;
-    }
-    .btn-cat {
-      white-space: nowrap;
-      padding: 8px 14px;
-      background: #e5e7eb;
-      border: none;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    .btn-cat.active {
-      background: #111827;
-      color: #fff;
-    }
+    .container { max-width: 900px; margin: 0 auto; padding: 15px; }
 
-    .menu-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 12px;
-    }
-    .item-card {
-      background: #fff;
-      padding: 14px;
-      border-radius: 10px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 100px;
-    }
-    .item-name { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
-    .item-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 8px;
-    }
-    .btn-qty {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      border: 1px solid #007aff;
-      background: #fff;
-      color: #007aff;
-      font-size: 18px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .btn-qty.plus { background: #007aff; color: #fff; }
-    .qty-display { font-weight: 700; font-size: 15px; }
+    /* Sélection des Tables */
+    .section-title { font-size: 0.85rem; text-transform: uppercase; color: #7f8c8d; font-weight: 700; margin-bottom: 8px; }
+    .tables-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; scrollbar-width: none; }
+    .btn-table { flex: 0 0 65px; height: 42px; background: #fff; border: 1px solid #dcdde1; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; }
+    .btn-table.active { background: #2980b9; color: #fff; border-color: #2980b9; box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3); }
 
-    .bottom-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #fff;
-      padding: 12px 16px;
-      border-top: 1px solid #e5e7eb;
-      box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .comment-input {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 13px;
-    }
-    .btn-envoyer {
-      width: 100%;
-      padding: 14px;
-      background: #28a745;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .btn-envoyer:disabled {
-      background: #9ca3af;
-      cursor: not-allowed;
-    }
+    /* Filtres Catégories */
+    .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; scrollbar-width: none; }
+    .btn-cat { white-space: nowrap; padding: 8px 16px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; color: #475569; }
+    .btn-cat.active { background: #1e293b; color: #fff; }
+
+    /* Grille des Articles */
+    .articles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .card { background: #fff; border-radius: 10px; padding: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border: 1px solid #eef0f2; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+    .card-title { font-weight: 600; font-size: 0.95rem; line-height: 1.3; color: #1e293b; }
+    .card-price { font-size: 0.9rem; font-weight: 700; color: #2980b9; }
+    
+    .card-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+    .btn-qty { width: 32px; height: 32px; border-radius: 6px; border: none; background: #f1f5f9; font-size: 1.1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #334155; }
+    .btn-qty.plus { background: #2563eb; color: #fff; }
+    .qty-display { font-weight: 700; font-size: 0.95rem; min-width: 20px; text-align: center; }
+
+    /* Barre d'envoi fixe */
+    .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 12px 20px; display: flex; gap: 10px; align-items: center; box-shadow: 0 -4px 12px rgba(0,0,0,0.05); }
+    .remarque-input { flex: 1; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; outline: none; }
+    .btn-send { background: #16a34a; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
+    .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>Hôtel des Pins</h1>
+    <span>Hôtel des Pins</span>
+    <span class="status-badge" id="net-status">Connecté</span>
   </header>
 
-  <div class="table-section">
-    <span class="table-label">NUMÉRO DE TABLE</span>
-    <div class="tables-grid" id="tablesGrid"></div>
+  <div class="container">
+    <div class="section-title">Table sélectionnée</div>
+    <div class="tables-bar" id="tables-container"></div>
+
+    <div class="section-title">Catégories</div>
+    <div class="categories-bar" id="categories-container"></div>
+
+    <div class="articles-grid" id="articles-container"></div>
   </div>
 
-  <div class="categories" id="categoriesBar"></div>
-  <div class="menu-grid" id="menuGrid"></div>
-
   <div class="bottom-bar">
-    <input type="text" id="remarque" class="comment-input" placeholder="Remarque (ex. sans sel, viande saignante...)">
-    <button id="btnEnvoyer" class="btn-envoyer" disabled onclick="envoyerCommande()">
-      <span>Envoyer en cuisine</span>
-      <span id="panierTotal">0 article</span>
-    </button>
+    <input type="text" id="remarque" class="remarque-input" placeholder="Remarque (ex: sans sel, viande saignante...)">
+    <button id="btn-envoyer" class="btn-send" disabled onclick="envoyerCommande()">Envoyer (0)</button>
   </div>
 
   <script>
-    const MENU = [
-      { id: 'e1', cat: 'Entrées', nom: 'Salade César' },
-      { id: 'e2', cat: 'Entrées', nom: 'Burrata Tomates' },
-      { id: 'e3', cat: 'Entrées', nom: 'Soupe à l’oignon' },
-      { id: 'p1', cat: 'Plats', nom: 'Burger Maison' },
-      { id: 'p2', cat: 'Plats', nom: 'Entrecôte 300g' },
-      { id: 'p3', cat: 'Plats', nom: 'Pâtes Carbonara' },
-      { id: 'p4', cat: 'Plats', nom: 'Pavé de Saumon' },
-      { id: 'd1', cat: 'Desserts', nom: 'Tiramisu' },
-      { id: 'd2', cat: 'Desserts', nom: 'Fondant Chocolat' },
-      { id: 'd3', cat: 'Desserts', nom: 'Crème Brûlée' },
-      { id: 'b1', cat: 'Boissons', nom: 'Coca-Cola' },
-      { id: 'b2', cat: 'Boissons', nom: 'Eau Minérale' },
-      { id: 'b3', cat: 'Boissons', nom: 'Bière Pression' },
-      { id: 'b4', cat: 'Boissons', nom: 'Café Expresso' }
-    ];
+    const socket = io();
+    let currentTable = 1;
+    let currentCategory = 'Tous';
+    let allArticles = [];
+    let panier = {}; // { articleId: { ...article, qte: 1 } }
 
-    let tableSelectionnee = 'Table 1';
-    let categorieActive = 'Tous';
-    let panier = {};
-
-    function initialiserTables() {
-      const container = document.getElementById('tablesGrid');
-      container.innerHTML = Array.from({ length: 6 }, (_, i) => `Table ${i + 1}`).map((tab, index) => `
-        <button class="btn-table ${index === 0 ? 'active' : ''}" onclick="choisirTable('${tab}', this)">
-          ${tab.replace('Table ', 'T')}
-        </button>
-      `).join('');
+    // Initialisation des 15 tables
+    const tablesContainer = document.getElementById('tables-container');
+    for (let i = 1; i <= 15; i++) {
+      const btn = document.createElement('button');
+      btn.className = `btn-table ${i === 1 ? 'active' : ''}`;
+      btn.innerText = `T${i}`;
+      btn.onclick = () => {
+        document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTable = i;
+      };
+      tablesContainer.appendChild(btn);
     }
 
-    function choisirTable(table, el) {
-      tableSelectionnee = table;
-      document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
-      el.classList.add('active');
-    }
-
-    function initialiserCategories() {
-      const cats = ['Tous', 'Entrées', 'Plats', 'Desserts', 'Boissons'];
-      const bar = document.getElementById('categoriesBar');
-      bar.innerHTML = cats.map(cat => `
-        <button class="btn-cat ${cat === categorieActive ? 'active' : ''}" onclick="filtrerCategorie('${cat}', this)">
-          ${cat}
-        </button>
-      `).join('');
-    }
-
-    function filtrerCategorie(cat, el) {
-      categorieActive = cat;
-      document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
-      el.classList.add('active');
-      afficherMenu();
-    }
-
-    function modifierQuantite(id, delta) {
-      const quantite = (panier[id] || 0) + delta;
-      if (quantite <= 0) {
-        delete panier[id];
-      } else {
-        panier[id] = quantite;
+    // Chargement des articles depuis la base de données
+    async function chargerArticles() {
+      try {
+        const res = await fetch('/api/articles');
+        allArticles = await res.json();
+        genererCategories();
+        afficherArticles();
+      } catch (err) {
+        console.error('Erreur chargement articles:', err);
       }
-      afficherMenu();
-      mettreAJourBouton();
     }
 
-    function afficherMenu() {
-      const grid = document.getElementById('menuGrid');
-      const items = categorieActive === 'Tous' 
-        ? MENU 
-        : MENU.filter(m => m.cat === categorieActive);
+    // Génération automatique des catégories
+    function genererCategories() {
+      const categories = ['Tous', ...new Set(allArticles.map(a => a.categorie))];
+      const catContainer = document.getElementById('categories-container');
+      catContainer.innerHTML = '';
 
-      grid.innerHTML = items.map(item => {
-        const qte = panier[item.id] || 0;
-        return `
-          <div class="item-card">
-            <span class="item-name">${item.nom}</span>
-            <div class="item-actions">
-              <button class="btn-qty" onclick="modifierQuantite('${item.id}', -1)">-</button>
-              <span class="qty-display">${qte}</span>
-              <button class="btn-qty plus" onclick="modifierQuantite('${item.id}', 1)">+</button>
-            </div>
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `btn-cat ${cat === currentCategory ? 'active' : ''}`;
+        btn.innerText = cat;
+        btn.onclick = () => {
+          document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentCategory = cat;
+          afficherArticles();
+        };
+        catContainer.appendChild(btn);
+      });
+    }
+
+    // Affichage des articles filtrés
+    function afficherArticles() {
+      const grid = document.getElementById('articles-container');
+      grid.innerHTML = '';
+
+      const filtres = currentCategory === 'Tous' 
+        ? allArticles 
+        : allArticles.filter(a => a.categorie === currentCategory);
+
+      filtres.forEach(art => {
+        const qte = panier[art.id] ? panier[art.id].qte : 0;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div>
+            <div class="card-title">${art.nom}</div>
+            <div class="card-price">${art.prix > 0 ? art.prix.toFixed(2) + ' €' : 'Inclus / Au choix'}</div>
+          </div>
+          <div class="card-controls">
+            <button class="btn-qty" onclick="modifierQte(${art.id}, -1)">-</button>
+            <span class="qty-display" id="qty-${art.id}">${qte}</span>
+            <button class="btn-qty plus" onclick="modifierQte(${art.id}, 1)">+</button>
           </div>
         `;
-      }).join('');
+        grid.appendChild(card);
+      });
     }
 
-    function mettreAJourBouton() {
-      const totalArticles = Object.values(panier).reduce((a, b) => a + b, 0);
-      const btn = document.getElementById('btnEnvoyer');
-      const label = document.getElementById('panierTotal');
+    function modifierQte(id, delta) {
+      const art = allArticles.find(a => a.id === id);
+      if (!art) return;
 
-      label.innerText = `${totalArticles} article${totalArticles > 1 ? 's' : ''}`;
-      btn.disabled = totalArticles === 0;
+      if (!panier[id]) {
+        if (delta > 0) panier[id] = { ...art, qte: 1 };
+      } else {
+        panier[id].qte += delta;
+        if (panier[id].qte <= 0) delete panier[id];
+      }
+
+      // Mise à jour affichage quantité
+      const el = document.getElementById(`qty-${id}`);
+      if (el) el.innerText = panier[id] ? panier[id].qte : 0;
+
+      mettreAJourBoutonEnvoi();
+    }
+
+    function mettreAJourBoutonEnvoi() {
+      const totalArticles = Object.values(panier).reduce((acc, it) => acc + it.qte, 0);
+      const totalPrix = Object.values(panier).reduce((acc, it) => acc + (it.prix * it.qte), 0);
+      const btn = document.getElementById('btn-envoyer');
+
+      if (totalArticles > 0) {
+        btn.disabled = false;
+        btn.innerText = `Envoyer T${currentTable} (${totalArticles} art. - ${totalPrix.toFixed(2)} €)`;
+      } else {
+        btn.disabled = true;
+        btn.innerText = 'Envoyer (0)';
+      }
     }
 
     async function envoyerCommande() {
-      const totalArticles = Object.values(panier).reduce((a, b) => a + b, 0);
-      if (totalArticles === 0) return;
+      const items = Object.values(panier).map(it => ({
+        article_id: it.id,
+        nom: it.nom,
+        prix: it.prix,
+        quantite: it.qte
+      }));
 
-      const lignesArticles = Object.entries(panier).map(([id, qte]) => {
-        const article = MENU.find(m => m.id === id);
-        return `${qte}x ${article.nom}`;
-      });
+      const payload = {
+        table_num: currentTable,
+        items: items,
+        remarques: document.getElementById('remarque').value.trim()
+      };
 
-      const remarque = document.getElementById('remarque').value.trim();
-      if (remarque) {
-        lignesArticles.push(`\nNote: ${remarque}`);
-      }
+      try {
+        const res = await fetch('/api/commandes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-      const detailsFormates = lignesArticles.join('\n');
-
-      const res = await fetch('/api/commandes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table: tableSelectionnee,
-          details: detailsFormates
-        })
-      });
-
-      if (res.ok) {
-        panier = {};
-        document.getElementById('remarque').value = '';
-        mettreAJourBouton();
-        afficherMenu();
+        if (res.ok) {
+          panier = {};
+          document.getElementById('remarque').value = '';
+          afficherArticles();
+          mettreAJourBoutonEnvoi();
+          alert('Commande envoyée en cuisine !');
+        }
+      } catch (err) {
+        alert('Erreur lors de l’envoi de la commande.');
       }
     }
 
-    initialiserTables();
-    initialiserCategories();
-    afficherMenu();
+    chargerArticles();
   </script>
 </body>
 </html>
