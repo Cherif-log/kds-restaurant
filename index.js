@@ -35,11 +35,14 @@ db.exec(`
 `);
 
 app.use(express.json());
+
+// Distribution des fichiers statiques depuis public ET depuis la racine
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
 // --- ROUTES API ---
 
-// 1. Récupérer les commandes actives pour la cuisine
+// 1. Récupérer les commandes actives
 app.get('/api/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`
@@ -93,7 +96,6 @@ app.post('/api/commandes', (req, res) => {
       });
     }
 
-    // Récupérer la commande complète créée
     const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
     const completeOrder = {
       id: commandeId,
@@ -104,17 +106,15 @@ app.post('/api/commandes', (req, res) => {
       items: getItems.all(commandeId)
     };
 
-    // Diffusion temps réel à tous les écrans cuisine connectés
     io.emit('nouvelle_commande', completeOrder);
-
     res.status(201).json(completeOrder);
   } catch (err) {
     console.error('Erreur POST /api/commandes :', err);
-    res.status(500).json({ error: 'Erreur lors de la création de la commande' });
+    res.status(500).json({ error: 'Erreur création commande' });
   }
 });
 
-// 3. Mise à jour du statut d'une commande
+// 3. Mise à jour statut
 app.put('/api/commandes/:id/statut', (req, res) => {
   try {
     const { id } = req.params;
@@ -133,13 +133,11 @@ app.put('/api/commandes/:id/statut', (req, res) => {
 
 // --- SOCKET.IO ---
 io.on('connection', (socket) => {
-  console.log('Client connecté en temps réel :', socket.id);
-
   socket.on('changer_statut', (data) => {
     io.emit('statut_mis_a_jour', data);
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`Serveur en écoute sur le port ${PORT}`);
+  console.log(`Serveur démarré sur le port ${PORT}`);
 });
