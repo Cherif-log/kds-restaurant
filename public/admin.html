@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Administration & Configuration</title>
+  <title>Hôtel des Pins — Espace Direction & Audit</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -23,12 +23,28 @@
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
     .container { max-width: 1200px; margin: 0 auto; }
 
+    /* VERROUILLAGE DIRECTION */
+    .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 15px; }
+    .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
+    .pin-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; }
+    .pin-subtitle { font-size: 0.8rem; color: #94a3b8; margin-bottom: 20px; }
+    
+    .pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
+    .pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #38bdf8; }
+    .pin-dot.filled { background: #38bdf8; }
+
+    .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+    .btn-key { background: #334155; color: #fff; border: none; border-radius: 12px; height: 58px; font-size: 1.4rem; font-weight: 800; cursor: pointer; }
+    .btn-key:active { background: #475569; }
+    .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
+
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
     h1 { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
 
-    .header-actions { display: flex; gap: 10px; }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
     .btn-export { background: #047857; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     .btn-print-z { background: var(--primary); color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
+    .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
     /* Grille KPI */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
@@ -39,38 +55,38 @@
     .kpi-value.blue { color: var(--accent); }
     .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* Panels Grid */
-    .dashboard-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 28px; }
-    .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
-    .panel-title { font-size: 1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
+    /* Surveillance & Audit Serveurs */
+    .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    .panel-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
 
+    .audit-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .audit-table th { background: #f8fafc; padding: 12px 14px; font-size: 0.78rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    .audit-table td { padding: 12px 14px; font-size: 0.88rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .audit-table tr:last-child td { border-bottom: none; }
+    .audit-table tr:hover { background: #f8fafc; }
+
+    .badge-perf { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; }
+    .perf-actif { background: #dcfce7; color: #15803d; }
+    .perf-inactif { background: #fee2e2; color: #b91c1c; }
+    .perf-neutre { background: #f1f5f9; color: #64748b; }
+
+    /* Configuration */
+    .dashboard-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 28px; }
     .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
     .breakdown-row:last-child { border-bottom: none; }
     .tag-bold { font-weight: 700; display: flex; align-items: center; gap: 6px; }
 
-    /* FORMULAIRES */
     .inline-form { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
     .form-input { flex: 2; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
     .form-input-short { flex: 1; max-width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; text-align: center; font-weight: 700; outline: none; }
-    .btn-action-primary { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+    .btn-action-primary { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
     .btn-del { background: none; border: none; color: #94a3b8; font-weight: 800; font-size: 1rem; cursor: pointer; padding: 2px 8px; border-radius: 4px; }
     .btn-del:hover { color: var(--danger); background: #fee2e2; }
 
-    /* Cartes Plan */
     .plan-zone-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
     .plan-zone-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 0.9rem; margin-bottom: 8px; }
     .plan-tables-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .table-chip { background: #fff; border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-
-    /* Tableau Journal */
-    .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); }
-    .table-container { background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-    
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th { background: #f1f5f9; padding: 12px 16px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
-    td { padding: 12px 16px; font-size: 0.88rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover { background: #f8fafc; }
 
     .badge-stat { padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
     .stat-en_attente { background: #fef9c3; color: #854d0e; }
@@ -79,23 +95,19 @@
     .stat-servi { background: #e0f2fe; color: #0369a1; }
     .stat-encaisse { background: #e2e8f0; color: #334155; }
 
-    /* Z DE CAISSE STYLES & IMPRESSION */
+    /* IMPRESSION Z */
     #z-caisse-print { display: none; }
-
     @media print {
-      body { background: #fff !important; color: #000 !important; padding: 0 !important; margin: 0 !important; }
+      body { background: #fff !important; color: #000 !important; padding: 0 !important; }
       .container { display: none !important; }
       #z-caisse-print {
         display: block !important;
         visibility: visible !important;
-        position: static !important;
         width: 80mm;
         margin: 0 auto;
         padding: 5mm;
         font-family: 'Courier New', Courier, monospace;
         font-size: 12px;
-        color: #000;
-        background: #fff;
       }
       #z-caisse-print * { visibility: visible !important; }
     }
@@ -103,16 +115,48 @@
 </head>
 <body>
 
-  <div class="container">
+  <!-- ÉCRAN DE VERROUILLAGE DIRECTION -->
+  <div class="lock-overlay" id="admin-lock-overlay">
+    <div class="pin-card">
+      <div class="pin-title">Accès Direction</div>
+      <div class="pin-subtitle">Saisissez le code PIN Direction pour accéder au panneau de contrôle</div>
+
+      <div class="pin-dots">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
+
+      <div class="keypad-grid">
+        <button class="btn-key" onclick="pressAdminPin('1')">1</button>
+        <button class="btn-key" onclick="pressAdminPin('2')">2</button>
+        <button class="btn-key" onclick="pressAdminPin('3')">3</button>
+        <button class="btn-key" onclick="pressAdminPin('4')">4</button>
+        <button class="btn-key" onclick="pressAdminPin('5')">5</button>
+        <button class="btn-key" onclick="pressAdminPin('6')">6</button>
+        <button class="btn-key" onclick="pressAdminPin('7')">7</button>
+        <button class="btn-key" onclick="pressAdminPin('8')">8</button>
+        <button class="btn-key" onclick="pressAdminPin('9')">9</button>
+        <button class="btn-key action" onclick="clearAdminPin()">C</button>
+        <button class="btn-key" onclick="pressAdminPin('0')">0</button>
+        <button class="btn-key action" onclick="deleteAdminPin()">⌫</button>
+      </div>
+      <div style="font-size:0.75rem; color:#64748b; margin-top:8px;">Code Direction par défaut : 9999</div>
+    </div>
+  </div>
+
+  <div class="container" id="admin-main-container" style="display:none;">
     <header>
       <div>
-        <h1>Hôtel des Pins — Administration & Configuration</h1>
-        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Plan de salle modulable, gestion de l'équipe et clôture de caisse</p>
+        <h1>Hôtel des Pins — Espace Direction & Audit</h1>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Surveillance de l'activité du personnel et pilotage financier</p>
       </div>
       <div class="header-actions">
         <a href="/api/admin/backup-db" class="btn-export" style="background:#4338ca; text-decoration:none;">💾 Sauvegarder la Base</a>
         <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter Excel (CSV)</button>
-        <button class="btn-print-z" onclick="imprimerZCaisse()">🖨️ Imprimer le Z de Caisse</button>
+        <button class="btn-print-z" onclick="imprimerZCaisse()">🖨️ Imprimer le Z</button>
+        <button class="btn-logout" onclick="verrouillerAdmin()">🔒 Verrouiller</button>
       </div>
     </header>
 
@@ -140,6 +184,30 @@
       </div>
     </div>
 
+    <!-- 🕵️ MODULE DE SURVEILLANCE & PERFORMANCE DES SERVEURS -->
+    <div class="panel-card">
+      <div class="panel-title">
+        <span>🕵️ Tableau d'Audit & Surveillance des Serveurs</span>
+        <span style="font-size:0.75rem; color:var(--text-muted);">Suivi de l'efficacité et des temps de réaction</span>
+      </div>
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Serveur</th>
+            <th>Statut en direct</th>
+            <th>Dernière commande</th>
+            <th>Commandes prises</th>
+            <th>Tables encaissées</th>
+            <th>CA Net Généré</th>
+            <th>Temps moyen de service</th>
+          </tr>
+        </thead>
+        <tbody id="servers-audit-tbody">
+          <tr><td colspan="7" style="text-align:center; padding:20px;">Chargement de l'audit...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
     <!-- MODULES CONFIGURATION & RAPPORTS -->
     <div class="dashboard-split">
       
@@ -147,11 +215,8 @@
       <div class="panel-card" style="grid-column: 1 / -1;">
         <div class="panel-title">
           <span>📐 Configuration du Plan de Salle (Zones & Tables)</span>
-          <span style="font-size:0.75rem; color:var(--text-muted);">Synchronisation instantanée avec la salle</span>
         </div>
-
         <div id="plan-zones-management" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; margin-bottom:14px;"></div>
-
         <div class="inline-form" style="border-top:1px solid var(--border); padding-top:14px;">
           <input type="text" id="new-zone-name" class="form-input" placeholder="Nouvelle zone (ex: Mezzanine, Bar Piscine...)">
           <button class="btn-action-primary" onclick="ajouterNouvelleZone()">➕ Créer la zone</button>
@@ -169,14 +234,6 @@
           <input type="text" id="new-server-name" class="form-input" placeholder="Nom serveur">
           <input type="text" id="new-server-pin" class="form-input-short" maxlength="4" placeholder="PIN (4 ch.)">
           <button class="btn-action-primary" onclick="ajouterNouveauServeur()">➕ Ajouter</button>
-        </div>
-      </div>
-
-      <!-- 👤 PERFORMANCE DES VENTES -->
-      <div class="panel-card">
-        <div class="panel-title">📊 Ventes par Serveur</div>
-        <div id="servers-breakdown-container">
-          <div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>
         </div>
       </div>
 
@@ -200,9 +257,9 @@
     </div>
 
     <!-- TABLEAU JOURNAL COMPLET -->
-    <h2 class="section-title">Journal détaillé des commandes</h2>
-    <div class="table-container">
-      <table>
+    <div class="panel-card">
+      <div class="panel-title">📋 Journal détaillé des commandes</div>
+      <table class="audit-table">
         <thead>
           <tr>
             <th>Table</th>
@@ -210,18 +267,18 @@
             <th>Heure</th>
             <th>Statut</th>
             <th>Paiement</th>
-            <th>Total Payé TTC</th>
-            <th>Détail du ticket</th>
+            <th>Total TTC</th>
+            <th>Détail</th>
           </tr>
         </thead>
         <tbody id="orders-table-body">
-          <tr><td colspan="7" style="text-align: center; padding: 30px;">Chargement...</td></tr>
+          <tr><td colspan="7" style="text-align:center; padding:30px;">Chargement...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- TICKET THERMIQUE Z DE CAISSE (PARFAITEMENT IMPRIMABLE) -->
+  <!-- TICKET THERMIQUE Z DE CAISSE -->
   <div id="z-caisse-print">
     <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
       <h2 style="font-size:15px; font-weight:800;">HÔTEL DES PINS</h2>
@@ -250,166 +307,153 @@
     let allOrders = [];
     let allServeurs = [];
     let planData = [];
+    let enteredAdminPin = '';
 
-    // --- PLAN DE SALLE ADMIN ---
-    async function chargerPlanAdmin() {
-      try {
-        const res = await fetch('/api/plan/zones-tables');
-        if (res.ok) {
-          planData = await res.json();
-          renderPlanAdmin();
-        }
-      } catch (e) {}
+    // --- AUTHENTIFICATION DIRECTION ---
+    function checkAdminAuth() {
+      const isAuth = sessionStorage.getItem('hdp_admin_auth');
+      if (isAuth === 'true') {
+        document.getElementById('admin-lock-overlay').style.display = 'none';
+        document.getElementById('admin-main-container').style.display = 'block';
+        chargerDonneesAdmin();
+        chargerServeurs();
+        chargerPlanAdmin();
+      } else {
+        document.getElementById('admin-lock-overlay').style.display = 'flex';
+        document.getElementById('admin-main-container').style.display = 'none';
+      }
     }
 
-    function renderPlanAdmin() {
-      const container = document.getElementById('plan-zones-management');
-      if (planData.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">Aucune zone définie.</div>';
+    function pressAdminPin(num) {
+      if (enteredAdminPin.length < 4) {
+        enteredAdminPin += num;
+        updateAdminPinDots();
+        if (enteredAdminPin.length === 4) verifierAdminPin();
+      }
+    }
+
+    function deleteAdminPin() {
+      enteredAdminPin = enteredAdminPin.slice(0, -1);
+      updateAdminPinDots();
+    }
+
+    function clearAdminPin() {
+      enteredAdminPin = '';
+      updateAdminPinDots();
+    }
+
+    function updateAdminPinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < enteredAdminPin.length) dot.classList.add('filled');
+        else dot.classList.remove('filled');
+      }
+    }
+
+    async function verifierAdminPin() {
+      try {
+        const res = await fetch('/api/auth/pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: enteredAdminPin })
+        });
+        const data = await res.json();
+        
+        if (res.ok && data.success && (data.serveur.nom.toLowerCase().includes('direction') || enteredAdminPin === '9999')) {
+          sessionStorage.setItem('hdp_admin_auth', 'true');
+          clearAdminPin();
+          checkAdminAuth();
+        } else {
+          alert("⛔ Accès refusé : Ce code n'a pas les droits de Direction !");
+          clearAdminPin();
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+        clearAdminPin();
+      }
+    }
+
+    function verrouillerAdmin() {
+      sessionStorage.removeItem('hdp_admin_auth');
+      checkAdminAuth();
+    }
+
+    // --- AUDIT & SURVEILLANCE SERVEURS ---
+    function calculerAuditServeurs(commandes, serveurs) {
+      const tbody = document.getElementById('servers-audit-tbody');
+      if (!serveurs || serveurs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Aucun serveur configuré</td></tr>';
         return;
       }
 
-      container.innerHTML = planData.map(z => {
-        const tablesChips = z.tables.map(t => `
-          <div class="table-chip">
-            <span>Table <strong>${t.numero}</strong></span>
-            <button class="btn-del" title="Supprimer Table ${t.numero}" onclick="supprimerTable(${t.id})">✕</button>
-          </div>
-        `).join('');
+      const now = new Date();
+      tbody.innerHTML = serveurs.map(serv => {
+        const cmdsServeur = commandes.filter(c => (c.serveur_nom || 'Salle').toLowerCase() === serv.nom.toLowerCase());
+        const encaissees = cmdsServeur.filter(c => c.statut === 'encaisse');
+
+        let caNet = 0;
+        let tempsTotal = 0;
+        let tempsCount = 0;
+        let derniereDate = null;
+
+        cmdsServeur.forEach(c => {
+          if (c.date_creation) {
+            const d = new Date(c.date_creation);
+            if (!derniereDate || d > derniereDate) derniereDate = d;
+          }
+          if (c.statut === 'encaisse') {
+            let brut = 0;
+            if (c.items) c.items.forEach(it => brut += (it.prix || 0) * (it.quantite || 1));
+            caNet += (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+          }
+          if (c.date_creation && c.date_fin) {
+            const diff = Math.round((new Date(c.date_fin) - new Date(c.date_creation)) / 60000);
+            if (diff >= 0) { tempsTotal += diff; tempsCount++; }
+          }
+        });
+
+        // Détection activité (Actif si commande < 45 min)
+        let statutBadge = '<span class="badge-perf perf-neutre">⚪ Aucune activité</span>';
+        let derniereHeureStr = '-';
+
+        if (derniereDate) {
+          derniereHeureStr = derniereDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const diffMinutes = Math.round((now - derniereDate) / 60000);
+          if (diffMinutes <= 45) {
+            statutBadge = '<span class="badge-perf perf-actif">🟢 Actif (En service)</span>';
+          } else {
+            statutBadge = `<span class="badge-perf perf-inactif">🟡 Inactif (${diffMinutes} min)</span>`;
+          }
+        }
+
+        const tempsMoyenStr = tempsCount > 0 ? `${Math.round(tempsTotal / tempsCount)} min` : '-';
 
         return `
-          <div class="plan-zone-card">
-            <div class="plan-zone-header">
-              <span>${z.nom} (${z.tables.length} table${z.tables.length > 1 ? 's' : ''})</span>
-              <button class="btn-del" title="Supprimer toute la zone" onclick="supprimerZone(${z.id}, '${z.nom.replace(/'/g, "\\'")}')">🗑️</button>
-            </div>
-            <div class="plan-tables-chips">${tablesChips || '<span style="color:var(--text-muted); font-size:0.75rem;">Aucune table</span>'}</div>
-            <div style="display:flex; gap:6px;">
-              <input type="number" id="input-new-table-${z.id}" class="form-input-short" placeholder="N° table">
-              <button class="btn-action-primary" style="padding:4px 10px; font-size:0.75rem;" onclick="ajouterTableAZone(${z.id})">➕ Ajouter Table</button>
-            </div>
-          </div>
+          <tr>
+            <td><strong>👤 ${serv.nom}</strong></td>
+            <td>${statutBadge}</td>
+            <td><strong>${derniereHeureStr}</strong></td>
+            <td>${cmdsServeur.length} commande${cmdsServeur.length > 1 ? 's' : ''}</td>
+            <td>${encaissees.length} table${encaissees.length > 1 ? 's' : ''}</td>
+            <td><strong style="color:var(--accent);">${caNet.toFixed(2)} €</strong></td>
+            <td>${tempsMoyenStr}</td>
+          </tr>
         `;
       }).join('');
     }
 
-    async function ajouterNouvelleZone() {
-      const nom = document.getElementById('new-zone-name').value.trim();
-      if (!nom) return alert("Veuillez indiquer un nom pour la zone.");
-      try {
-        const res = await fetch('/api/admin/zones', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nom })
-        });
-        if (res.ok) {
-          document.getElementById('new-zone-name').value = '';
-          chargerPlanAdmin();
-        }
-      } catch (e) { alert("Erreur création zone."); }
-    }
-
-    async function supprimerZone(id, nom) {
-      if (!confirm(`Supprimer la zone « ${nom} » et toutes ses tables ?`)) return;
-      try {
-        await fetch(`/api/admin/zones/${id}`, { method: 'DELETE' });
-        chargerPlanAdmin();
-      } catch (e) { alert("Erreur suppression zone."); }
-    }
-
-    async function ajouterTableAZone(zone_id) {
-      const input = document.getElementById(`input-new-table-${zone_id}`);
-      const numero = parseInt(input.value, 10);
-      if (isNaN(numero) || numero <= 0) return alert("Veuillez indiquer un numéro de table valide.");
-
-      try {
-        const res = await fetch('/api/admin/tables', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ zone_id, numero })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          input.value = '';
-          chargerPlanAdmin();
-        } else {
-          alert(data.error || "Erreur ajout table.");
-        }
-      } catch (e) { alert("Erreur ajout table."); }
-    }
-
-    async function supprimerTable(id) {
-      try {
-        await fetch(`/api/admin/tables/${id}`, { method: 'DELETE' });
-        chargerPlanAdmin();
-      } catch (e) { alert("Erreur suppression table."); }
-    }
-
-    // --- SERVEURS & CODES PIN ---
-    async function chargerServeurs() {
-      try {
-        const res = await fetch('/api/admin/serveurs');
-        if (res.ok) {
-          allServeurs = await res.json();
-          renderServeursList();
-        }
-      } catch (e) {}
-    }
-
-    function renderServeursList() {
-      const container = document.getElementById('servers-list-container');
-      const badge = document.getElementById('server-count-badge');
-      badge.innerText = `${allServeurs.length} membre${allServeurs.length > 1 ? 's' : ''}`;
-
-      if (allServeurs.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucun serveur enregistré</div>';
-        return;
-      }
-
-      container.innerHTML = allServeurs.map(s => `
-        <div class="breakdown-row">
-          <span class="tag-bold">👤 ${s.nom} <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b;">PIN: ${s.pin}</span></span>
-          <button class="btn-del" title="Supprimer" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
-        </div>
-      `).join('');
-    }
-
-    async function ajouterNouveauServeur() {
-      const nom = document.getElementById('new-server-name').value.trim();
-      const pin = document.getElementById('new-server-pin').value.trim();
-      if (!nom || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-        return alert("Veuillez renseigner un nom et un code PIN de 4 chiffres.");
-      }
-      try {
-        const res = await fetch('/api/admin/serveurs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nom, pin })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          document.getElementById('new-server-name').value = '';
-          document.getElementById('new-server-pin').value = '';
-          chargerServeurs();
-        } else { alert(data.error || "Erreur ajout serveur."); }
-      } catch (e) { alert("Erreur."); }
-    }
-
-    async function supprimerServeur(id, nom) {
-      if (!confirm(`Supprimer le serveur « ${nom} » ?`)) return;
-      try {
-        await fetch(`/api/admin/serveurs/${id}`, { method: 'DELETE' });
-        chargerServeurs();
-      } catch (e) {}
-    }
-
-    // --- KPI & RAPPORTS ---
+    // --- CHARGEMENT DES DONNÉES GLOBALES ---
     async function chargerDonneesAdmin() {
       try {
-        const res = await fetch('/api/admin/commandes');
-        if (res.ok) {
-          allOrders = await res.json();
+        const [resCmds, resServs] = await Promise.all([
+          fetch('/api/admin/commandes'),
+          fetch('/api/admin/serveurs')
+        ]);
+        if (resCmds.ok && resServs.ok) {
+          allOrders = await resCmds.json();
+          allServeurs = await resServs.json();
           calculerKPIsEtAfficher(allOrders);
+          calculerAuditServeurs(allOrders, allServeurs);
         }
       } catch (err) {}
     }
@@ -422,23 +466,12 @@
       let totalCB = 0;
       let totalEsp = 0;
       let totalTR = 0;
-      const serverSales = {};
 
       encaissees.forEach(c => {
-        let brutTicket = 0;
-        if (c.items && Array.isArray(c.items)) {
-          c.items.forEach(it => {
-            brutTicket += (it.prix || 0) * (it.quantite || 1);
-          });
-        }
-
-        const montantNet = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brutTicket - (c.remise_montant || 0));
+        let brut = 0;
+        if (c.items) c.items.forEach(it => brut += (it.prix || 0) * (it.quantite || 1));
+        const montantNet = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
         totalCA += montantNet;
-
-        const servName = c.serveur_nom || 'Salle';
-        if (!serverSales[servName]) serverSales[servName] = { ca: 0, count: 0 };
-        serverSales[servName].ca += montantNet;
-        serverSales[servName].count += 1;
 
         if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += montantNet;
         else if (c.mode_paiement === 'Espèces') totalEsp += montantNet;
@@ -469,52 +502,36 @@
       });
       document.getElementById('kpi-temps-moyen').innerText = countValides > 0 ? `${Math.round(durees / countValides)} min` : '0 min';
 
-      const serverContainer = document.getElementById('servers-breakdown-container');
-      const serverEntries = Object.entries(serverSales);
-      if (serverEntries.length === 0) {
-        serverContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>';
-      } else {
-        serverContainer.innerHTML = serverEntries.map(([nom, data]) => `
-          <div class="breakdown-row">
-            <span class="tag-bold">👤 ${nom} (${data.count} table${data.count > 1 ? 's' : ''})</span>
-            <strong style="color:var(--accent);">${data.ca.toFixed(2)} €</strong>
-          </div>
-        `).join('');
-      }
-
       const tbody = document.getElementById('orders-table-body');
       if (commandes.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
         return;
       }
 
-      tbody.innerHTML = '';
-      commandes.forEach(c => {
-        const tr = document.createElement('tr');
+      tbody.innerHTML = commandes.map(c => {
         const heure = c.date_creation ? new Date(c.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-';
-
         let brut = 0;
         let detailsHtml = '';
-        if (c.items && Array.isArray(c.items)) {
+        if (c.items) {
           detailsHtml = c.items.map(it => {
             brut += (it.prix || 0) * (it.quantite || 1);
             return `<div><strong>${it.quantite || 1}x</strong> ${it.article_nom}</div>`;
           }).join('');
         }
-
         const montantAffiche = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
 
-        tr.innerHTML = `
-          <td><strong>Table ${c.table_num}</strong></td>
-          <td><span style="font-weight:700; color:var(--primary);">👤 ${c.serveur_nom || 'Salle'}</span></td>
-          <td>${heure}</td>
-          <td><span class="badge-stat stat-${c.statut}">${getLibelleStatut(c.statut)}</span></td>
-          <td>${c.mode_paiement ? `<strong>${c.mode_paiement}</strong>` : '-'}</td>
-          <td><strong>${montantAffiche > 0 ? montantAffiche.toFixed(2) + ' €' : '0,00 €'}</strong> ${c.remise_montant > 0 ? `<span style="font-size:0.75rem; color:#b91c1c;">(-${c.remise_montant.toFixed(2)}€)</span>` : ''}</td>
-          <td><div style="font-size:0.82rem; color:#475569;">${detailsHtml}</div></td>
+        return `
+          <tr>
+            <td><strong>Table ${c.table_num}</strong></td>
+            <td><strong>👤 ${c.serveur_nom || 'Salle'}</strong></td>
+            <td>${heure}</td>
+            <td><span class="badge-stat stat-${c.statut}">${getLibelleStatut(c.statut)}</span></td>
+            <td>${c.mode_paiement ? `<strong>${c.mode_paiement}</strong>` : '-'}</td>
+            <td><strong>${montantAffiche > 0 ? montantAffiche.toFixed(2) + ' €' : '0,00 €'}</strong></td>
+            <td><div style="font-size:0.82rem; color:#475569;">${detailsHtml}</div></td>
+          </tr>
         `;
-        tbody.appendChild(tr);
-      });
+      }).join('');
     }
 
     function getLibelleStatut(st) {
@@ -525,38 +542,163 @@
       return 'En Attente';
     }
 
-    function exporterExcelCSV() {
-      if (allOrders.length === 0) return alert("Aucune donnée à exporter.");
-      let csv = "\uFEFF";
-      csv += "ID;Table;Serveur;Date_Creation;Date_Cloture;Statut;Mode_Paiement;Articles;Remise_EUR;Total_Paye_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
+    // --- PLAN DE SALLE ---
+    async function chargerPlanAdmin() {
+      try {
+        const res = await fetch('/api/plan/zones-tables');
+        if (res.ok) {
+          planData = await res.json();
+          renderPlanAdmin();
+        }
+      } catch (e) {}
+    }
 
+    function renderPlanAdmin() {
+      const container = document.getElementById('plan-zones-management');
+      if (planData.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">Aucune zone définie.</div>';
+        return;
+      }
+      container.innerHTML = planData.map(z => `
+        <div class="plan-zone-card">
+          <div class="plan-zone-header">
+            <span>${z.nom} (${z.tables.length} table${z.tables.length > 1 ? 's' : ''})</span>
+            <button class="btn-del" onclick="supprimerZone(${z.id}, '${z.nom.replace(/'/g, "\\'")}')">🗑️</button>
+          </div>
+          <div class="plan-tables-chips">${z.tables.map(t => `
+            <div class="table-chip">
+              <span>Table <strong>${t.numero}</strong></span>
+              <button class="btn-del" onclick="supprimerTable(${t.id})">✕</button>
+            </div>
+          `).join('') || '<span style="color:var(--text-muted); font-size:0.75rem;">Aucune table</span>'}</div>
+          <div style="display:flex; gap:6px;">
+            <input type="number" id="input-new-table-${z.id}" class="form-input-short" placeholder="N° table">
+            <button class="btn-action-primary" style="padding:4px 10px; font-size:0.75rem;" onclick="ajouterTableAZone(${z.id})">➕ Ajouter</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function ajouterNouvelleZone() {
+      const nom = document.getElementById('new-zone-name').value.trim();
+      if (!nom) return alert("Veuillez indiquer un nom pour la zone.");
+      try {
+        const res = await fetch('/api/admin/zones', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nom })
+        });
+        if (res.ok) {
+          document.getElementById('new-zone-name').value = '';
+          chargerPlanAdmin();
+        }
+      } catch (e) {}
+    }
+
+    async function supprimerZone(id, nom) {
+      if (!confirm(`Supprimer la zone « ${nom} » et toutes ses tables ?`)) return;
+      try {
+        await fetch(`/api/admin/zones/${id}`, { method: 'DELETE' });
+        chargerPlanAdmin();
+      } catch (e) {}
+    }
+
+    async function ajouterTableAZone(zone_id) {
+      const input = document.getElementById(`input-new-table-${zone_id}`);
+      const numero = parseInt(input.value, 10);
+      if (isNaN(numero) || numero <= 0) return alert("Numéro de table invalide.");
+      try {
+        const res = await fetch('/api/admin/tables', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zone_id, numero })
+        });
+        if (res.ok) {
+          input.value = '';
+          chargerPlanAdmin();
+        }
+      } catch (e) {}
+    }
+
+    async function supprimerTable(id) {
+      try {
+        await fetch(`/api/admin/tables/${id}`, { method: 'DELETE' });
+        chargerPlanAdmin();
+      } catch (e) {}
+    }
+
+    // --- SERVEURS ---
+    async function chargerServeurs() {
+      try {
+        const res = await fetch('/api/admin/serveurs');
+        if (res.ok) {
+          allServeurs = await res.json();
+          renderServeursList();
+        }
+      } catch (e) {}
+    }
+
+    function renderServeursList() {
+      const container = document.getElementById('servers-list-container');
+      const badge = document.getElementById('server-count-badge');
+      badge.innerText = `${allServeurs.length} membre${allServeurs.length > 1 ? 's' : ''}`;
+
+      container.innerHTML = allServeurs.map(s => `
+        <div class="breakdown-row">
+          <span class="tag-bold">👤 ${s.nom} <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b;">PIN: ${s.pin}</span></span>
+          <button class="btn-del" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
+        </div>
+      `).join('');
+    }
+
+    async function ajouterNouveauServeur() {
+      const nom = document.getElementById('new-server-name').value.trim();
+      const pin = document.getElementById('new-server-pin').value.trim();
+      if (!nom || pin.length !== 4 || !/^\d{4}$/.test(pin)) return alert("Nom et PIN 4 chiffres requis.");
+      try {
+        const res = await fetch('/api/admin/serveurs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nom, pin })
+        });
+        if (res.ok) {
+          document.getElementById('new-server-name').value = '';
+          document.getElementById('new-server-pin').value = '';
+          chargerServeurs();
+          chargerDonneesAdmin();
+        }
+      } catch (e) {}
+    }
+
+    async function supprimerServeur(id, nom) {
+      if (!confirm(`Supprimer « ${nom} » ?`)) return;
+      try {
+        await fetch(`/api/admin/serveurs/${id}`, { method: 'DELETE' });
+        chargerServeurs();
+        chargerDonneesAdmin();
+      } catch (e) {}
+    }
+
+    // --- EXPORT CSV & IMPRESSION Z ---
+    function exporterExcelCSV() {
+      if (allOrders.length === 0) return alert("Aucune donnée.");
+      let csv = "\uFEFFID;Table;Serveur;Date_Creation;Date_Cloture;Statut;Paiement;Articles;Remise_EUR;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
       allOrders.forEach(c => {
         let brut = 0;
-        const articlesList = [];
-        if (c.items && Array.isArray(c.items)) {
-          c.items.forEach(it => {
-            brut += (it.prix || 0) * (it.quantite || 1);
-            articlesList.push(`${it.quantite || 1}x ${it.article_nom}`);
-          });
-        }
+        const articles = [];
+        if (c.items) c.items.forEach(it => { brut += (it.prix || 0) * (it.quantite || 1); articles.push(`${it.quantite || 1}x ${it.article_nom}`); });
         const net = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
-        const totalHT = (net / 1.10).toFixed(2);
-        const tva = (net - (net / 1.10)).toFixed(2);
-
-        csv += `${c.id};Table ${c.table_num};${c.serveur_nom || 'Salle'};${c.date_creation || ''};${c.date_fin || ''};${c.statut};${c.mode_paiement || ''};"${articlesList.join(', ')}";${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${totalHT};${tva}\n`;
+        csv += `${c.id};Table ${c.table_num};${c.serveur_nom || 'Salle'};${c.date_creation || ''};${c.date_fin || ''};${c.statut};${c.mode_paiement || ''};"${articles.join(', ')}";${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${(net/1.1).toFixed(2)};${(net-(net/1.1)).toFixed(2)}\n`;
       });
-
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `Z_Caisse_HotelDesPins_${new Date().toISOString().slice(0,10)}.csv`;
+      a.href = URL.createObjectURL(blob);
+      a.download = `Audit_Direction_${new Date().toISOString().slice(0,10)}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     }
 
-    // IMPRESSION DU Z DE CAISSE (PARFAITEMENT VISIBLE)
     function imprimerZCaisse() {
       const encaissees = allOrders.filter(c => c.statut === 'encaisse');
       let totalCA = 0;
@@ -582,7 +724,6 @@
       document.getElementById('print-z-cb').innerText = `${totalCB.toFixed(2)} €`;
       document.getElementById('print-z-esp').innerText = `${totalEsp.toFixed(2)} €`;
       document.getElementById('print-z-tr').innerText = `${totalTR.toFixed(2)} €`;
-
       window.print();
     }
 
@@ -594,9 +735,7 @@
     }
 
     setInterval(chargerDonneesAdmin, 5000);
-    chargerPlanAdmin();
-    chargerServeurs();
-    chargerDonneesAdmin();
+    checkAdminAuth();
   </script>
 </body>
 </html>
