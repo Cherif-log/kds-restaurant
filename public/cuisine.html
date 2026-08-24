@@ -26,7 +26,7 @@
     h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
     .header-controls { display: flex; align-items: center; gap: 10px; }
-    .btn-test { background: #e11d48; color: #fff; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(225,29,72,0.4); }
+    .btn-test { background: #e11d48; color: #fff; border: none; padding: 9px 18px; border-radius: 20px; font-size: 0.9rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(225,29,72,0.4); }
     .btn-test:hover { background: #be123c; }
     .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
 
@@ -65,10 +65,15 @@
 </head>
 <body>
 
+  <!-- ELEMENT AUDIO NATIF INTÉGRÉ (SON WAV ULTRA AIGU 2200Hz / 1700Hz) -->
+  <audio id="audio-buzzer" loop preload="auto">
+    <source src="data:audio/wav;base64,UklGRmQfAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUAfAADQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKAAAAAAA=" type="audio/wav">
+  </audio>
+
   <header>
     <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
     <div class="header-controls">
-      <button class="btn-test" onclick="testerAlarme()">🔊 TESTER L'ALARME (5s)</button>
+      <button class="btn-test" onclick="declencherAlarme5s()">🔊 TESTER L'ALARME (5s)</button>
       <span id="active-count" style="font-weight:700; font-size:0.9rem;">0 en cours</span>
       <span class="badge-status" id="socket-status">En direct</span>
     </div>
@@ -81,56 +86,36 @@
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
     let commandes = [];
-    let audioContextPrincipal = null;
 
-    // ALARME PUISSANTE 5 SECONDES (COMPATIBLE SAFARI & CHROME MAC/IOS)
+    // FONCTION D'ALARME ULTRA-FIABLE (LECTEUR AUDIO NATIF)
     function declencherAlarme5s() {
-      try {
-        // Flash visuel rouge pendant 5 secondes
-        document.body.classList.add('alarm-flash');
-        setTimeout(() => document.body.classList.remove('alarm-flash'), 5000);
+      // 1. Flash visuel rouge
+      document.body.classList.add('alarm-flash');
+      setTimeout(() => document.body.classList.remove('alarm-flash'), 5000);
 
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!audioContextPrincipal) {
-          audioContextPrincipal = new AudioContextClass();
-        }
-        if (audioContextPrincipal.state === 'suspended') {
-          audioContextPrincipal.resume();
-        }
-
-        const ctx = audioContextPrincipal;
-        const duration = 5.0; // 5 secondes
-        const sampleRate = ctx.sampleRate;
-        const buffer = ctx.createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
-        const data = buffer.getChannelData(0);
-
-        // Synthèse directe d'une alarme stridente avec bips alternés 1800 Hz / 2400 Hz
-        for (let i = 0; i < data.length; i++) {
-          const t = i / sampleRate;
-          const cycle = t % 0.25; // cycle de 0.25s (0.18s de son, 0.07s de silence)
-          if (cycle < 0.18) {
-            const freq = (Math.floor(t / 0.25) % 2 === 0) ? 2200 : 1700;
-            // Onde carrée très perçante
-            data[i] = Math.sin(2 * Math.PI * freq * t) > 0 ? 0.9 : -0.9;
-          } else {
-            data[i] = 0;
-          }
+      // 2. Lecture du buzzer WAV intégré
+      const audio = document.getElementById('audio-buzzer');
+      if (audio) {
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+        
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.warn("Lecture audio bloquée par Safari:", error);
+            alert("⚠️ Safari bloque le son : cliquez sur Safari > Réglages pour ce site web > et choisissez 'Toujours autoriser la lecture automatique'");
+          });
         }
 
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        source.start(0);
-      } catch (err) {
-        console.error('Erreur audio :', err);
+        // Arrêt automatique après 5 secondes
+        setTimeout(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }, 5000);
       }
     }
 
-    function testerAlarme() {
-      declencherAlarme5s();
-    }
-
-    // Réception Socket.io
+    // Réception Socket.io en direct
     if (socket) {
       socket.on('nouvelle_commande', () => {
         declencherAlarme5s();
