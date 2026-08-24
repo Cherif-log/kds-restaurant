@@ -33,7 +33,7 @@
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* Tables bar avec statuts */
+    /* Tables bar */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
     .table-legend { font-size: 0.7rem; display: flex; gap: 8px; }
     .dot-legend { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; }
@@ -46,18 +46,17 @@
     .btn-table.status-servi { border-color: var(--served); color: var(--served); background: #f0f9ff; }
     .btn-table.active { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; box-shadow: 0 4px 10px rgba(37,99,235,0.3); }
 
-    /* Barre d'action rapide Table */
     .table-action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
     .btn-addition { flex: 1; background: #0284c7; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-addition:hover { background: #0369a1; }
 
-    /* Onglets Catégories */
+    /* Catégories */
     .cat-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; scrollbar-width: none; }
     .cat-tabs::-webkit-scrollbar { display: none; }
     .btn-cat-tab { white-space: nowrap; padding: 8px 16px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; color: #475569; }
     .btn-cat-tab.active { background: var(--primary); color: #fff; }
 
-    /* Grille des Plats */
+    /* Grille plats */
     .section-header { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin: 16px 0 10px 0; padding-bottom: 4px; border-bottom: 2px solid #e2e8f0; }
     .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 15px; }
     
@@ -73,7 +72,7 @@
     .dish-card.active .btn-q.plus { background: var(--accent); color: #fff; }
     .q-val { font-weight: 800; font-size: 0.95rem; min-width: 22px; text-align: center; color: var(--text); }
 
-    /* Sidebar Ticket */
+    /* Sidebar ticket */
     .ticket-header { padding: 14px 18px; background: var(--primary); color: #fff; font-size: 1rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
     .ticket-body { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
     .ticket-empty { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: 40px; }
@@ -97,10 +96,21 @@
     @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     .modal-head { background: var(--primary); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
-    .modal-body { padding: 18px; max-height: 65vh; overflow-y: auto; }
-    .receipt-line { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 6px 0; border-bottom: 1px dashed var(--border); }
-    .receipt-line.total-row { border-top: 2px solid var(--text); border-bottom: none; font-size: 1.2rem; font-weight: 800; margin-top: 10px; padding-top: 10px; }
-    .receipt-tax { font-size: 0.8rem; color: var(--text-muted); text-align: right; margin-top: 4px; }
+    .modal-body { padding: 18px; max-height: 75vh; overflow-y: auto; }
+
+    .receipt-container { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-family: 'Courier New', Courier, monospace; color: #111; }
+    .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 12px; }
+    .receipt-header h2 { font-size: 1.15rem; font-weight: 800; }
+    .receipt-header p { font-size: 0.75rem; margin-top: 2px; }
+
+    .receipt-info { font-size: 0.78rem; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 8px; }
+    .receipt-line { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; }
+    
+    .receipt-total-block { border-top: 2px solid #000; border-bottom: 1px dashed #000; margin-top: 8px; padding: 8px 0; }
+    .receipt-total-ttc { display: flex; justify-content: space-between; font-size: 1.15rem; font-weight: 800; }
+    .receipt-tax-table { font-size: 0.75rem; margin-top: 6px; }
+
+    .receipt-footer { text-align: center; font-size: 0.75rem; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; }
 
     .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0 10px 0; }
     .btn-pay-method { padding: 10px 4px; border: 1.5px solid var(--border); background: #f8fafc; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-align: center; }
@@ -110,11 +120,24 @@
     .btn-print { flex: 1; background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
     .btn-encaisser { flex: 2; background: var(--success); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
 
-    /* Impression Ticket Thermique */
+    /* MISE EN PAGE IMPRESSION THERMIQUE 80MM */
     @media print {
       body * { visibility: hidden; }
       #printable-receipt, #printable-receipt * { visibility: visible; }
-      #printable-receipt { position: absolute; left: 0; top: 0; width: 80mm; font-family: monospace; font-size: 12px; padding: 5mm; }
+      #printable-receipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm;
+        margin: 0;
+        padding: 4mm;
+        background: #fff;
+        color: #000;
+        border: none;
+        box-shadow: none;
+        font-family: 'Courier New', Courier, monospace;
+      }
+      .no-print { display: none !important; }
     }
   </style>
 </head>
@@ -181,27 +204,55 @@
   <div class="modal-overlay" id="addition-modal">
     <div class="modal-card">
       <div class="modal-head">
-        <span>Addition Table <span id="modal-table-num">1</span></span>
+        <span>Note de Table <span id="modal-table-num">1</span></span>
         <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalAddition()">✕</button>
       </div>
-      <div class="modal-body" id="printable-receipt">
-        <div style="text-align:center; margin-bottom:12px;">
-          <h3 style="font-size:1.1rem; font-weight:800;">HÔTEL DES PINS</h3>
-          <p style="font-size:0.75rem; color:var(--text-muted);">Le Cap Ferret — Note de Table</p>
+      
+      <div class="modal-body">
+        
+        <!-- TICKET DE CAISSE THERMIQUE 80MM -->
+        <div class="receipt-container" id="printable-receipt">
+          <div class="receipt-header">
+            <h2>HÔTEL DES PINS</h2>
+            <p>Restaurant & Brasserie</p>
+            <p>23 Rue des Chênes, 33970 Cap Ferret</p>
+            <p>Tél : 05 56 60 00 00</p>
+            <p>SIRET : 842 198 472 00019</p>
+            <p>TVA : FR 48 842198472</p>
+          </div>
+
+          <div class="receipt-info">
+            <div style="display:flex; justify-content:space-between;">
+              <span>TABLE : <strong id="receipt-table-num">1</strong></span>
+              <span>SERVEUR : Salle</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:2px;">
+              <span id="receipt-date-print"></span>
+              <span id="receipt-ticket-id"></span>
+            </div>
+          </div>
+
+          <div id="receipt-items-container"></div>
+
+          <div class="receipt-total-block">
+            <div class="receipt-total-ttc">
+              <span>TOTAL TTC</span>
+              <span id="modal-total-ttc">0,00 €</span>
+            </div>
+            <div class="receipt-tax-table">
+              <div style="display:flex; justify-content:space-between;"><span>Total HT :</span><span id="modal-total-ht">0,00 €</span></div>
+              <div style="display:flex; justify-content:space-between;"><span>TVA (10 %) :</span><span id="modal-total-tva">0,00 €</span></div>
+            </div>
+          </div>
+
+          <div class="receipt-footer">
+            <p>Merci de votre visite et à très bientôt !</p>
+            <p style="margin-top:2px;">Wi-Fi : HotelDesPins_Guest</p>
+          </div>
         </div>
 
-        <div id="receipt-items-container"></div>
-
-        <div class="receipt-line total-row">
-          <span>TOTAL TTC</span>
-          <span id="modal-total-ttc">0,00 €</span>
-        </div>
-        <div class="receipt-tax">
-          Dont Total HT : <span id="modal-total-ht">0,00 €</span> | TVA (10%) : <span id="modal-total-tva">0,00 €</span>
-        </div>
-
-        <div style="margin-top:16px;">
-          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Moyen de paiement</div>
+        <div class="no-print" style="margin-top:16px;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Moyen de règlement</div>
           <div class="payment-methods">
             <button class="btn-pay-method active" onclick="choisirPaiement(this, 'CB')">💳 Carte</button>
             <button class="btn-pay-method" onclick="choisirPaiement(this, 'Espèces')">💵 Espèces</button>
@@ -209,8 +260,8 @@
           </div>
         </div>
 
-        <div class="modal-actions">
-          <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+        <div class="modal-actions no-print">
+          <button class="btn-print" onclick="imprimerTicketClient()">🖨️ Imprimer le ticket</button>
           <button class="btn-encaisser" id="btn-valider-encaissement" onclick="validerEncaissement()">
             ✔ Encaisser & Libérer
           </button>
@@ -477,12 +528,16 @@
       }
     }
 
-    // --- GESTION ADDITION & CAISSE ---
+    // --- GESTION ADDITION & TICKET CLIENT ---
     async function ouvrirModalAddition() {
       document.getElementById('modal-table-num').innerText = currentTable;
+      document.getElementById('receipt-table-num').innerText = currentTable;
+      document.getElementById('receipt-date-print').innerText = new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+      document.getElementById('receipt-ticket-id').innerText = `TICK #${Date.now().toString().slice(-4)}`;
+
       const modal = document.getElementById('addition-modal');
       const container = document.getElementById('receipt-items-container');
-      container.innerHTML = '<div style="text-align:center; padding:20px;">Chargement de l\'addition...</div>';
+      container.innerHTML = '<div style="text-align:center; padding:15px;">Chargement...</div>';
       modal.classList.add('open');
 
       try {
@@ -490,7 +545,7 @@
         const data = await res.json();
 
         if (!data.items || data.items.length === 0) {
-          container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Aucune consommation active sur cette table.</div>';
+          container.innerHTML = '<div style="text-align:center; padding:15px; color:var(--text-muted);">Aucune consommation active sur cette table.</div>';
           document.getElementById('modal-total-ttc').innerText = '0,00 €';
           document.getElementById('modal-total-ht').innerText = '0,00 €';
           document.getElementById('modal-total-tva').innerText = '0,00 €';
@@ -504,7 +559,7 @@
           row.className = 'receipt-line';
           row.innerHTML = `
             <span>${it.quantite}x ${it.article_nom}</span>
-            <strong>${it.total_ligne > 0 ? it.total_ligne.toFixed(2) + ' €' : '-'}</strong>
+            <strong>${it.total_ligne > 0 ? it.total_ligne.toFixed(2) + ' €' : '0,00 €'}</strong>
           `;
           container.appendChild(row);
         });
@@ -526,6 +581,10 @@
       document.querySelectorAll('.btn-pay-method').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedModePaiement = mode;
+    }
+
+    function imprimerTicketClient() {
+      window.print();
     }
 
     async function validerEncaissement() {
