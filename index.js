@@ -138,6 +138,28 @@ app.delete('/api/admin/serveurs/:id', (req, res) => {
   }
 });
 
+// 👉 MODIFICATION DU CODE PIN SERVEUR PAR LA DIRECTION
+app.put('/api/admin/serveurs/:id/pin', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pin } = req.body;
+    
+    if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      return res.status(400).json({ error: 'Le code PIN doit comporter exactement 4 chiffres.' });
+    }
+
+    const existing = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ? AND id != ?`).get(pin.trim(), id);
+    if (existing) {
+      return res.status(400).json({ error: `Ce code PIN est déjà utilisé par ${existing.nom}.` });
+    }
+
+    db.prepare(`UPDATE serveurs SET pin = ? WHERE id = ?`).run(pin.trim(), id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur lors de la modification du code PIN.' });
+  }
+});
+
 // 3. Plan de salle dynamique
 app.get('/api/plan/zones-tables', (req, res) => {
   try {
@@ -336,7 +358,7 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 9. Encaisser Table (Libération stricte)
+// 9. Encaisser Table
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
@@ -354,6 +376,19 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Erreur encaissement' });
+  }
+});
+
+// 9bis. Forcer la libération
+app.post('/api/tables/:table_num/reset', (req, res) => {
+  try {
+    const table_num = parseInt(req.params.table_num, 10);
+    db.prepare(`UPDATE commandes SET statut = 'annule', date_fin = datetime('now', 'localtime') WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).run(table_num);
+    io.emit('table_status_change');
+    io.emit('statut_mis_a_jour');
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur reset table' });
   }
 });
 

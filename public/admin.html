@@ -76,6 +76,10 @@
     .breakdown-row:last-child { border-bottom: none; }
     .tag-bold { font-weight: 700; display: flex; align-items: center; gap: 6px; }
 
+    .action-icons-group { display: flex; align-items: center; gap: 4px; }
+    .btn-edit-pin { background: #eff6ff; border: 1px solid #bfdbfe; color: var(--accent); font-weight: 700; font-size: 0.75rem; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+    .btn-edit-pin:hover { background: #dbeafe; }
+
     .inline-form { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
     .form-input { flex: 2; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
     .form-input-short { flex: 1; max-width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; text-align: center; font-weight: 700; outline: none; }
@@ -223,13 +227,13 @@
         </div>
       </div>
 
-      <!-- 👥 MODULE GESTION DES SERVEURS -->
+      <!-- 👥 MODULE GESTION DES SERVEURS (AVEC MODIFICATION PIN) -->
       <div class="panel-card">
         <div class="panel-title">
           <span>👥 Équipe & Codes PIN</span>
           <span id="server-count-badge" style="font-size:0.75rem; background:#eff6ff; color:var(--accent); padding:2px 8px; border-radius:12px;">0</span>
         </div>
-        <div id="servers-list-container" style="max-height:220px; overflow-y:auto;"></div>
+        <div id="servers-list-container" style="max-height:240px; overflow-y:auto;"></div>
         <div class="inline-form">
           <input type="text" id="new-server-name" class="form-input" placeholder="Nom serveur">
           <input type="text" id="new-server-pin" class="form-input-short" maxlength="4" placeholder="PIN (4 ch.)">
@@ -412,7 +416,6 @@
           }
         });
 
-        // Détection activité (Actif si commande < 45 min)
         let statutBadge = '<span class="badge-perf perf-neutre">⚪ Aucune activité</span>';
         let derniereHeureStr = '-';
 
@@ -627,7 +630,7 @@
       } catch (e) {}
     }
 
-    // --- SERVEURS ---
+    // --- GESTION DES SERVEURS & MODIFICATION DE PIN ---
     async function chargerServeurs() {
       try {
         const res = await fetch('/api/admin/serveurs');
@@ -645,10 +648,42 @@
 
       container.innerHTML = allServeurs.map(s => `
         <div class="breakdown-row">
-          <span class="tag-bold">👤 ${s.nom} <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b;">PIN: ${s.pin}</span></span>
-          <button class="btn-del" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
+          <span class="tag-bold">👤 ${s.nom} <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b;">PIN: <strong>${s.pin}</strong></span></span>
+          <div class="action-icons-group">
+            <button class="btn-edit-pin" title="Modifier le code PIN" onclick="modifierPinServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}', '${s.pin}')">✏️ Changer PIN</button>
+            <button class="btn-del" title="Supprimer le serveur" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
+          </div>
         </div>
       `).join('');
+    }
+
+    // Fonction de modification du code PIN
+    async function modifierPinServeur(id, nom, currentPin) {
+      const nouveauPin = prompt(`Entrez le nouveau code PIN à 4 chiffres pour ${nom} :`, currentPin);
+      if (nouveauPin === null) return; // Annulé
+
+      if (!nouveauPin || nouveauPin.trim().length !== 4 || !/^\d{4}$/.test(nouveauPin.trim())) {
+        alert("❌ Erreur : Le code PIN doit comporter exactement 4 chiffres.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/serveurs/${id}/pin`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: nouveauPin.trim() })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          alert(`✅ Le code PIN de ${nom} a été mis à jour avec succès (${nouveauPin.trim()}).`);
+          chargerServeurs();
+        } else {
+          alert(`❌ ${data.error || "Erreur lors de la modification."}`);
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
     }
 
     async function ajouterNouveauServeur() {
