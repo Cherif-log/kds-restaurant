@@ -13,6 +13,7 @@
       --success: #16a34a;
       --warning: #f97316;
       --served: #0284c7;
+      --danger: #ef4444;
       --bg: #f8fafc;
       --card-bg: #ffffff;
       --border: #e2e8f0;
@@ -33,7 +34,7 @@
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* Barre des Tables */
+    /* Tables bar */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
     .table-legend { font-size: 0.7rem; display: flex; gap: 8px; }
     .dot-legend { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; }
@@ -60,16 +61,20 @@
     .section-header { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin: 16px 0 10px 0; padding-bottom: 4px; border-bottom: 2px solid #e2e8f0; }
     .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 15px; }
     
-    .dish-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .dish-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
     .dish-card.active { border-color: var(--accent); background: var(--accent-light); }
+    .dish-card.epuise { opacity: 0.55; background: #f1f5f9; border-color: #cbd5e1; }
+    
     .dish-info { flex: 1; padding-right: 10px; }
     .dish-name { font-weight: 600; font-size: 0.88rem; line-height: 1.3; color: var(--text); }
     .dish-price { font-weight: 700; font-size: 0.85rem; color: var(--accent); margin-top: 3px; }
+    .badge-epuise { display: inline-block; background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-top: 4px; text-transform: uppercase; }
 
     .qty-controls { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
     .dish-card.active .qty-controls { background: #fff; border-color: var(--accent); }
     .btn-q { width: 30px; height: 30px; border: none; background: #fff; border-radius: 6px; font-weight: 800; font-size: 1.1rem; cursor: pointer; color: var(--text); display: flex; align-items: center; justify-content: center; }
     .dish-card.active .btn-q.plus { background: var(--accent); color: #fff; }
+    .btn-q:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
     .q-val { font-weight: 800; font-size: 0.95rem; min-width: 22px; text-align: center; color: var(--text); }
 
     /* Sidebar ticket */
@@ -98,7 +103,6 @@
     .modal-head { background: var(--primary); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
     .modal-body { padding: 18px; max-height: 80vh; overflow-y: auto; }
 
-    /* TICKET DE CAISSE THERMIQUE 80MM */
     .receipt-container { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-family: 'Courier New', Courier, monospace; color: #111; }
     .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 12px; }
     .receipt-header h2 { font-size: 1.15rem; font-weight: 800; }
@@ -116,7 +120,6 @@
 
     .receipt-footer { text-align: center; font-size: 0.75rem; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; }
 
-    /* CONTRÔLES DIVISION & REMISE DANS LA MODAL */
     .caisse-controls-box { margin-top: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
     .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .control-row:last-child { margin-bottom: 0; }
@@ -138,7 +141,6 @@
     .btn-print { flex: 1; background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
     .btn-encaisser { flex: 2; background: var(--success); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
 
-    /* Impression 80mm */
     @media print {
       body * { visibility: hidden; }
       #printable-receipt, #printable-receipt * { visibility: visible; }
@@ -218,7 +220,7 @@
 
   </div>
 
-  <!-- MODAL ADDITION, DIVISION & REMISE -->
+  <!-- MODAL ADDITION -->
   <div class="modal-overlay" id="addition-modal">
     <div class="modal-card">
       <div class="modal-head">
@@ -227,8 +229,6 @@
       </div>
       
       <div class="modal-body">
-        
-        <!-- TICKET DE CAISSE THERMIQUE 80MM -->
         <div class="receipt-container" id="printable-receipt">
           <div class="receipt-header">
             <h2>HÔTEL DES PINS</h2>
@@ -282,7 +282,6 @@
           </div>
         </div>
 
-        <!-- CONTRÔLES CAISSE (DIVISION & REMISES) -->
         <div class="caisse-controls-box no-print">
           <div class="control-row">
             <span class="control-label">✂️ Remise / Réduction :</span>
@@ -303,7 +302,6 @@
           </div>
         </div>
 
-        <!-- MODES DE PAIEMENT -->
         <div class="no-print" style="margin-top:14px;">
           <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Moyen de règlement</div>
           <div class="payment-methods">
@@ -329,9 +327,9 @@
     let currentTab = "Menu 40 €";
     let cart = {}; 
     let tableStatuses = {};
+    let indisponibles = [];
     let selectedModePaiement = 'CB';
 
-    // Variables de calcul addition active
     let rawTotalTTC = 0;
     let discountPercent = 0;
     let splitParts = 1;
@@ -409,6 +407,16 @@
       } catch (e) {}
     }
 
+    async function chargerStock() {
+      try {
+        const res = await fetch('/api/stock/indisponibles');
+        if (res.ok) {
+          indisponibles = await res.json();
+          afficherPlats();
+        }
+      } catch (e) {}
+    }
+
     function renderTablesBar() {
       const tContainer = document.getElementById('tables-container');
       tContainer.innerHTML = '';
@@ -447,6 +455,7 @@
       afficherPlats();
       mettreAJourTicket();
       chargerStatutsTables();
+      chargerStock();
     }
 
     function afficherPlats() {
@@ -467,18 +476,21 @@
         const platsDeLaSection = platsFiltres.filter(d => d.section === secTitle);
         platsDeLaSection.forEach(plat => {
           const qte = cart[plat.id] || 0;
+          const isOut = indisponibles.includes(plat.id);
+
           const card = document.createElement('div');
-          card.className = `dish-card ${qte > 0 ? 'active' : ''}`;
+          card.className = `dish-card ${qte > 0 ? 'active' : ''} ${isOut ? 'epuise' : ''}`;
           card.id = `card-${plat.id}`;
           card.innerHTML = `
             <div class="dish-info">
               <div class="dish-name">${plat.nom}</div>
               <div class="dish-price">${plat.prix > 0 ? plat.prix.toFixed(2) + ' €' : 'Inclus'}</div>
+              ${isOut ? '<span class="badge-epuise">🔴 Épuisé en cuisine</span>' : ''}
             </div>
             <div class="qty-controls">
-              <button class="btn-q" onclick="modifierQuantite('${plat.id}', -1)">-</button>
+              <button class="btn-q" onclick="modifierQuantite('${plat.id}', -1)" ${isOut && qte === 0 ? 'disabled' : ''}>-</button>
               <span class="q-val" id="qty-${plat.id}">${qte}</span>
-              <button class="btn-q plus" onclick="modifierQuantite('${plat.id}', 1)">+</button>
+              <button class="btn-q plus" onclick="modifierQuantite('${plat.id}', 1)" ${isOut ? 'disabled' : ''}>+</button>
             </div>
           `;
           grid.appendChild(card);
@@ -489,6 +501,10 @@
     }
 
     function modifierQuantite(id, delta) {
+      if (delta > 0 && indisponibles.includes(id)) {
+        alert("Ce plat est actuellement épuisé en cuisine !");
+        return;
+      }
       const current = cart[id] || 0;
       const next = current + delta;
       if (next <= 0) delete cart[id];
@@ -586,14 +602,13 @@
       }
     }
 
-    // --- GESTION ADDITION, DIVISION & REMISE ---
+    // GESTION ADDITION
     async function ouvrirModalAddition() {
       document.getElementById('modal-table-num').innerText = currentTable;
       document.getElementById('receipt-table-num').innerText = currentTable;
       document.getElementById('receipt-date-print').innerText = new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
       document.getElementById('receipt-ticket-id').innerText = `TICK #${Date.now().toString().slice(-4)}`;
 
-      // Réinitialisation des paramètres
       discountPercent = 0;
       splitParts = 1;
       document.getElementById('split-display').innerText = '1';
@@ -644,7 +659,6 @@
       const totalHT = netTotalTTC / 1.10;
       const totalTVA = netTotalTTC - totalHT;
 
-      // Affichage Remise
       const subRow = document.getElementById('receipt-subtotal-row');
       const discRow = document.getElementById('receipt-discount-row');
       if (discountPercent > 0) {
@@ -658,12 +672,10 @@
         discRow.style.display = 'none';
       }
 
-      // Totaux Net
       document.getElementById('modal-total-ttc').innerText = `${netTotalTTC.toFixed(2)} €`;
       document.getElementById('modal-total-ht').innerText = `${totalHT.toFixed(2)} €`;
       document.getElementById('modal-total-tva').innerText = `${totalTVA.toFixed(2)} €`;
 
-      // Division
       const splitBox = document.getElementById('receipt-split-box');
       if (splitParts > 1 && netTotalTTC > 0) {
         splitBox.style.display = 'flex';
@@ -738,6 +750,10 @@
     if (socket) {
       socket.on('table_status_change', () => chargerStatutsTables());
       socket.on('statut_mis_a_jour', () => chargerStatutsTables());
+      socket.on('stock_update', (data) => {
+        indisponibles = data;
+        afficherPlats();
+      });
     }
 
     setInterval(chargerStatutsTables, 6000);

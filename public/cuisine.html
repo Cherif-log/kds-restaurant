@@ -16,6 +16,7 @@
       --attente: #eab308;
       --prepa: #f97316;
       --pret: #22c55e;
+      --danger: #ef4444;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -26,8 +27,9 @@
     h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
     .header-controls { display: flex; align-items: center; gap: 10px; }
-    .btn-test { background: #e11d48; color: #fff; border: none; padding: 9px 18px; border-radius: 20px; font-size: 0.9rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(225,29,72,0.4); }
-    .btn-test:hover { background: #be123c; }
+    .btn-stock { background: #475569; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-stock:hover { background: #334155; }
+    .btn-test { background: #e11d48; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; cursor: pointer; }
     .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
 
     .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
@@ -61,18 +63,38 @@
     .btn-start { background: var(--prepa); color: #fff; }
     .btn-ready { background: var(--pret); color: #fff; }
     .btn-done { background: #475569; color: #fff; }
+
+    /* MODAL GESTION DU STOCK (86 LIST) */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { background: #1e293b; color: #fff; width: 100%; max-width: 650px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border); }
+    .modal-head { background: #0f172a; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; border-bottom: 1px solid var(--border); }
+    .modal-body { padding: 16px; max-height: 75vh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+    
+    .stock-sec-title { font-size: 0.85rem; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+    .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (max-width: 600px) { .stock-grid { grid-template-columns: 1fr; } }
+    
+    .stock-item { background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+    .stock-item.is-out { border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+    .stock-item-name { font-size: 0.85rem; font-weight: 600; flex: 1; padding-right: 8px; }
+    
+    .btn-toggle-stock { padding: 6px 12px; border: none; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; }
+    .btn-toggle-stock.in { background: #16a34a; color: #fff; }
+    .btn-toggle-stock.out { background: var(--danger); color: #fff; }
   </style>
 </head>
 <body>
 
-  <!-- ELEMENT AUDIO NATIF INTÉGRÉ (SON WAV ULTRA AIGU 2200Hz / 1700Hz) -->
+  <!-- LECTEUR AUDIO NATIF INTÉGRÉ -->
   <audio id="audio-buzzer" loop preload="auto">
-    <source src="data:audio/wav;base64,UklGRmQfAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUAfAADQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKAAAAAAA=" type="audio/wav">
+    <source src="data:audio/wav;base64,UklGRmQfAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUAfAADQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKAAAAAAA=" type="audio/wav">
   </audio>
 
   <header>
     <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
     <div class="header-controls">
+      <button class="btn-stock" onclick="ouvrirModalStock()">📦 Ruptures (86-List)</button>
       <button class="btn-test" onclick="declencherAlarme5s()">🔊 TESTER L'ALARME (5s)</button>
       <span id="active-count" style="font-weight:700; font-size:0.9rem;">0 en cours</span>
       <span class="badge-status" id="socket-status">En direct</span>
@@ -83,31 +105,69 @@
     <div class="empty-state">En attente de commandes...</div>
   </div>
 
+  <!-- MODAL GESTION DU STOCK -->
+  <div class="modal-overlay" id="stock-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <span>📦 Gestion des Ruptures (86-List)</span>
+        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalStock()">✕</button>
+      </div>
+      <div class="modal-body" id="stock-modal-body">
+        <!-- Rempli en JS -->
+      </div>
+    </div>
+  </div>
+
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
     let commandes = [];
+    let indisponibles = [];
 
-    // FONCTION D'ALARME ULTRA-FIABLE (LECTEUR AUDIO NATIF)
+    const menuItems = [
+      { id: "m40_e1", nom: "Entrée du jour", cat: "Entrées" },
+      { id: "m40_e2", nom: "Saumon fumé maison", cat: "Entrées" },
+      { id: "m40_e3", nom: "Foie gras de canard maison", cat: "Entrées" },
+      { id: "m40_e4", nom: "Soupe de poissons du Bassin", cat: "Entrées" },
+      { id: "m40_e5", nom: "Cornet de friture de calamars", cat: "Entrées" },
+      { id: "m40_e6", nom: "Assiette de charcuterie", cat: "Entrées" },
+      { id: "m40_e7", nom: "Asperges blanches & jambon", cat: "Entrées" },
+
+      { id: "m40_p1", nom: "Dos de maigre, sauce vierge", cat: "Plats / Poissons" },
+      { id: "m40_p2", nom: "Pavé de cabillaud rôti", cat: "Plats / Poissons" },
+      { id: "m40_p3", nom: "Pavé de bar, risotto riz noir", cat: "Plats / Poissons" },
+      { id: "m40_p4", nom: "Blanquette de seiche safranée", cat: "Plats / Poissons" },
+      { id: "m40_p5", nom: "Carpaccio de bœuf & Parmesan", cat: "Plats / Viandes" },
+      { id: "m40_p6", nom: "Entrecôte de bœuf, échalotes", cat: "Plats / Viandes" },
+      { id: "m40_p7", nom: "Magret de canard, poivre", cat: "Plats / Viandes" },
+
+      { id: "m40_d1", nom: "Dessert du jour", cat: "Desserts" },
+      { id: "m40_d2", nom: "Assiette de fromages", cat: "Desserts" },
+      { id: "m40_d3", nom: "Crème brûlée à la vanille", cat: "Desserts" },
+      { id: "m40_d4", nom: "Tiramisu au café", cat: "Desserts" },
+      { id: "m40_d5", nom: "Café gourmand", cat: "Desserts" },
+      { id: "m40_d6", nom: "Fromage blanc fermier", cat: "Desserts" },
+      { id: "m40_d7", nom: "Mousse au chocolat noir", cat: "Desserts" },
+      { id: "m40_d8", nom: "Cheesecake au citron", cat: "Desserts" },
+      { id: "m40_d9", nom: "Coupe glacée 2 boules", cat: "Desserts" },
+
+      { id: "enf_p1", nom: "Menu Enfant : Chicken tenders", cat: "Enfants" },
+      { id: "enf_p2", nom: "Menu Enfant : Steak haché", cat: "Enfants" },
+      { id: "enf_p3", nom: "Menu Enfant : Filet de poisson", cat: "Enfants" }
+    ];
+
+    // ALARME 5S
     function declencherAlarme5s() {
-      // 1. Flash visuel rouge
       document.body.classList.add('alarm-flash');
       setTimeout(() => document.body.classList.remove('alarm-flash'), 5000);
 
-      // 2. Lecture du buzzer WAV intégré
       const audio = document.getElementById('audio-buzzer');
       if (audio) {
         audio.currentTime = 0;
         audio.volume = 1.0;
-        
         const playPromise = audio.play();
         if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.warn("Lecture audio bloquée par Safari:", error);
-            alert("⚠️ Safari bloque le son : cliquez sur Safari > Réglages pour ce site web > et choisissez 'Toujours autoriser la lecture automatique'");
-          });
+          playPromise.catch(e => console.warn("Audio bloqué :", e));
         }
-
-        // Arrêt automatique après 5 secondes
         setTimeout(() => {
           audio.pause();
           audio.currentTime = 0;
@@ -115,7 +175,87 @@
       }
     }
 
-    // Réception Socket.io en direct
+    // GESTION DU STOCK (86-LIST)
+    async function chargerStock() {
+      try {
+        const res = await fetch('/api/stock/indisponibles');
+        if (res.ok) {
+          indisponibles = await res.json();
+          renderStockModal();
+        }
+      } catch (e) {}
+    }
+
+    function ouvrirModalStock() {
+      chargerStock();
+      document.getElementById('stock-modal').classList.add('open');
+    }
+
+    function fermerModalStock() {
+      document.getElementById('stock-modal').classList.remove('open');
+    }
+
+    function renderStockModal() {
+      const container = document.getElementById('stock-modal-body');
+      container.innerHTML = '';
+
+      const categories = [...new Set(menuItems.map(m => m.cat))];
+      categories.forEach(cat => {
+        const secTitle = document.createElement('div');
+        secTitle.className = 'stock-sec-title';
+        secTitle.innerText = cat;
+        container.appendChild(secTitle);
+
+        const grid = document.createElement('div');
+        grid.className = 'stock-grid';
+
+        const items = menuItems.filter(m => m.cat === cat);
+        items.forEach(item => {
+          const isOut = indisponibles.includes(item.id);
+          const div = document.createElement('div');
+          div.className = `stock-item ${isOut ? 'is-out' : ''}`;
+          div.innerHTML = `
+            <span class="stock-item-name">${item.nom}</span>
+            <button class="btn-toggle-stock ${isOut ? 'out' : 'in'}" onclick="toggleStock('${item.id}', '${item.nom.replace(/'/g, "\\'")}')">
+              ${isOut ? '🔴 ÉPUISÉ' : '🟢 DISPO'}
+            </button>
+          `;
+          grid.appendChild(div);
+        });
+
+        container.appendChild(grid);
+      });
+    }
+
+    async function toggleStock(article_id, article_nom) {
+      try {
+        const res = await fetch('/api/stock/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ article_id, article_nom })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          indisponibles = data.indisponibles;
+          renderStockModal();
+        }
+      } catch (e) {
+        alert("Erreur mise à jour du stock.");
+      }
+    }
+
+    // COMMANDES
+    async function chargerCommandes() {
+      try {
+        const res = await fetch('/api/commandes');
+        if (res.ok) {
+          const data = await res.json();
+          commandes = data.filter(c => c.statut !== 'servi' && c.statut !== 'encaisse' && c.statut !== 'annule');
+          afficherTickets();
+        }
+      } catch (e) {}
+    }
+
     if (socket) {
       socket.on('nouvelle_commande', () => {
         declencherAlarme5s();
@@ -125,26 +265,16 @@
       socket.on('statut_mis_a_jour', () => {
         chargerCommandes();
       });
-    }
 
-    // Chargement API
-    async function chargerCommandes() {
-      try {
-        const res = await fetch('/api/commandes');
-        if (res.ok) {
-          const data = await res.json();
-          commandes = data.filter(c => c.statut !== 'servi' && c.statut !== 'annule');
-          afficherTickets();
-        }
-      } catch (e) {
-        console.error(e);
-      }
+      socket.on('stock_update', (data) => {
+        indisponibles = data;
+        renderStockModal();
+      });
     }
 
     function afficherTickets() {
       const container = document.getElementById('tickets-container');
       const countEl = document.getElementById('active-count');
-      
       countEl.innerText = `${commandes.length} commande${commandes.length > 1 ? 's' : ''}`;
 
       if (commandes.length === 0) {
@@ -153,18 +283,16 @@
       }
 
       container.innerHTML = '';
-
       commandes.forEach(cmd => {
         const div = document.createElement('div');
         div.className = `ticket-card status-${cmd.statut || 'en_attente'}`;
-
         const heure = cmd.date_creation ? new Date(cmd.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
         let itemsHtml = '';
         if (cmd.items && Array.isArray(cmd.items)) {
           itemsHtml = cmd.items.map(it => `
             <div class="ticket-item">
-              <span><span class="item-qty">${it.quantite || 1}x</span> ${it.article_nom || it.nom}</span>
+              <span><span class="item-qty">${it.quantite || 1}x</span> ${it.article_nom}</span>
             </div>
           `).join('');
         }
@@ -216,6 +344,7 @@
 
     setInterval(chargerCommandes, 5000);
     chargerCommandes();
+    chargerStock();
   </script>
 </body>
 </html>

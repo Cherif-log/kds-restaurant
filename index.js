@@ -36,6 +36,11 @@ db.exec(`
     remarques TEXT,
     FOREIGN KEY(commande_id) REFERENCES commandes(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS articles_indisponibles (
+    article_id TEXT PRIMARY KEY,
+    article_nom TEXT
+  );
 `);
 
 // Migrations automatiques
@@ -50,7 +55,7 @@ app.use(express.static(path.join(__dirname)));
 
 // --- ROUTES API ---
 
-// 1. Statut en direct des tables (1 à 15)
+// 1. Statut en direct des tables
 app.get('/api/tables/statuts', (req, res) => {
   try {
     const activeOrders = db.prepare(`
@@ -75,7 +80,38 @@ app.get('/api/tables/statuts', (req, res) => {
   }
 });
 
-// 2. Commandes actives (Cuisine)
+// 2. Gestion des Ruptures de Stock (86-List)
+app.get('/api/stock/indisponibles', (req, res) => {
+  try {
+    const rows = db.prepare(`SELECT article_id FROM articles_indisponibles`).all();
+    res.json(rows.map(r => r.article_id));
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur récupération stock' });
+  }
+});
+
+app.post('/api/stock/toggle', (req, res) => {
+  try {
+    const { article_id, article_nom } = req.body;
+    const exists = db.prepare(`SELECT article_id FROM articles_indisponibles WHERE article_id = ?`).get(article_id);
+
+    if (exists) {
+      db.prepare(`DELETE FROM articles_indisponibles WHERE article_id = ?`).run(article_id);
+    } else {
+      db.prepare(`INSERT INTO articles_indisponibles (article_id, article_nom) VALUES (?, ?)`).run(article_id, article_nom || article_id);
+    }
+
+    const rows = db.prepare(`SELECT article_id FROM articles_indisponibles`).all();
+    const indisponibles = rows.map(r => r.article_id);
+
+    io.emit('stock_update', indisponibles);
+    res.json({ success: true, indisponibles });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur mise à jour stock' });
+  }
+});
+
+// 3. Commandes actives (Cuisine)
 app.get('/api/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`
@@ -96,7 +132,7 @@ app.get('/api/commandes', (req, res) => {
   }
 });
 
-// 3. Récupérer l'addition d'une table
+// 4. Addition d'une table
 app.get('/api/tables/:table_num/addition', (req, res) => {
   try {
     const { table_num } = req.params;
@@ -132,7 +168,7 @@ app.get('/api/tables/:table_num/addition', (req, res) => {
   }
 });
 
-// 4. Créer une commande
+// 5. Créer une commande
 app.post('/api/commandes', (req, res) => {
   try {
     const { table_num, items, remarques } = req.body;
@@ -180,7 +216,7 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 5. Encaisser avec prise en compte de la remise et du total payé
+// 6. Encaisser table
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const { table_num } = req.params;
@@ -205,7 +241,7 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
   }
 });
 
-// 6. Mise à jour statut commande
+// 7. Statut commande
 app.put('/api/commandes/:id/statut', (req, res) => {
   try {
     const { id } = req.params;
@@ -223,11 +259,11 @@ app.put('/api/commandes/:id/statut', (req, res) => {
     io.emit('table_status_change');
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur mise à jour statut' });
+    res.status(500).json({ error: 'Erreur statut' });
   }
 });
 
-// 7. TOUTES les commandes (Admin)
+// 8. Admin historique
 app.get('/api/admin/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
