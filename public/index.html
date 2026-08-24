@@ -73,6 +73,8 @@
     .table-action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
     .btn-addition { flex: 2; background: #0284c7; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-addition:hover { background: #0369a1; }
+    .btn-suite { flex: 1.2; background: #ea580c; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .btn-suite:hover { background: #c2410c; }
     .btn-transfer { flex: 1; background: #475569; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-transfer:hover { background: #334155; }
 
@@ -251,10 +253,13 @@
 
       <div class="table-action-bar">
         <button class="btn-addition" onclick="ouvrirModalAddition()">
-          🧾 Note & Encaissement : Table <span id="btn-add-table-num">1</span>
+          🧾 Note : T<span id="btn-add-table-num">1</span>
+        </button>
+        <button class="btn-suite" onclick="ouvrirModalSuite()">
+          🔔 Suite
         </button>
         <button class="btn-transfer" onclick="ouvrirModalTransfert()">
-          🔀 Transférer / Fusionner
+          🔀 Déplacer
         </button>
       </div>
 
@@ -288,7 +293,34 @@
 
   </div>
 
-  <!-- MODAL RAPIDE DE SÉLECTION CUISSON & OPTIONS -->
+  <!-- MODAL RÉCLAMER LA SUITE (NOUVEAU) -->
+  <div class="modal-overlay" id="suite-modal">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-head" style="background:#ea580c;">
+        <span>🔔 Réclamer la Suite — Table <span id="suite-modal-table-num">1</span></span>
+        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalSuite()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.88rem; color:#475569; margin-bottom:14px; line-height:1.4;">
+          Sélectionnez l'étape à envoyer immédiatement sur l'écran du chef pour la <strong>Table <span id="suite-modal-table-bold">1</span></strong> :
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+          <button class="btn-send" style="background:#2563eb; padding:12px; font-size:0.95rem;" onclick="envoyerSuite('Plats (Suite)')">
+            🍽️ Lancer les Plats (Suite)
+          </button>
+          <button class="btn-send" style="background:#059669; padding:12px; font-size:0.95rem;" onclick="envoyerSuite('Desserts')">
+            🍰 Lancer les Desserts
+          </button>
+          <button class="btn-send" style="background:#475569; padding:12px; font-size:0.95rem;" onclick="envoyerSuite('Cafés & Digestifs')">
+            ☕ Lancer les Cafés & Digestifs
+          </button>
+        </div>
+        <button style="width:100%; background:#e2e8f0; color:#334155; border:none; padding:10px; border-radius:8px; font-weight:700; cursor:pointer;" onclick="fermerModalSuite()">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CHOIX CUISSON & OPTIONS -->
   <div class="modal-overlay" id="options-modal">
     <div class="modal-card">
       <div class="modal-head">
@@ -464,9 +496,7 @@
     let currentTable = 1;
     let currentTab = "Menu 40 €";
     
-    // Structure du panier avec support des options
-    let cart = []; // [{ id, platId, nom, prix, quantite, optionsStr }]
-    
+    let cart = []; 
     let tableStatuses = {};
     let dynamicPlan = [];
     let indisponibles = [];
@@ -479,7 +509,6 @@
     let discountPercent = 0;
     let splitParts = 1;
 
-    // Variables pour le modal de configuration
     let currentPendingPlat = null;
     let selectedCuisson = 'Saignant';
     let selectedGarnitures = ['Frites'];
@@ -849,13 +878,11 @@
       selectedGarnitures = ['Frites'];
       document.getElementById('opt-custom-note').value = '';
 
-      // Reset visuel boutons cuisson
       document.querySelectorAll('#group-cuissons .btn-mod-choice').forEach(b => {
         if (b.innerText === 'Saignant') b.classList.add('active');
         else b.classList.remove('active');
       });
 
-      // Reset visuel boutons garnitures
       document.querySelectorAll('#group-garnitures .btn-mod-choice').forEach(b => {
         if (b.innerText.includes('Frites')) b.classList.add('active-side');
         else b.classList.remove('active-side');
@@ -1043,6 +1070,39 @@
         document.getElementById('order-notes').value = '';
         afficherPlats();
         mettreAJourTicket();
+      }
+    }
+
+    // --- NOUVEAU : RÉCLAMER LA SUITE ---
+    function ouvrirModalSuite() {
+      document.getElementById('suite-modal-table-num').innerText = currentTable;
+      document.getElementById('suite-modal-table-bold').innerText = currentTable;
+      document.getElementById('suite-modal').classList.add('open');
+    }
+
+    function fermerModalSuite() {
+      document.getElementById('suite-modal').classList.remove('open');
+    }
+
+    async function envoyerSuite(course) {
+      try {
+        const res = await fetch(`/api/tables/${currentTable}/suite`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            course: course,
+            serveur_nom: currentServeur || 'Salle'
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`🔔 Suite "${course}" envoyée en cuisine pour la Table ${currentTable} !`);
+          fermerModalSuite();
+        } else {
+          alert(`❌ ${data.error || "Impossible d'envoyer la suite."}`);
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
       }
     }
 

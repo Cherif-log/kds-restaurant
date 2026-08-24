@@ -30,7 +30,7 @@
 
     .kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; flex: 1; align-items: start; }
     
-    .ticket-card { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: border-color 0.2s; }
+    .ticket-card { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: border-color 0.2s; position: relative; }
     .ticket-card.stat-en_attente { border-color: var(--warning); }
     .ticket-card.stat-en_preparation { border-color: var(--accent); }
     .ticket-card.stat-pret { border-color: var(--success); }
@@ -40,6 +40,12 @@
     .ticket-server { font-size: 0.78rem; font-weight: 700; color: #38bdf8; }
     .ticket-time { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
 
+    /* BANNIÈRE SUITE RÉCLAMÉE EN CUISINE (PULSANTE) */
+    .suite-alert-banner { background: #c2410c; color: #fff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 0.88rem; animation: pulseAlert 1.2s infinite; border-bottom: 2px solid #ea580c; }
+    @keyframes pulseAlert { 0%, 100% { background: #c2410c; } 50% { background: #ea580c; } }
+    .btn-ack-suite { background: #fff; color: #c2410c; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; }
+    .btn-ack-suite:hover { background: #fed7aa; }
+
     .ticket-items { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
     .ticket-item-row { border-bottom: 1px dashed #334155; padding-bottom: 8px; }
     .ticket-item-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -47,7 +53,6 @@
     .ticket-item-main { display: flex; align-items: flex-start; gap: 8px; font-size: 1.05rem; font-weight: 700; color: #fff; }
     .item-qty { background: #334155; color: #38bdf8; padding: 2px 7px; border-radius: 6px; font-weight: 900; font-size: 0.95rem; }
     
-    /* BADGE CUISSON & GARNITURE VISIBLE EN CUISINE */
     .item-modifiers-badge { display: inline-block; background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid #ef4444; padding: 3px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 800; margin-top: 4px; margin-left: 28px; }
 
     .ticket-notes { background: #334155; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; color: #fbbf24; margin: 0 16px 12px 16px; }
@@ -102,6 +107,7 @@
     const socket = typeof io !== 'undefined' ? io() : null;
     let commandes = [];
     let indisponibles = [];
+    let suitesActives = {}; // { [table_num]: { course, serveur_nom, time } }
 
     const platsStockList = [
       { slug: "saumon_fume", nom: "Saumon fumé maison" },
@@ -166,8 +172,17 @@
 
         const heureStr = cmd.date_creation ? new Date(cmd.date_creation).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
 
+        const suiteAlert = suitesActives[cmd.table_num];
+        const suiteBannerHtml = suiteAlert ? `
+          <div class="suite-alert-banner">
+            <span>🔔 <strong>SUITE : ${suiteAlert.course}</strong> (${suiteAlert.serveur_nom})</span>
+            <button class="btn-ack-suite" onclick="acquitterSuite(${cmd.table_num})">✓ Vu</button>
+          </div>
+        ` : '';
+
         return `
           <div class="ticket-card stat-${cmd.statut}">
+            ${suiteBannerHtml}
             <div class="ticket-top">
               <div>
                 <div class="ticket-table">Table ${cmd.table_num}</div>
@@ -192,6 +207,11 @@
         });
         chargerCommandesCuisine();
       } catch (e) {}
+    }
+
+    function acquitterSuite(tableNum) {
+      delete suitesActives[tableNum];
+      renderKDS();
     }
 
     // --- GESTION 86-LIST ---
@@ -234,8 +254,8 @@
       } catch (e) {}
     }
 
-    // SON D'ALERTE 5s SUR NOUVELLE COMMANDE
-    function playBeep() {
+    // SONS D'ALERTE AUDIO
+    function playBeepNouvelleCommande() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let count = 0;
@@ -255,9 +275,28 @@
       } catch (e) {}
     }
 
+    function playChimeSuite() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const tones = [523.25, 659.25, 783.99]; // Do - Mi - Sol (Carillon agréable et percutant)
+        tones.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.18);
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime + idx * 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.18 + 0.5);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + idx * 0.18);
+          osc.stop(audioCtx.currentTime + idx * 0.18 + 0.5);
+        });
+      } catch (e) {}
+    }
+
     if (socket) {
       socket.on('nouvelle_commande', (cmd) => {
-        playBeep();
+        playBeepNouvelleCommande();
         chargerCommandesCuisine();
       });
       socket.on('statut_mis_a_jour', () => chargerCommandesCuisine());
@@ -265,6 +304,12 @@
       socket.on('stock_update', (data) => {
         indisponibles = data;
         renderStockModal();
+      });
+      // RÉCEPTION RÉCLAMER LA SUITE
+      socket.on('reclamer_suite', (data) => {
+        suitesActives[data.table_num] = data;
+        playChimeSuite();
+        renderKDS();
       });
     }
 

@@ -433,6 +433,32 @@ app.post('/api/tables/:table_num/transfer', (req, res) => {
   }
 });
 
+// 👉 9quater. NOUVEAU : RÉCLAMER LA SUITE (ENTRÉES -> PLATS -> DESSERTS)
+app.post('/api/tables/:table_num/suite', (req, res) => {
+  try {
+    const table_num = parseInt(req.params.table_num, 10);
+    const { course, serveur_nom } = req.body;
+    const nowIso = new Date().toISOString();
+
+    const activeOrders = db.prepare(`SELECT id FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(table_num);
+    if (activeOrders.length === 0) {
+      return res.status(400).json({ error: `Aucune commande en cours sur la Table ${table_num}.` });
+    }
+
+    const suiteData = {
+      table_num,
+      course: course || 'Plats',
+      serveur_nom: serveur_nom || 'Salle',
+      timestamp: nowIso
+    };
+
+    io.emit('reclamer_suite', suiteData);
+    res.json({ success: true, message: `Suite (${suiteData.course}) réclamée pour la Table ${table_num}` });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur lors de la réclamation de la suite.' });
+  }
+});
+
 // 10. Statut commande
 app.put('/api/commandes/:id/statut', (req, res) => {
   try {
