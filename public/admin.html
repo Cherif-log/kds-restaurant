@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tableau de bord - Statistiques</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 24px; font-weight: 700; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .stat-label { font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+    .stat-value { font-size: 28px; font-weight: 800; margin-top: 8px; color: #0f172a; }
+    
+    .table-container {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #475569;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-attente { background: #fef3c7; color: #92400e; }
+    .badge-prepa { background: #dbeafe; color: #1e40af; }
+    .badge-prete { background: #dcfce7; color: #166534; }
+    .badge-servie { background: #f1f5f9; color: #475569; }
+  </style>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+  <header>
+    <h1>Tableau de bord du service</h1>
+  </header>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Commandes actives</div>
+      <div class="stat-value" id="statEnCours">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Commandes servies</div>
+      <div class="stat-value" id="statServies" style="color: #16a34a;">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Temps moyen de service</div>
+      <div class="stat-value" id="statTempsMoyen">0 min</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total tickets créés</div>
+      <div class="stat-value" id="statTotal">0</div>
+    </div>
+  </div>
+
+  <h2>Historique des commandes</h2>
+  <div class="table-container" style="margin-top: 16px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Table</th>
+          <th>Heure</th>
+          <th>Statut</th>
+          <th>Durée de traitement</th>
+          <th>Détail du ticket</th>
+        </tr>
+      </thead>
+      <tbody id="historiqueBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const socket = io();
+
+    function badgeStatut(statut) {
+      if (statut === 'En attente') return '<span class="badge badge-attente">En attente</span>';
+      if (statut === 'En préparation') return '<span class="badge badge-prepa">En préparation</span>';
+      if (statut === 'Prête') return '<span class="badge badge-prete">Prête</span>';
+      if (statut === 'Servie') return '<span class="badge badge-servie">Servie / Archivée</span>';
+      return statut;
+    }
+
+    function calculerDuree(cmd) {
+      if (!cmd.timestamp_fin) return 'En cours...';
+      const sec = Math.floor((cmd.timestamp_fin - cmd.timestamp_creation) / 1000);
+      const min = Math.floor(sec / 60);
+      const restSec = sec % 60;
+      return `${min}m ${restSec < 10 ? '0' : ''}${restSec}s`;
+    }
+
+    async function chargerDonnees() {
+      const [resStats, resHist] = await Promise.all([
+        fetch('/api/statistiques'),
+        fetch('/api/historique')
+      ]);
+
+      const stats = await resStats.json();
+      const historique = await resHist.json();
+
+      document.getElementById('statEnCours').innerText = stats.enCours;
+      document.getElementById('statServies').innerText = stats.servies;
+      document.getElementById('statTempsMoyen').innerText = `${stats.tempsMoyenMinutes} min`;
+      document.getElementById('statTotal').innerText = stats.total;
+
+      const tbody = document.getElementById('historiqueBody');
+      if (historique.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">Aucune donnée disponible.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = historique.map(cmd => `
+        <tr>
+          <td style="font-weight: 700;">${cmd.table}</td>
+          <td>${cmd.heure}</td>
+          <td>${badgeStatut(cmd.statut)}</td>
+          <td><strong>${calculerDuree(cmd)}</strong></td>
+          <td style="white-space: pre-line; color: #334155;">${cmd.details}</td>
+        </tr>
+      `).join('');
+    }
+
+    socket.on('miseAJourStats', () => chargerDonnees());
+    socket.on('miseAJourCommandes', () => chargerDonnees());
+    chargerDonnees();
+  </script>
+</body>
+</html>

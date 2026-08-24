@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Prise de Commande</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f4f5f7;
+      color: #1a1a1a;
+      padding: 16px;
+      padding-bottom: 120px;
+    }
+    header {
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+    
+    .table-section {
+      background: #fff;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+    .table-label { font-size: 13px; font-weight: 600; color: #666; margin-bottom: 8px; display: block; }
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+    .btn-table {
+      padding: 10px 0;
+      border: 1px solid #ddd;
+      background: #fafafa;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn-table.active {
+      background: #007aff;
+      color: #fff;
+      border-color: #007aff;
+    }
+
+    .categories {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      scrollbar-width: none;
+    }
+    .btn-cat {
+      white-space: nowrap;
+      padding: 8px 14px;
+      background: #e5e7eb;
+      border: none;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn-cat.active {
+      background: #111827;
+      color: #fff;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    .item-card {
+      background: #fff;
+      padding: 14px;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100px;
+    }
+    .item-name { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+    .item-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .btn-qty {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid #007aff;
+      background: #fff;
+      color: #007aff;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-qty.plus { background: #007aff; color: #fff; }
+    .qty-display { font-weight: 700; font-size: 15px; }
+
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      padding: 12px 16px;
+      border-top: 1px solid #e5e7eb;
+      box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .comment-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .btn-envoyer {
+      width: 100%;
+      padding: 14px;
+      background: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-envoyer:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Prise de commande</h1>
+  </header>
+
+  <div class="table-section">
+    <span class="table-label">NUMÉRO DE TABLE</span>
+    <div class="tables-grid" id="tablesGrid"></div>
+  </div>
+
+  <div class="categories" id="categoriesBar"></div>
+  <div class="menu-grid" id="menuGrid"></div>
+
+  <div class="bottom-bar">
+    <input type="text" id="remarque" class="comment-input" placeholder="Remarque (ex. sans sel, viande saignante...)">
+    <button id="btnEnvoyer" class="btn-envoyer" disabled onclick="envoyerCommande()">
+      <span>Envoyer en cuisine</span>
+      <span id="panierTotal">0 article</span>
+    </button>
+  </div>
+
+  <script>
+    const MENU = [
+      { id: 'e1', cat: 'Entrées', nom: 'Salade César' },
+      { id: 'e2', cat: 'Entrées', nom: 'Burrata Tomates' },
+      { id: 'e3', cat: 'Entrées', nom: 'Soupe à l’oignon' },
+      { id: 'p1', cat: 'Plats', nom: 'Burger Maison' },
+      { id: 'p2', cat: 'Plats', nom: 'Entrecôte 300g' },
+      { id: 'p3', cat: 'Plats', nom: 'Pâtes Carbonara' },
+      { id: 'p4', cat: 'Plats', nom: 'Pavé de Saumon' },
+      { id: 'd1', cat: 'Desserts', nom: 'Tiramisu' },
+      { id: 'd2', cat: 'Desserts', nom: 'Fondant Chocolat' },
+      { id: 'd3', cat: 'Desserts', nom: 'Crème Brûlée' },
+      { id: 'b1', cat: 'Boissons', nom: 'Coca-Cola' },
+      { id: 'b2', cat: 'Boissons', nom: 'Eau Minérale' },
+      { id: 'b3', cat: 'Boissons', nom: 'Bière Pression' },
+      { id: 'b4', cat: 'Boissons', nom: 'Café Expresso' }
+    ];
+
+    let tableSelectionnee = 'Table 1';
+    let categorieActive = 'Tous';
+    let panier = {};
+
+    function initialiserTables() {
+      const container = document.getElementById('tablesGrid');
+      container.innerHTML = Array.from({ length: 6 }, (_, i) => `Table ${i + 1}`).map((tab, index) => `
+        <button class="btn-table ${index === 0 ? 'active' : ''}" onclick="choisirTable('${tab}', this)">
+          ${tab.replace('Table ', 'T')}
+        </button>
+      `).join('');
+    }
+
+    function choisirTable(table, el) {
+      tableSelectionnee = table;
+      document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function initialiserCategories() {
+      const cats = ['Tous', 'Entrées', 'Plats', 'Desserts', 'Boissons'];
+      const bar = document.getElementById('categoriesBar');
+      bar.innerHTML = cats.map(cat => `
+        <button class="btn-cat ${cat === categorieActive ? 'active' : ''}" onclick="filtrerCategorie('${cat}', this)">
+          ${cat}
+        </button>
+      `).join('');
+    }
+
+    function filtrerCategorie(cat, el) {
+      categorieActive = cat;
+      document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      afficherMenu();
+    }
+
+    function modifierQuantite(id, delta) {
+      const quantite = (panier[id] || 0) + delta;
+      if (quantite <= 0) {
+        delete panier[id];
+      } else {
+        panier[id] = quantite;
+      }
+      afficherMenu();
+      mettreAJourBouton();
+    }
+
+    function afficherMenu() {
+      const grid = document.getElementById('menuGrid');
+      const items = categorieActive === 'Tous' 
+        ? MENU 
+        : MENU.filter(m => m.cat === categorieActive);
+
+      grid.innerHTML = items.map(item => {
+        const qte = panier[item.id] || 0;
+        return `
+          <div class="item-card">
+            <span class="item-name">${item.nom}</span>
+            <div class="item-actions">
+              <button class="btn-qty" onclick="modifierQuantite('${item.id}', -1)">-</button>
+              <span class="qty-display">${qte}</span>
+              <button class="btn-qty plus" onclick="modifierQuantite('${item.id}', 1)">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function mettreAJourBouton() {
+      const totalArticles = Object.values(panier).reduce((a, b) => a + b, 0);
+      const btn = document.getElementById('btnEnvoyer');
+      const label = document.getElementById('panierTotal');
+
+      label.innerText = `${totalArticles} article${totalArticles > 1 ? 's' : ''}`;
+      btn.disabled = totalArticles === 0;
+    }
+
+    async function envoyerCommande() {
+      const totalArticles = Object.values(panier).reduce((a, b) => a + b, 0);
+      if (totalArticles === 0) return;
+
+      const lignesArticles = Object.entries(panier).map(([id, qte]) => {
+        const article = MENU.find(m => m.id === id);
+        return `${qte}x ${article.nom}`;
+      });
+
+      const remarque = document.getElementById('remarque').value.trim();
+      if (remarque) {
+        lignesArticles.push(`\nNote: ${remarque}`);
+      }
+
+      const detailsFormates = lignesArticles.join('\n');
+
+      const res = await fetch('/api/commandes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table: tableSelectionnee,
+          details: detailsFormates
+        })
+      });
+
+      if (res.ok) {
+        panier = {};
+        document.getElementById('remarque').value = '';
+        mettreAJourBouton();
+        afficherMenu();
+      }
+    }
+
+    initialiserTables();
+    initialiserCategories();
+    afficherMenu();
+  </script>
+</body>
+</html>
