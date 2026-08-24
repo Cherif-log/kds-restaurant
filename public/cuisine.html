@@ -3,113 +3,98 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Écran Cuisine</title>
+  <title>Hôtel des Pins — KDS Cuisine</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
       --bg: #0f172a;
       --card-bg: #1e293b;
-      --border: #334155;
+      --card-border: #334155;
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --accent: #38bdf8;
-      --attente: #eab308;
-      --prepa: #f97316;
-      --pret: #22c55e;
+      --success: #22c55e;
+      --warning: #f59e0b;
       --danger: #ef4444;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; transition: background 0.2s; }
-    body.alarm-flash { background: #b91c1c !important; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 18px; display: flex; flex-direction: column; }
 
-    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-    h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    h1 { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
-    .header-controls { display: flex; align-items: center; gap: 10px; }
-    .btn-stock { background: #475569; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    .btn-stock:hover { background: #334155; }
-    .btn-test { background: #e11d48; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; cursor: pointer; }
-    .btn-stop-sound { background: #0284c7; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; cursor: pointer; }
-    .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+    .btn-86 { background: #b91c1c; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-86:hover { background: #dc2626; }
 
-    .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
-    .empty-state { grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 1.1rem; padding: 80px 20px; }
+    .kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; flex: 1; align-items: start; }
+    
+    .ticket-card { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: border-color 0.2s; }
+    .ticket-card.stat-en_attente { border-color: var(--warning); }
+    .ticket-card.stat-en_preparation { border-color: var(--accent); }
+    .ticket-card.stat-pret { border-color: var(--success); }
 
-    .ticket-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 20px rgba(0,0,0,0.3); animation: fadeIn 0.2s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    .ticket-top { padding: 12px 16px; background: #0f172a; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
+    .ticket-table { font-size: 1.25rem; font-weight: 900; color: #fff; }
+    .ticket-server { font-size: 0.78rem; font-weight: 700; color: #38bdf8; }
+    .ticket-time { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
 
-    .ticket-top { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
-    .ticket-table { font-size: 1.25rem; }
-    .ticket-time { font-size: 0.85rem; color: var(--text-muted); }
+    .ticket-items { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .ticket-item-row { border-bottom: 1px dashed #334155; padding-bottom: 8px; }
+    .ticket-item-row:last-child { border-bottom: none; padding-bottom: 0; }
+    
+    .ticket-item-main { display: flex; align-items: flex-start; gap: 8px; font-size: 1.05rem; font-weight: 700; color: #fff; }
+    .item-qty { background: #334155; color: #38bdf8; padding: 2px 7px; border-radius: 6px; font-weight: 900; font-size: 0.95rem; }
+    
+    /* BADGE CUISSON & GARNITURE VISIBLE EN CUISINE */
+    .item-modifiers-badge { display: inline-block; background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid #ef4444; padding: 3px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 800; margin-top: 4px; margin-left: 28px; }
 
-    .status-en_attente .ticket-top { background: rgba(234, 179, 8, 0.15); border-bottom: 2px solid var(--attente); }
-    .status-en_attente .badge-stat { background: var(--attente); color: #000; }
+    .ticket-notes { background: #334155; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; color: #fbbf24; margin: 0 16px 12px 16px; }
 
-    .status-en_cours .ticket-top, .status-en_preparation .ticket-top { background: rgba(249, 115, 22, 0.15); border-bottom: 2px solid var(--prepa); }
-    .status-en_cours .badge-stat, .status-en_preparation .badge-stat { background: var(--prepa); color: #fff; }
+    .ticket-footer { padding: 10px 16px; background: #0f172a; border-top: 1px solid var(--card-border); display: flex; gap: 8px; }
+    .btn-stat { flex: 1; padding: 12px 6px; border: none; border-radius: 8px; font-weight: 800; font-size: 0.9rem; cursor: pointer; text-transform: uppercase; }
+    .btn-stat.preparer { background: var(--accent); color: #0f172a; }
+    .btn-stat.pret { background: var(--success); color: #fff; }
+    .btn-stat.servir { background: #64748b; color: #fff; }
 
-    .status-pret .ticket-top { background: rgba(34, 197, 94, 0.15); border-bottom: 2px solid var(--pret); }
-    .status-pret .badge-stat { background: var(--pret); color: #fff; }
-
-    .badge-stat { padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
-
-    .ticket-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-    .ticket-item { display: flex; justify-content: space-between; font-weight: 700; font-size: 1rem; border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
-    .item-qty { color: var(--accent); margin-right: 6px; font-weight: 800; }
-    .ticket-remarque { background: #334155; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; color: #fde047; font-weight: 600; margin-top: 6px; }
-
-    .ticket-actions { padding: 12px 16px; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border); display: flex; gap: 8px; }
-    .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
-    .btn-start { background: var(--prepa); color: #fff; }
-    .btn-ready { background: var(--pret); color: #fff; }
-    .btn-done { background: #475569; color: #fff; }
-
-    /* MODAL GESTION DU STOCK */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
+    /* MODAL 86-LIST */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
     .modal-overlay.open { display: flex; }
-    .modal-card { background: #1e293b; color: #fff; width: 100%; max-width: 650px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border); }
-    .modal-head { background: #0f172a; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; border-bottom: 1px solid var(--border); }
-    .modal-body { padding: 16px; max-height: 75vh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+    .modal-card { background: #1e293b; color: #fff; width: 100%; max-width: 520px; border-radius: 12px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+    .modal-head { background: #0f172a; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
+    .modal-body { padding: 18px; max-height: 75vh; overflow-y: auto; }
     
-    .stock-sec-title { font-size: 0.85rem; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
-    .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    @media (max-width: 600px) { .stock-grid { grid-template-columns: 1fr; } }
-    
-    .stock-item { background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
-    .stock-item.is-out { border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
-    .stock-item-name { font-size: 0.85rem; font-weight: 600; flex: 1; padding-right: 8px; }
-    
-    .btn-toggle-stock { padding: 6px 12px; border: none; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; }
-    .btn-toggle-stock.in { background: #16a34a; color: #fff; }
-    .btn-toggle-stock.out { background: var(--danger); color: #fff; }
+    .stock-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #334155; font-size: 0.92rem; }
+    .stock-row:last-child { border-bottom: none; }
+    .btn-toggle-stock { padding: 6px 12px; border-radius: 6px; border: none; font-weight: 800; font-size: 0.78rem; cursor: pointer; }
+    .btn-toggle-stock.dispo { background: #22c55e; color: #0f172a; }
+    .btn-toggle-stock.indispo { background: #ef4444; color: #fff; }
   </style>
 </head>
 <body>
 
   <header>
     <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
-    <div class="header-controls">
-      <button class="btn-stock" onclick="ouvrirModalStock()">📦 Ruptures (86-List)</button>
-      <button class="btn-test" onclick="declencherAlarme5s()">🔊 TEST (5s)</button>
-      <button class="btn-stop-sound" onclick="arreterAlarme()">⏹️ Couper le son</button>
-      <span id="active-count" style="font-weight:700; font-size:0.9rem;">0 en cours</span>
-      <span class="badge-status" id="socket-status">En direct</span>
+    <div class="header-actions">
+      <button class="btn-86" onclick="ouvrirModal86()">🔴 Ruptures de Stock (86-List)</button>
     </div>
   </header>
 
-  <div class="tickets-grid" id="tickets-container">
-    <div class="empty-state">En attente de commandes...</div>
+  <div class="kds-grid" id="kds-container">
+    <div style="color:var(--text-muted); font-size:1.1rem; padding:20px;">En attente de commandes...</div>
   </div>
 
-  <!-- MODAL GESTION DU STOCK (86 LIST) -->
-  <div class="modal-overlay" id="stock-modal">
+  <!-- MODAL RUPTURES DE STOCK -->
+  <div class="modal-overlay" id="modal-86">
     <div class="modal-card">
       <div class="modal-head">
-        <span>📦 Gestion des Ruptures (Menu & Carte)</span>
-        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalStock()">✕</button>
+        <span>🔴 Gestion des Ruptures de Stock (86-List)</span>
+        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModal86()">✕</button>
       </div>
-      <div class="modal-body" id="stock-modal-body"></div>
+      <div class="modal-body" id="stock-list-container">
+        <!-- Rempli en JS -->
+      </div>
     </div>
   </div>
 
@@ -118,86 +103,30 @@
     let commandes = [];
     let indisponibles = [];
 
-    // Articles uniques avec leur slug partagé
-    const distinctDishes = [
-      { slug: "entree_jour", nom: "Entrée du jour", cat: "Entrées" },
-      { slug: "saumon_fume", nom: "Saumon fumé maison", cat: "Entrées" },
-      { slug: "foie_gras", nom: "Foie gras de canard maison", cat: "Entrées" },
-      { slug: "soupe_poissons", nom: "Soupe de poissons du Bassin", cat: "Entrées" },
-      { slug: "calamars", nom: "Friture de calamars", cat: "Entrées" },
-      { slug: "charcuterie", nom: "Assiette de charcuterie", cat: "Entrées" },
-      { slug: "asperges", nom: "Asperges blanches & jambon", cat: "Entrées" },
-
-      { slug: "dos_maigre", nom: "Dos de maigre, sauce vierge", cat: "Plats / Poissons" },
-      { slug: "cabillaud", nom: "Pavé de cabillaud rôti", cat: "Plats / Poissons" },
-      { slug: "bar", nom: "Pavé de bar, risotto", cat: "Plats / Poissons" },
-      { slug: "blanquette_seiche", nom: "Blanquette de seiche safranée", cat: "Plats / Poissons" },
-
-      { slug: "carpaccio", nom: "Carpaccio de bœuf & Parmesan", cat: "Plats / Viandes" },
-      { slug: "entrecote", nom: "Entrecôte de bœuf, échalotes", cat: "Plats / Viandes" },
-      { slug: "magret", nom: "Magret de canard, poivre", cat: "Plats / Viandes" },
-
-      { slug: "dessert_jour", nom: "Dessert du jour", cat: "Desserts" },
-      { slug: "fromages", nom: "Assiette de fromages", cat: "Desserts" },
-      { slug: "creme_brulee", nom: "Crème brûlée à la vanille", cat: "Desserts" },
-      { slug: "tiramisu", nom: "Tiramisu au café", cat: "Desserts" },
-      { slug: "cafe_gourmand", nom: "Café gourmand", cat: "Desserts" },
-      { slug: "fromage_blanc", nom: "Fromage blanc fermier", cat: "Desserts" },
-      { slug: "mousse_chocolat", nom: "Mousse au chocolat noir", cat: "Desserts" },
-      { slug: "cheesecake", nom: "Cheesecake au citron", cat: "Desserts" },
-      { slug: "glace", nom: "Coupe glacée 2 boules", cat: "Desserts" },
-
-      { slug: "tenders_enf", nom: "Chicken tenders (Enfant)", cat: "Enfants" },
-      { slug: "steak_enf", nom: "Steak haché (Enfant)", cat: "Enfants" },
-      { slug: "poisson_enf", nom: "Filet de poisson (Enfant)", cat: "Enfants" }
+    const platsStockList = [
+      { slug: "saumon_fume", nom: "Saumon fumé maison" },
+      { slug: "foie_gras", nom: "Foie gras de canard maison" },
+      { slug: "soupe_poissons", nom: "Soupe de poissons du Bassin" },
+      { slug: "calamars", nom: "Friture de calamars" },
+      { slug: "bar", nom: "Pavé de bar" },
+      { slug: "dos_maigre", nom: "Dos de maigre" },
+      { slug: "cabillaud", nom: "Pavé de cabillaud rôti" },
+      { slug: "blanquette_seiche", nom: "Blanquette de seiche" },
+      { slug: "entrecote", nom: "Entrecôte de bœuf" },
+      { slug: "magret", nom: "Magret de canard" },
+      { slug: "carpaccio", nom: "Carpaccio de bœuf" }
     ];
 
-    // --- ALARME SYNTHÉTIQUE ULTRA-FIABLE (Arrêt garanti à 5s) ---
-    let audioCtx = null;
-    let alarmBeepInterval = null;
-    let alarmAutoStopTimer = null;
-
-    function declencherAlarme5s() {
-      arreterAlarme(); // Réinitialiser si déjà active
-      document.body.classList.add('alarm-flash');
-
+    async function chargerCommandesCuisine() {
       try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-
-        const playTone = () => {
-          if (!audioCtx) return;
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(850, audioCtx.currentTime);
-          gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start();
-          osc.stop(audioCtx.currentTime + 0.38);
-        };
-
-        playTone();
-        alarmBeepInterval = setInterval(playTone, 500);
-      } catch (e) {
-        console.warn("Audio non autorisé sans clic préalable :", e);
-      }
-
-      // Arrêt automatique strict après 5000ms
-      alarmAutoStopTimer = setTimeout(() => {
-        arreterAlarme();
-      }, 5000);
+        const res = await fetch('/api/commandes');
+        if (res.ok) {
+          commandes = await res.json();
+          renderKDS();
+        }
+      } catch (e) {}
     }
 
-    function arreterAlarme() {
-      document.body.classList.remove('alarm-flash');
-      if (alarmBeepInterval) { clearInterval(alarmBeepInterval); alarmBeepInterval = null; }
-      if (alarmAutoStopTimer) { clearTimeout(alarmAutoStopTimer); alarmAutoStopTimer = null; }
-    }
-
-    // --- GESTION DU STOCK ---
     async function chargerStock() {
       try {
         const res = await fetch('/api/stock/indisponibles');
@@ -208,161 +137,139 @@
       } catch (e) {}
     }
 
-    function ouvrirModalStock() {
-      chargerStock();
-      document.getElementById('stock-modal').classList.add('open');
-    }
-
-    function fermerModalStock() {
-      document.getElementById('stock-modal').classList.remove('open');
-    }
-
-    function renderStockModal() {
-      const container = document.getElementById('stock-modal-body');
-      container.innerHTML = '';
-
-      const categories = [...new Set(distinctDishes.map(m => m.cat))];
-      categories.forEach(cat => {
-        const secTitle = document.createElement('div');
-        secTitle.className = 'stock-sec-title';
-        secTitle.innerText = cat;
-        container.appendChild(secTitle);
-
-        const grid = document.createElement('div');
-        grid.className = 'stock-grid';
-
-        const items = distinctDishes.filter(m => m.cat === cat);
-        items.forEach(item => {
-          const isOut = indisponibles.includes(item.slug);
-          const div = document.createElement('div');
-          div.className = `stock-item ${isOut ? 'is-out' : ''}`;
-          div.innerHTML = `
-            <span class="stock-item-name">${item.nom}</span>
-            <button class="btn-toggle-stock ${isOut ? 'out' : 'in'}" onclick="toggleStock('${item.slug}', '${item.nom.replace(/'/g, "\\'")}')">
-              ${isOut ? '🔴 ÉPUISÉ' : '🟢 DISPO'}
-            </button>
-          `;
-          grid.appendChild(div);
-        });
-
-        container.appendChild(grid);
-      });
-    }
-
-    async function toggleStock(slug, article_nom) {
-      try {
-        const res = await fetch('/api/stock/toggle', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ article_id: slug, article_nom })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          indisponibles = data.indisponibles;
-          renderStockModal();
-        }
-      } catch (e) {
-        alert("Erreur mise à jour stock.");
-      }
-    }
-
-    // --- COMMANDES ---
-    async function chargerCommandes() {
-      try {
-        const res = await fetch('/api/commandes');
-        if (res.ok) {
-          const data = await res.json();
-          commandes = data.filter(c => c.statut !== 'servi' && c.statut !== 'encaisse' && c.statut !== 'annule');
-          afficherTickets();
-        }
-      } catch (e) {}
-    }
-
-    if (socket) {
-      socket.on('nouvelle_commande', () => {
-        declencherAlarme5s();
-        chargerCommandes();
-      });
-
-      socket.on('statut_mis_a_jour', () => chargerCommandes());
-      socket.on('stock_update', (data) => {
-        indisponibles = data;
-        renderStockModal();
-      });
-    }
-
-    function afficherTickets() {
-      const container = document.getElementById('tickets-container');
-      const countEl = document.getElementById('active-count');
-      countEl.innerText = `${commandes.length} commande${commandes.length > 1 ? 's' : ''}`;
-
+    function renderKDS() {
+      const container = document.getElementById('kds-container');
       if (commandes.length === 0) {
-        container.innerHTML = '<div class="empty-state">Aucune commande en attente 🎉</div>';
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:1.1rem; padding:20px;">Aucun bon de commande en cours. Cuisine prête ! 👍</div>';
         return;
       }
 
-      container.innerHTML = '';
-      commandes.forEach(cmd => {
-        const div = document.createElement('div');
-        div.className = `ticket-card status-${cmd.statut || 'en_attente'}`;
-        const heure = cmd.date_creation ? new Date(cmd.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-
-        let itemsHtml = '';
-        if (cmd.items && Array.isArray(cmd.items)) {
-          itemsHtml = cmd.items.map(it => `
-            <div class="ticket-item">
-              <span><span class="item-qty">${it.quantite || 1}x</span> ${it.article_nom}</span>
-            </div>
-          `).join('');
-        }
-
-        let actionsHtml = '';
-        if (cmd.statut === 'en_attente' || !cmd.statut) {
-          actionsHtml = `<button class="btn-action btn-start" onclick="changerStatut(${cmd.id}, 'en_cours')">▶ Lancer Prépa</button>`;
-        } else if (cmd.statut === 'en_cours' || cmd.statut === 'en_preparation') {
-          actionsHtml = `<button class="btn-action btn-ready" onclick="changerStatut(${cmd.id}, 'pret')">✔ Prêt à Servir</button>`;
+      container.innerHTML = commandes.map(cmd => {
+        let actionBtn = '';
+        if (cmd.statut === 'en_attente') {
+          actionBtn = `<button class="btn-stat preparer" onclick="changerStatutCommande(${cmd.id}, 'en_preparation')">▶ Commencer</button>`;
+        } else if (cmd.statut === 'en_preparation') {
+          actionBtn = `<button class="btn-stat pret" onclick="changerStatutCommande(${cmd.id}, 'pret')">✔ Prêt à servir</button>`;
         } else if (cmd.statut === 'pret') {
-          actionsHtml = `<button class="btn-action btn-done" onclick="changerStatut(${cmd.id}, 'servi')">✓ Servi / Archiver</button>`;
+          actionBtn = `<button class="btn-stat servir" onclick="changerStatutCommande(${cmd.id}, 'servi')">🚀 Envoyé en Salle</button>`;
         }
 
-        div.innerHTML = `
-          <div class="ticket-top">
-            <span class="ticket-table">Table ${cmd.table_num}</span>
-            <span class="badge-stat">${getLibelleStatut(cmd.statut)}</span>
-            <span class="ticket-time">${heure}</span>
+        const itemsHtml = (cmd.items || []).map(it => `
+          <div class="ticket-item-row">
+            <div class="ticket-item-main">
+              <span class="item-qty">${it.quantite || 1}x</span>
+              <span>${it.article_nom}</span>
+            </div>
+            ${it.remarques ? `<div class="item-modifiers-badge">👉 ${it.remarques}</div>` : ''}
           </div>
-          <div class="ticket-body">
-            ${itemsHtml}
-            ${cmd.remarques ? `<div class="ticket-remarque">Note : ${cmd.remarques}</div>` : ''}
-          </div>
-          <div class="ticket-actions">
-            ${actionsHtml}
+        `).join('');
+
+        const heureStr = cmd.date_creation ? new Date(cmd.date_creation).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
+
+        return `
+          <div class="ticket-card stat-${cmd.statut}">
+            <div class="ticket-top">
+              <div>
+                <div class="ticket-table">Table ${cmd.table_num}</div>
+                <div class="ticket-server">👤 ${cmd.serveur_nom || 'Salle'}</div>
+              </div>
+              <div class="ticket-time">🕒 ${heureStr}</div>
+            </div>
+            <div class="ticket-items">${itemsHtml}</div>
+            ${cmd.remarques ? `<div class="ticket-notes">⚠️ ${cmd.remarques}</div>` : ''}
+            <div class="ticket-footer">${actionBtn}</div>
           </div>
         `;
-        container.appendChild(div);
-      });
+      }).join('');
     }
 
-    function getLibelleStatut(st) {
-      if (st === 'en_cours' || st === 'en_preparation') return 'En Prépa';
-      if (st === 'pret') return 'Prêt';
-      return 'En Attente';
-    }
-
-    async function changerStatut(id, statut) {
+    async function changerStatutCommande(id, statut) {
       try {
         await fetch(`/api/commandes/${id}/statut`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ statut })
         });
-        if (socket) socket.emit('changer_statut', { id, statut });
-        chargerCommandes();
+        chargerCommandesCuisine();
       } catch (e) {}
     }
 
-    setInterval(chargerCommandes, 5000);
-    chargerCommandes();
+    // --- GESTION 86-LIST ---
+    function ouvrirModal86() {
+      renderStockModal();
+      document.getElementById('modal-86').classList.add('open');
+    }
+
+    function fermerModal86() {
+      document.getElementById('modal-86').classList.remove('open');
+    }
+
+    function renderStockModal() {
+      const container = document.getElementById('stock-list-container');
+      container.innerHTML = platsStockList.map(p => {
+        const isOut = indisponibles.includes(p.slug);
+        return `
+          <div class="stock-row">
+            <span><strong>${p.nom}</strong></span>
+            <button class="btn-toggle-stock ${isOut ? 'indispo' : 'dispo'}" onclick="toggleStockPlat('${p.slug}', '${p.nom.replace(/'/g, "\\'")}')">
+              ${isOut ? '🔴 ÉPUISÉ (86)' : '🟢 DISPONIBLE'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function toggleStockPlat(slug, nom) {
+      try {
+        const res = await fetch('/api/stock/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ article_id: slug, article_nom: nom })
+        });
+        const data = await res.json();
+        if (data.success) {
+          indisponibles = data.indisponibles;
+          renderStockModal();
+        }
+      } catch (e) {}
+    }
+
+    // SON D'ALERTE 5s SUR NOUVELLE COMMANDE
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let count = 0;
+        const interval = setInterval(() => {
+          if (count >= 5) { clearInterval(interval); return; }
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.35);
+          count++;
+        }, 1000);
+      } catch (e) {}
+    }
+
+    if (socket) {
+      socket.on('nouvelle_commande', (cmd) => {
+        playBeep();
+        chargerCommandesCuisine();
+      });
+      socket.on('statut_mis_a_jour', () => chargerCommandesCuisine());
+      socket.on('table_status_change', () => chargerCommandesCuisine());
+      socket.on('stock_update', (data) => {
+        indisponibles = data;
+        renderStockModal();
+      });
+    }
+
+    setInterval(chargerCommandesCuisine, 5000);
+    chargerCommandesCuisine();
     chargerStock();
   </script>
 </body>
