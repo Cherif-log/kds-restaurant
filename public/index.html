@@ -21,30 +21,30 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
-    /* Header */
+    /* Bannière Notification Prêt */
+    #notif-ready-bar { display: none; background: #16a34a; color: #fff; text-align: center; padding: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; animation: slideDown 0.3s ease; }
+    @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
     header { background: var(--primary); color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
     header h1 { font-size: 1.15rem; font-weight: 700; }
-    .badge-status { background: var(--success); font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+    .header-links { display: flex; gap: 10px; align-items: center; }
+    .btn-nav-top { background: #334155; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
 
-    /* Layout */
     .app-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 54px); }
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* Barre des Tables */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; }
     .tables-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; scrollbar-width: none; }
     .tables-scroll::-webkit-scrollbar { display: none; }
     .btn-table { flex: 0 0 62px; height: 42px; background: #fff; border: 1.5px solid var(--border); border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; color: var(--text); }
     .btn-table.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 10px rgba(37,99,235,0.25); }
 
-    /* Onglets Catégories */
     .cat-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; scrollbar-width: none; }
     .cat-tabs::-webkit-scrollbar { display: none; }
     .btn-cat-tab { white-space: nowrap; padding: 8px 16px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; color: #475569; }
     .btn-cat-tab.active { background: var(--primary); color: #fff; }
 
-    /* Grille des Plats */
     .section-header { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin: 16px 0 10px 0; padding-bottom: 4px; border-bottom: 2px solid #e2e8f0; }
     .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 15px; }
     
@@ -54,14 +54,12 @@
     .dish-name { font-weight: 600; font-size: 0.88rem; line-height: 1.3; color: var(--text); }
     .dish-price { font-weight: 700; font-size: 0.85rem; color: var(--accent); margin-top: 3px; }
 
-    /* Contrôle Quantité direct */
     .qty-controls { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
     .dish-card.active .qty-controls { background: #fff; border-color: var(--accent); }
     .btn-q { width: 30px; height: 30px; border: none; background: #fff; border-radius: 6px; font-weight: 800; font-size: 1.1rem; cursor: pointer; color: var(--text); display: flex; align-items: center; justify-content: center; }
     .dish-card.active .btn-q.plus { background: var(--accent); color: #fff; }
     .q-val { font-weight: 800; font-size: 0.95rem; min-width: 22px; text-align: center; color: var(--text); }
 
-    /* Sidebar Ticket */
     .ticket-header { padding: 14px 18px; background: var(--primary); color: #fff; font-size: 1rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
     .ticket-body { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
     .ticket-empty { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: 40px; }
@@ -75,7 +73,7 @@
     .ticket-footer { padding: 14px 18px; border-top: 1px solid var(--border); background: #fff; }
     .ticket-total { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; }
     .ticket-note { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; outline: none; }
-    .btn-send { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn-send { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
     .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
 
     @media (max-width: 900px) {
@@ -86,13 +84,19 @@
 </head>
 <body>
 
+  <div id="notif-ready-bar" onclick="masquerNotifReady()">
+    🍽️ <span id="notif-ready-text">Table 1 est prête à être servie !</span> (Cliquer pour fermer)
+  </div>
+
   <header>
     <h1>Hôtel des Pins — Prise de commande</h1>
-    <span class="badge-status">Connecté</span>
+    <div class="header-links">
+      <a href="/cuisine.html" target="_blank" class="btn-nav-top">👨‍🍳 Écran Cuisine</a>
+      <a href="/admin.html" target="_blank" class="btn-nav-top">📊 Caisse & Stats</a>
+    </div>
   </header>
 
   <div class="app-layout">
-    
     <main class="main-content">
       <div class="section-label">1. Sélectionner la table</div>
       <div class="tables-scroll" id="tables-container"></div>
@@ -124,21 +128,16 @@
         </button>
       </div>
     </aside>
-
   </div>
 
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
     let currentTable = 1;
     let currentTab = "Menu 40 €";
-    let cart = {}; // { dishId: quantity }
+    let cart = {};
 
-    // --- CARTE COMPLÈTE AVEC IDs UNIQUES ---
     const menuData = [
-      // MENU 40 € - FORMULE GLOBALE
       { id: "m40_formule", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00 },
-
-      // MENU 40 € - ENTRÉES
       { id: "m40_e1", nom: "Entrée du jour (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
       { id: "m40_e2", nom: "Saumon fumé maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
       { id: "m40_e3", nom: "Foie gras de canard maison, chutney (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
@@ -146,8 +145,6 @@
       { id: "m40_e5", nom: "Cornet de friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
       { id: "m40_e6", nom: "Assiette de charcuterie (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
       { id: "m40_e7", nom: "Asperges blanches & jambon (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
-
-      // MENU 40 € - PLATS
       { id: "m40_p1", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
       { id: "m40_p2", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
       { id: "m40_p3", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
@@ -155,8 +152,6 @@
       { id: "m40_p5", nom: "Carpaccio de bœuf & Parmesan (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
       { id: "m40_p6", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
       { id: "m40_p7", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
-
-      // MENU 40 € - DESSERTS
       { id: "m40_d1", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
       { id: "m40_d2", nom: "Assiette de fromages (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
       { id: "m40_d3", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
@@ -166,27 +161,19 @@
       { id: "m40_d7", nom: "Mousse au chocolat noir (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
       { id: "m40_d8", nom: "Cheesecake au citron (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
       { id: "m40_d9", nom: "Coupe glacée 2 boules (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-
-      // LA CARTE : ENTRÉES (15 €)
       { id: "c_e1", nom: "Terrine de foie de canard maison, chutney", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e2", nom: "Soupe de poissons et accompagnement", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e3", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e4", nom: "Cornet de friture de calamars, tartare", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e5", nom: "Assiette de charcuterie", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e6", nom: "Asperges blanches, jambon & vierge", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
-
-      // LA CARTE : POISSONS (25 €)
       { id: "c_p1", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
       { id: "c_p2", nom: "Dos de maigre, sauce vierge", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
       { id: "c_p3", nom: "Pavé de cabillaud rôti, légumes iodés", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
       { id: "c_p4", nom: "Blanquette de seiche safranée", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
-
-      // LA CARTE : VIANDES (25 €)
       { id: "c_v1", nom: "Carpaccio de bœuf maison basilic & Parmesan", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
       { id: "c_v2", nom: "Entrecôte de bœuf, échalotes confites", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
       { id: "c_v3", nom: "Magret de canard, sauce au poivre", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
-
-      // LA CARTE : DESSERTS
       { id: "c_d1", nom: "Dessert du jour", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
       { id: "c_d2", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00 },
       { id: "c_d3", nom: "Fromage blanc fermier & fruits exotiques", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
@@ -196,8 +183,6 @@
       { id: "c_d7", nom: "Cheesecake au citron", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
       { id: "c_d8", nom: "Tiramisu au café", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
       { id: "c_d9", nom: "Coupe de glaces 2 boules au choix", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-
-      // MENU ENFANT (15 €)
       { id: "enf_p1", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
       { id: "enf_p2", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
       { id: "enf_p3", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
@@ -205,8 +190,6 @@
       { id: "enf_g2", nom: "Garniture : Frites maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
       { id: "enf_g3", nom: "Garniture : Purée maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
       { id: "enf_g4", nom: "Garniture : Légumes sautés maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
-
-      // PARFUMS DE GLACES
       { id: "gl_1", nom: "Parfum Glace : Vanille", cat: "Glaces", section: "Parfums", prix: 0.00 },
       { id: "gl_2", nom: "Parfum Glace : Café", cat: "Glaces", section: "Parfums", prix: 0.00 },
       { id: "gl_3", nom: "Parfum Glace : Chocolat", cat: "Glaces", section: "Parfums", prix: 0.00 },
@@ -218,9 +201,7 @@
       { id: "gl_9", nom: "Parfum Glace : Poire", cat: "Glaces", section: "Parfums", prix: 0.00 }
     ];
 
-    // Initialisation
     function init() {
-      // 1. Tables 1 à 15
       const tContainer = document.getElementById('tables-container');
       tContainer.innerHTML = '';
       for (let i = 1; i <= 15; i++) {
@@ -236,7 +217,6 @@
         tContainer.appendChild(btn);
       }
 
-      // 2. Onglets Catégories
       const categories = ["Menu 40 €", "Entrées (15 €)", "Poissons (25 €)", "Viandes (25 €)", "Desserts", "Menu Enfant (15 €)", "Glaces"];
       const catContainer = document.getElementById('cat-tabs-container');
       catContainer.innerHTML = '';
@@ -257,14 +237,10 @@
       mettreAJourTicket();
     }
 
-    // Affichage des plats avec compteurs individuels
     function afficherPlats() {
       const container = document.getElementById('dishes-content');
       container.innerHTML = '';
-
       const platsFiltres = menuData.filter(d => d.cat === currentTab);
-      
-      // Regrouper par section
       const sections = [...new Set(platsFiltres.map(d => d.section))];
 
       sections.forEach(secTitle => {
@@ -295,23 +271,15 @@
           `;
           grid.appendChild(card);
         });
-
         container.appendChild(grid);
       });
     }
 
-    // Modification Quantité
     function modifierQuantite(id, delta) {
-      const current = cart[id] || 0;
-      const next = current + delta;
+      const next = (cart[id] || 0) + delta;
+      if (next <= 0) delete cart[id];
+      else cart[id] = next;
 
-      if (next <= 0) {
-        delete cart[id];
-      } else {
-        cart[id] = next;
-      }
-
-      // Mise à jour visuelle immédiate
       const el = document.getElementById(`qty-${id}`);
       const card = document.getElementById(`card-${id}`);
       if (el) el.innerText = cart[id] || 0;
@@ -319,11 +287,9 @@
         if (cart[id] > 0) card.classList.add('active');
         else card.classList.remove('active');
       }
-
       mettreAJourTicket();
     }
 
-    // Mise à jour du Ticket latéral
     function mettreAJourTicket() {
       const container = document.getElementById('ticket-container');
       const countEl = document.getElementById('ticket-items-count');
@@ -374,11 +340,10 @@
       btnSend.disabled = false;
     }
 
-    // ENVOI SÉCURISÉ EN CUISINE
     async function envoyerCommande() {
       const btn = document.getElementById('btn-submit');
       btn.disabled = true;
-      btn.innerText = 'Envoi en cours...';
+      btn.innerText = 'Envoi...';
 
       const items = Object.keys(cart).map(id => {
         const plat = menuData.find(d => d.id === id);
@@ -397,17 +362,13 @@
       };
 
       try {
-        // 1. Envoi API REST
-        const res = await fetch('/api/commandes', {
+        await fetch('/api/commandes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
 
-        // 2. Émission Socket.io en direct
-        if (socket) {
-          socket.emit('nouvelle_commande', payload);
-        }
+        if (socket) socket.emit('nouvelle_commande', payload);
 
         alert(`✅ Commande de la Table ${currentTable} envoyée en cuisine !`);
         cart = {};
@@ -415,10 +376,26 @@
         afficherPlats();
         mettreAJourTicket();
       } catch (err) {
-        alert("⚠️ Erreur lors de l'envoi de la commande.");
+        alert("Erreur envoi");
         btn.disabled = false;
         btn.innerText = 'Envoyer en cuisine';
       }
+    }
+
+    // Gestion de la notification "Prêt à servir"
+    if (socket) {
+      socket.on('statut_mis_a_jour', (data) => {
+        if (data && data.statut === 'pret') {
+          const bar = document.getElementById('notif-ready-bar');
+          const txt = document.getElementById('notif-ready-text');
+          txt.innerText = `Table ${data.table_num || ''} est PRÊTE à être servie !`;
+          bar.style.display = 'block';
+        }
+      });
+    }
+
+    function masquerNotifReady() {
+      document.getElementById('notif-ready-bar').style.display = 'none';
     }
 
     init();
