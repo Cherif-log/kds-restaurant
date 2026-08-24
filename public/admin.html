@@ -3,153 +3,206 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Caisse & Statistiques</title>
+  <title>Hôtel des Pins — Administration</title>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --success: #22c55e;
-      --warning: #f59e0b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #1e293b;
+      --accent: #2563eb;
+      --success: #16a34a;
+      --warning: #eab308;
+      --orange: #f97316;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 30px; }
 
-    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
-    h1 { font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .container { max-width: 1200px; margin: 0 auto; }
 
-    /* KPI Cards */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .kpi-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
-    .kpi-title { font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); }
-    .kpi-value { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+    h1 { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
+    .badge-live { background: #dcfce7; color: var(--success); padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
 
-    /* Tableau des Commandes */
-    .table-section { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; }
-    .table-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-    .table-title { font-size: 1.1rem; font-weight: 700; }
+    /* Grille des KPI Cards */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+    .kpi-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 8px; }
+    .kpi-value { font-size: 2.2rem; font-weight: 800; color: var(--primary); }
+    .kpi-value.green { color: var(--success); }
+    .kpi-value.blue { color: var(--accent); }
 
+    /* Section Historique */
+    .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 16px; color: var(--primary); }
+    .table-container { background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    
     table { width: 100%; border-collapse: collapse; text-align: left; }
-    th { background: #111827; padding: 12px 18px; font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
-    td { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    th { background: #f1f5f9; padding: 14px 18px; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    td { padding: 14px 18px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
+    tr:hover { background: #f8fafc; }
 
-    .badge-stat { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; display: inline-block; }
-    .badge-en_attente { background: #eab308; color: #000; }
-    .badge-en_cours { background: #f97316; color: #fff; }
-    .badge-pret { background: #38bdf8; color: #000; }
-    .badge-servi { background: #22c55e; color: #fff; }
+    /* Badges de Statut */
+    .badge-stat { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
+    .stat-en_attente { background: #fef9c3; color: #854d0e; }
+    .stat-en_cours, .stat-en_preparation { background: #ffedd5; color: #9a3412; }
+    .stat-pret { background: #dcfce7; color: #166534; }
+    .stat-servi { background: #e2e8f0; color: #475569; }
 
-    .btn-action { background: #334155; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
-    .btn-action:hover { background: #475569; }
+    .ticket-details-list { font-size: 0.82rem; color: #334155; line-height: 1.4; }
+    .table-tag { font-weight: 800; font-size: 1rem; color: var(--primary); }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>📊 Tableau de bord Caisse — Hôtel des Pins</h1>
-    <button class="btn-action" onclick="chargerDonnees()">🔄 Actualiser</button>
-  </header>
+  <div class="container">
+    <header>
+      <h1>Hôtel des Pins — Administration</h1>
+      <span class="badge-live">● Direct</span>
+    </header>
 
-  <!-- CARTES KPI -->
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-title">Chiffre d'Affaires Total</div>
-      <div class="kpi-value" id="kpi-ca">0,00 €</div>
+    <!-- KPI STATS -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-title">Commandes actives</div>
+        <div class="kpi-value" id="kpi-actives">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Commandes servies</div>
+        <div class="kpi-value green" id="kpi-servies">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Temps moyen de service</div>
+        <div class="kpi-value" id="kpi-temps-moyen">0 min</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Total tickets créés</div>
+        <div class="kpi-value blue" id="kpi-total">0</div>
+      </div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Total Commandes</div>
-      <div class="kpi-value" id="kpi-count">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-title">Panier Moyen / Table</div>
-      <div class="kpi-value" id="kpi-panier">0,00 €</div>
-    </div>
-  </div>
 
-  <!-- TABLEAU HISTORIQUE -->
-  <div class="table-section">
-    <div class="table-header">
-      <div class="table-title">Historique des Commandes du Service</div>
+    <!-- TABLEAU HISTORIQUE -->
+    <h2 class="section-title">Historique des commandes</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Table</th>
+            <th>Heure</th>
+            <th>Statut</th>
+            <th>Durée de traitement</th>
+            <th>Détail du ticket</th>
+          </tr>
+        </thead>
+        <tbody id="orders-table-body">
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px;">Chargement des données...</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Table</th>
-          <th>Heure</th>
-          <th>Détail Articles</th>
-          <th>Total</th>
-          <th>Statut</th>
-        </tr>
-      </thead>
-      <tbody id="orders-table-body">
-        <tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Chargement...</td></tr>
-      </tbody>
-    </table>
   </div>
 
   <script>
-    async function chargerDonnees() {
+    const socket = typeof io !== 'undefined' ? io() : null;
+
+    async function chargerDonneesAdmin() {
       try {
         const res = await fetch('/api/admin/commandes');
-        if (!res.ok) return;
-        const data = await res.json();
-
-        let totalCA = 0;
-        const tbody = document.getElementById('orders-table-body');
-        tbody.innerHTML = '';
-
-        if (data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Aucune commande enregistrée</td></tr>';
-          document.getElementById('kpi-ca').innerText = '0,00 €';
-          document.getElementById('kpi-count').innerText = '0';
-          document.getElementById('kpi-panier').innerText = '0,00 €';
-          return;
+        if (res.ok) {
+          const commandes = await res.json();
+          calculerKPIsEtAfficher(commandes);
         }
-
-        data.forEach(cmd => {
-          let totalCmd = 0;
-          let itemsText = [];
-
-          if (cmd.items && Array.isArray(cmd.items)) {
-            cmd.items.forEach(it => {
-              totalCmd += (it.prix * it.quantite);
-              itemsText.push(`${it.quantite}x ${it.article_nom}`);
-            });
-          }
-
-          totalCA += totalCmd;
-          const heure = cmd.date_creation ? new Date(cmd.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>#${cmd.id}</td>
-            <td><strong>Table ${cmd.table_num}</strong></td>
-            <td>${heure}</td>
-            <td>${itemsText.join(', ')}</td>
-            <td><strong>${totalCmd.toFixed(2)} €</strong></td>
-            <td><span class="badge-stat badge-${cmd.statut || 'en_attente'}">${cmd.statut || 'En attente'}</span></td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        document.getElementById('kpi-ca').innerText = `${totalCA.toFixed(2)} €`;
-        document.getElementById('kpi-count').innerText = `${data.length}`;
-        const panierMoyen = data.length > 0 ? (totalCA / data.length) : 0;
-        document.getElementById('kpi-panier').innerText = `${panierMoyen.toFixed(2)} €`;
-
-      } catch (e) {
-        console.error(e);
+      } catch (err) {
+        console.error('Erreur chargement admin :', err);
       }
     }
 
-    chargerDonnees();
-    setInterval(chargerDonnees, 10000);
+    function calculerKPIsEtAfficher(commandes) {
+      const actives = commandes.filter(c => c.statut !== 'servi' && c.statut !== 'annule');
+      const servies = commandes.filter(c => c.statut === 'servi');
+      
+      document.getElementById('kpi-actives').innerText = actives.length;
+      document.getElementById('kpi-servies').innerText = servies.length;
+      document.getElementById('kpi-total').innerText = commandes.length;
+
+      // Calcul du temps moyen pour les commandes servies
+      let dureesTotalesMinutes = 0;
+      let nbServiesValides = 0;
+
+      servies.forEach(c => {
+        if (c.date_creation && c.date_fin) {
+          const t1 = new Date(c.date_creation).getTime();
+          const t2 = new Date(c.date_fin).getTime();
+          const diffMinutes = Math.round((t2 - t1) / (1000 * 60));
+          if (diffMinutes >= 0) {
+            dureesTotalesMinutes += diffMinutes;
+            nbServiesValides++;
+          }
+        }
+      });
+
+      const moyenne = nbServiesValides > 0 ? Math.round(dureesTotalesMinutes / nbServiesValides) : 0;
+      document.getElementById('kpi-temps-moyen').innerText = `${moyenne} min`;
+
+      // Remplissage du tableau
+      const tbody = document.getElementById('orders-table-body');
+      if (commandes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #64748b; padding: 30px;">Aucune commande pour le moment</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      commandes.forEach(c => {
+        const tr = document.createElement('tr');
+        
+        const dateObj = new Date(c.date_creation);
+        const heure = isNaN(dateObj) ? '-' : dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        // Calcul durée
+        let dureeText = '-';
+        if (c.date_creation) {
+          const debut = new Date(c.date_creation).getTime();
+          const fin = c.date_fin ? new Date(c.date_fin).getTime() : Date.now();
+          const diffMin = Math.max(0, Math.round((fin - debut) / (1000 * 60)));
+          dureeText = `${diffMin} min ${c.statut !== 'servi' ? '(en cours)' : ''}`;
+        }
+
+        // Détails des items
+        let detailsHtml = '';
+        if (c.items && Array.isArray(c.items)) {
+          detailsHtml = c.items.map(it => `<div><strong>${it.quantite || 1}x</strong> ${it.article_nom}</div>`).join('');
+        }
+
+        tr.innerHTML = `
+          <td><span class="table-tag">Table ${c.table_num}</span></td>
+          <td>${heure}</td>
+          <td><span class="badge-stat stat-${c.statut}">${getLibelleStatut(c.statut)}</span></td>
+          <td>${dureeText}</td>
+          <td><div class="ticket-details-list">${detailsHtml || 'Sans détails'}</div></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function getLibelleStatut(st) {
+      if (st === 'en_cours' || st === 'en_preparation') return 'En Prépa';
+      if (st === 'pret') return 'Prêt';
+      if (st === 'servi') return 'Servi';
+      return 'En Attente';
+    }
+
+    if (socket) {
+      socket.on('nouvelle_commande', () => chargerDonneesAdmin());
+      socket.on('statut_mis_a_jour', () => chargerDonneesAdmin());
+    }
+
+    setInterval(chargerDonneesAdmin, 5000);
+    chargerDonneesAdmin();
   </script>
 </body>
 </html>

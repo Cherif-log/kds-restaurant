@@ -20,7 +20,8 @@ db.exec(`
     table_num INTEGER NOT NULL,
     statut TEXT DEFAULT 'en_attente',
     remarques TEXT,
-    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+    date_fin DATETIME
   );
 
   CREATE TABLE IF NOT EXISTS commande_items (
@@ -34,13 +35,18 @@ db.exec(`
   );
 `);
 
+// Migration légère si date_fin n'existe pas encore
+try {
+  db.exec(`ALTER TABLE commandes ADD COLUMN date_fin DATETIME`);
+} catch (e) {}
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
 // --- ROUTES API ---
 
-// 1. Commandes actives pour la cuisine
+// 1. Commandes actives (pour la cuisine)
 app.get('/api/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`
@@ -57,23 +63,25 @@ app.get('/api/commandes', (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error(err);
+    console.error('Erreur GET /api/commandes :', err);
     res.status(500).json({ error: 'Erreur base de données' });
   }
 });
 
-// 2. Historique complet pour l'écran Admin / Caisse
+// 2. TOUTES les commandes (pour l'Administration & Historique)
 app.get('/api/admin/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
     const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
+
     const result = commandes.map(cmd => ({
       ...cmd,
       items: getItems.all(cmd.id)
     }));
+
     res.json(result);
   } catch (err) {
-    console.error(err);
+    console.error('Erreur GET /api/admin/commandes :', err);
     res.status(500).json({ error: 'Erreur base de données' });
   }
 });
@@ -84,8 +92,8 @@ app.post('/api/commandes', (req, res) => {
     const { table_num, items, remarques } = req.body;
 
     const insertCmd = db.prepare(`
-      INSERT INTO commandes (table_num, statut, remarques) 
-      VALUES (?, 'en_attente', ?)
+      INSERT INTO commandes (table_num, statut, remarques, date_creation) 
+      VALUES (?, 'en_attente', ?, datetime('now', 'localtime'))
     `);
     const info = insertCmd.run(table_num || 1, remarques || '');
     const commandeId = info.lastInsertRowid;
@@ -120,25 +128,33 @@ app.post('/api/commandes', (req, res) => {
     io.emit('nouvelle_commande', completeOrder);
     res.status(201).json(completeOrder);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur création commande' });
+    console.error('Erreur POST /api/commandes :', err);
+    res.status(500).json({ error: 'Erreur création' });
   }
 });
 
-// 4. Mise à jour statut commande
+// 4. Mettre à jour le statut d'une commande
 app.put('/api/commandes/:id/statut', (req, res) => {
   try {
     const { id } = req.params;
     const { statut } = req.body;
 
-    const update = db.prepare(`UPDATE commandes SET statut = ? WHERE id = ?`);
-    update.run(statut, id);
+    if (statut === 'servi') {
+      const update = db.prepare(`
+        UPDATE commandes 
+        SET statut = ?, date_fin = datetime('now', 'localtime') 
+        WHERE id = ?
+      `);
+      update.run(statut, id);
+    } else {
+      const update = db.prepare(`UPDATE commandes SET statut = ? WHERE id = ?`);
+      update.run(statut, id);
+    }
 
-    const getCmd = db.prepare(`SELECT * FROM commandes WHERE id = ?`).get(id);
-    io.emit('statut_mis_a_jour', { id, statut, table_num: getCmd ? getCmd.table_num : null });
+    io.emit('statut_mis_a_jour', { id, statut });
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error('Erreur PUT /api/commandes statut :', err);
     res.status(500).json({ error: 'Erreur mise à jour' });
   }
 });
