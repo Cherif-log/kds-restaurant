@@ -57,7 +57,7 @@ try { db.exec(`ALTER TABLE commandes ADD COLUMN remise_montant REAL DEFAULT 0`);
 try { db.exec(`ALTER TABLE commandes ADD COLUMN total_paye REAL`); } catch (e) {}
 try { db.exec(`ALTER TABLE commandes ADD COLUMN serveur_nom TEXT DEFAULT 'Salle'`); } catch (e) {}
 
-// Initialisation des serveurs par défaut
+// Initialisation par défaut si vide
 const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
 if (countServeurs.count === 0) {
   const insertServ = db.prepare(`INSERT INTO serveurs (nom, pin) VALUES (?, ?)`);
@@ -88,7 +88,41 @@ app.post('/api/auth/pin', (req, res) => {
   }
 });
 
-// 2. Statut des tables
+// 2. Gestion de l'équipe (Serveurs)
+app.get('/api/admin/serveurs', (req, res) => {
+  try {
+    const serveurs = db.prepare(`SELECT * FROM serveurs ORDER BY id ASC`).all();
+    res.json(serveurs);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur récupération serveurs' });
+  }
+});
+
+app.post('/api/admin/serveurs', (req, res) => {
+  try {
+    const { nom, pin } = req.body;
+    if (!nom || !pin || pin.length !== 4) {
+      return res.status(400).json({ error: 'Nom requis et code PIN de 4 chiffres obligatoire' });
+    }
+    const insert = db.prepare(`INSERT INTO serveurs (nom, pin) VALUES (?, ?)`);
+    const info = insert.run(nom.trim(), pin.trim());
+    res.status(201).json({ id: info.lastInsertRowid, nom: nom.trim(), pin: pin.trim() });
+  } catch (err) {
+    res.status(400).json({ error: 'Ce code PIN est déjà attribué à un autre serveur.' });
+  }
+});
+
+app.delete('/api/admin/serveurs/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    db.prepare(`DELETE FROM serveurs WHERE id = ?`).run(id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur suppression serveur' });
+  }
+});
+
+// 3. Statut des tables
 app.get('/api/tables/statuts', (req, res) => {
   try {
     const activeOrders = db.prepare(`
@@ -113,7 +147,7 @@ app.get('/api/tables/statuts', (req, res) => {
   }
 });
 
-// 3. Ruptures de Stock (86-List)
+// 4. Ruptures de Stock (86-List)
 app.get('/api/stock/indisponibles', (req, res) => {
   try {
     const rows = db.prepare(`SELECT article_id FROM articles_indisponibles`).all();
@@ -144,7 +178,7 @@ app.post('/api/stock/toggle', (req, res) => {
   }
 });
 
-// 4. Commandes actives (Cuisine)
+// 5. Commandes actives (Cuisine)
 app.get('/api/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`
@@ -165,7 +199,7 @@ app.get('/api/commandes', (req, res) => {
   }
 });
 
-// 5. Addition d'une table
+// 6. Addition d'une table
 app.get('/api/tables/:table_num/addition', (req, res) => {
   try {
     const { table_num } = req.params;
@@ -202,7 +236,7 @@ app.get('/api/tables/:table_num/addition', (req, res) => {
   }
 });
 
-// 6. Créer une commande
+// 7. Créer une commande
 app.post('/api/commandes', (req, res) => {
   try {
     const { table_num, items, remarques, serveur_nom } = req.body;
@@ -251,7 +285,7 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 7. Encaisser table
+// 8. Encaisser table
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const { table_num } = req.params;
@@ -277,7 +311,7 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
   }
 });
 
-// 8. Statut commande
+// 9. Statut commande
 app.put('/api/commandes/:id/statut', (req, res) => {
   try {
     const { id } = req.params;
@@ -299,7 +333,7 @@ app.put('/api/commandes/:id/statut', (req, res) => {
   }
 });
 
-// 9. Admin historique
+// 10. Admin historique
 app.get('/api/admin/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();

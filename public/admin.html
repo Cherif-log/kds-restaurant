@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Administration & Z de Caisse</title>
+  <title>Hôtel des Pins — Administration & Équipe</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -16,6 +16,7 @@
       --accent: #2563eb;
       --success: #16a34a;
       --warning: #f59e0b;
+      --danger: #ef4444;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -26,12 +27,10 @@
     h1 { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
 
     .header-actions { display: flex; gap: 10px; }
-    .btn-export { background: #047857; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(4,120,87,0.2); }
-    .btn-export:hover { background: #065f46; }
-    .btn-print-z { background: var(--primary); color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    .btn-print-z:hover { background: #334155; }
+    .btn-export { background: #047857; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-print-z { background: var(--primary); color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
 
-    /* Grille des KPI Principaux */
+    /* Grille KPI */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
     .kpi-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; }
@@ -40,15 +39,22 @@
     .kpi-value.blue { color: var(--accent); }
     .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* Règlements, Serveurs & Top Ventes */
-    .dashboard-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 28px; }
-
+    /* Panels dashboard */
+    .dashboard-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 28px; }
     .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
-    .panel-title { font-size: 1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); }
+    .panel-title { font-size: 1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
 
     .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
     .breakdown-row:last-child { border-bottom: none; }
     .tag-bold { font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+    /* Formulaire Ajout Serveur */
+    .add-server-form { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
+    .add-server-input { flex: 2; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
+    .add-server-pin { flex: 1; max-width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; text-align: center; font-weight: 700; outline: none; }
+    .btn-add-server { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+    .btn-del-server { background: none; border: none; color: #94a3b8; font-weight: 800; font-size: 1rem; cursor: pointer; padding: 2px 8px; border-radius: 4px; }
+    .btn-del-server:hover { color: var(--danger); background: #fee2e2; }
 
     /* Tableau Journal */
     .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); }
@@ -80,8 +86,8 @@
   <div class="container">
     <header>
       <div>
-        <h1>Hôtel des Pins — Administration & Ventes</h1>
-        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Journal de caisse & rapports financiers en direct</p>
+        <h1>Hôtel des Pins — Administration & Équipe</h1>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Suivi des encaissements, gestion des codes serveurs et Z de caisse</p>
       </div>
       <div class="header-actions">
         <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter Excel (CSV)</button>
@@ -113,8 +119,36 @@
       </div>
     </div>
 
-    <!-- PANELS : MODES DE PAIEMENT, PERFORMANCE SERVEURS & TOP VENTES -->
+    <!-- PANELS : GESTION DES SERVEURS, RÈGLEMENTS & VENTES -->
     <div class="dashboard-split">
+      
+      <!-- 👥 MODULE GESTION DE L'ÉQUIPE (SERVEURS & CODES PIN) -->
+      <div class="panel-card">
+        <div class="panel-title">
+          <span>👥 Équipe & Codes PIN</span>
+          <span id="server-count-badge" style="font-size:0.75rem; background:#eff6ff; color:var(--accent); padding:2px 8px; border-radius:12px;">0 membres</span>
+        </div>
+
+        <div id="servers-list-container" style="max-height:220px; overflow-y:auto;">
+          <div style="color:var(--text-muted); font-size:0.85rem;">Chargement des serveurs...</div>
+        </div>
+
+        <div class="add-server-form">
+          <input type="text" id="new-server-name" class="add-server-input" placeholder="Nom du serveur (ex: Paul)">
+          <input type="text" id="new-server-pin" class="add-server-pin" maxlength="4" placeholder="PIN (4 ch.)">
+          <button class="btn-add-server" onclick="ajouterNouveauServeur()">➕ Ajouter</button>
+        </div>
+      </div>
+
+      <!-- 👤 PERFORMANCE DU CA PAR SERVEUR -->
+      <div class="panel-card">
+        <div class="panel-title">📊 Ventes par Serveur (Service actif)</div>
+        <div id="servers-breakdown-container">
+          <div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>
+        </div>
+      </div>
+
+      <!-- 💳 MODES DE PAIEMENT -->
       <div class="panel-card">
         <div class="panel-title">💳 Règlements Nets</div>
         <div class="breakdown-row">
@@ -131,22 +165,9 @@
         </div>
       </div>
 
-      <div class="panel-card">
-        <div class="panel-title">👤 Ventes par Serveur</div>
-        <div id="servers-breakdown-container">
-          <div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>
-        </div>
-      </div>
-
-      <div class="panel-card">
-        <div class="panel-title">🏆 Top Plats Vendus</div>
-        <div id="top-items-container">
-          <div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>
-        </div>
-      </div>
     </div>
 
-    <!-- TABLEAU COMPLET -->
+    <!-- TABLEAU JOURNAL COMPLET -->
     <h2 class="section-title">Journal détaillé des commandes</h2>
     <div class="table-container">
       <table>
@@ -195,7 +216,76 @@
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
     let allOrders = [];
+    let allServeurs = [];
 
+    // --- GESTION DU PERSONNEL & CODES PIN ---
+    async function chargerServeurs() {
+      try {
+        const res = await fetch('/api/admin/serveurs');
+        if (res.ok) {
+          allServeurs = await res.json();
+          renderServeursList();
+        }
+      } catch (e) {}
+    }
+
+    function renderServeursList() {
+      const container = document.getElementById('servers-list-container');
+      const badge = document.getElementById('server-count-badge');
+      badge.innerText = `${allServeurs.length} membre${allServeurs.length > 1 ? 's' : ''}`;
+
+      if (allServeurs.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucun serveur enregistré</div>';
+        return;
+      }
+
+      container.innerHTML = allServeurs.map(s => `
+        <div class="breakdown-row">
+          <span class="tag-bold">👤 ${s.nom} <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b;">PIN: ${s.pin}</span></span>
+          <button class="btn-del-server" title="Supprimer ce serveur" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
+        </div>
+      `).join('');
+    }
+
+    async function ajouterNouveauServeur() {
+      const nom = document.getElementById('new-server-name').value.trim();
+      const pin = document.getElementById('new-server-pin').value.trim();
+
+      if (!nom || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+        alert("Veuillez renseigner un nom et un code PIN composé de 4 chiffres exactement.");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/serveurs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nom, pin })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('new-server-name').value = '';
+          document.getElementById('new-server-pin').value = '';
+          chargerServeurs();
+        } else {
+          alert(data.error || "Erreur lors de l'ajout.");
+        }
+      } catch (e) {
+        alert("Erreur connexion.");
+      }
+    }
+
+    async function supprimerServeur(id, nom) {
+      if (!confirm(`Supprimer le serveur « ${nom} » ? Son code PIN sera désactivé.`)) return;
+      try {
+        await fetch(`/api/admin/serveurs/${id}`, { method: 'DELETE' });
+        chargerServeurs();
+      } catch (e) {
+        alert("Erreur suppression.");
+      }
+    }
+
+    // --- KPI & VENTES ---
     async function chargerDonneesAdmin() {
       try {
         const res = await fetch('/api/admin/commandes');
@@ -214,7 +304,6 @@
       let totalCB = 0;
       let totalEsp = 0;
       let totalTR = 0;
-      const itemCounts = {};
       const serverSales = {};
 
       encaissees.forEach(c => {
@@ -222,14 +311,12 @@
         if (c.items && Array.isArray(c.items)) {
           c.items.forEach(it => {
             brutTicket += (it.prix || 0) * (it.quantite || 1);
-            itemCounts[it.article_nom] = (itemCounts[it.article_nom] || 0) + (it.quantite || 1);
           });
         }
 
         const montantNet = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brutTicket - (c.remise_montant || 0));
         totalCA += montantNet;
 
-        // Ventes par serveur
         const servName = c.serveur_nom || 'Salle';
         if (!serverSales[servName]) serverSales[servName] = { ca: 0, count: 0 };
         serverSales[servName].ca += montantNet;
@@ -244,19 +331,16 @@
       const totalTVA = totalCA - totalHT;
       const panierMoyen = encaissees.length > 0 ? (totalCA / encaissees.length) : 0;
 
-      // Affichage KPI
       document.getElementById('kpi-ca').innerText = `${totalCA.toFixed(2)} €`;
       document.getElementById('kpi-tva').innerText = `${totalTVA.toFixed(2)} €`;
       document.getElementById('kpi-encaissees').innerText = encaissees.length;
       document.getElementById('kpi-panier-moyen').innerText = `${panierMoyen.toFixed(2)} €`;
       document.getElementById('kpi-actives').innerText = actives.length;
 
-      // Règlements
       document.getElementById('pay-total-cb').innerText = `${totalCB.toFixed(2)} €`;
       document.getElementById('pay-total-esp').innerText = `${totalEsp.toFixed(2)} €`;
       document.getElementById('pay-total-tr').innerText = `${totalTR.toFixed(2)} €`;
 
-      // Temps moyen
       let durees = 0;
       let countValides = 0;
       encaissees.forEach(c => {
@@ -267,7 +351,6 @@
       });
       document.getElementById('kpi-temps-moyen').innerText = countValides > 0 ? `${Math.round(durees / countValides)} min` : '0 min';
 
-      // Rendu Serveurs
       const serverContainer = document.getElementById('servers-breakdown-container');
       const serverEntries = Object.entries(serverSales);
       if (serverEntries.length === 0) {
@@ -275,27 +358,12 @@
       } else {
         serverContainer.innerHTML = serverEntries.map(([nom, data]) => `
           <div class="breakdown-row">
-            <span class="tag-bold">👤 ${nom} (${data.count} tbl)</span>
+            <span class="tag-bold">👤 ${nom} (${data.count} table${data.count > 1 ? 's' : ''})</span>
             <strong style="color:var(--accent);">${data.ca.toFixed(2)} €</strong>
           </div>
         `).join('');
       }
 
-      // Top Ventes
-      const sortedItems = Object.entries(itemCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
-      const topContainer = document.getElementById('top-items-container');
-      if (sortedItems.length === 0) {
-        topContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>';
-      } else {
-        topContainer.innerHTML = sortedItems.map(([nom, qte], idx) => `
-          <div class="breakdown-row">
-            <span><strong>#${idx+1}</strong> ${nom}</span>
-            <strong style="color:var(--accent);">${qte}x</strong>
-          </div>
-        `).join('');
-      }
-
-      // Remplissage Tableau
       const tbody = document.getElementById('orders-table-body');
       if (commandes.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
@@ -339,7 +407,6 @@
       return 'En Attente';
     }
 
-    // EXPORT CSV
     function exporterExcelCSV() {
       if (allOrders.length === 0) {
         alert("Aucune donnée à exporter.");
@@ -375,7 +442,6 @@
       document.body.removeChild(a);
     }
 
-    // IMPRESSION Z DE CAISSE
     function imprimerZCaisse() {
       const encaissees = allOrders.filter(c => c.statut === 'encaisse');
       let totalCA = 0;
@@ -412,6 +478,7 @@
     }
 
     setInterval(chargerDonneesAdmin, 5000);
+    chargerServeurs();
     chargerDonneesAdmin();
   </script>
 </body>
