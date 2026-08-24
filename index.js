@@ -1,82 +1,145 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const { 
-  recupererCommandes, 
-  recupererHistorique, 
-  recupererStatistiques, 
-  ajouterCommande, 
-  changerStatutCommande, 
-  supprimerCommande 
-} = require('./db');
+const path = require('path');
+const Database = require('better-sqlite3');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-const PORT = process.env.PORT || 3001;
+
+const PORT = process.env.PORT || 10000;
+
+// Base de données SQLite
+const db = new Database('restaurant.db');
+
+// Création des tables si elles n'existent pas
+db.exec(`
+  CREATE TABLE IF NOT EXISTS commandes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    table_num INTEGER NOT NULL,
+    statut TEXT DEFAULT 'en_attente',
+    remarques TEXT,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS commande_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    commande_id INTEGER,
+    article_nom TEXT NOT NULL,
+    prix REAL DEFAULT 0,
+    quantite INTEGER DEFAULT 1,
+    remarques TEXT,
+    FOREIGN KEY(commande_id) REFERENCES commandes(id) ON DELETE CASCADE
+  );
+`);
 
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname)));
 
-// 1. Récupérer les commandes en cours (pour la cuisine et la salle)
+// --- ROUTES API ---
+
+// 1. Récupérer les commandes actives pour la cuisine
 app.get('/api/commandes', (req, res) => {
-  res.json(recupererCommandes());
-});
+  try {
+    const commandes = db.prepare(`
+      SELECT * FROM commandes 
+      WHERE statut != 'servi' AND statut != 'annule' 
+      ORDER BY id DESC
+    `).all();
 
-// 2. Récupérer l'historique complet (pour admin.html)
-app.get('/api/historique', (req, res) => {
-  res.json(recupererHistorique());
-});
+    const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
 
-// 3. Récupérer les métriques statistiques (pour admin.html)
-app.get('/api/statistiques', (req, res) => {
-  res.json(recupererStatistiques());
-});
+    const result = commandes.map(cmd => {
+      return {
+        ...cmd,
+        items: getItems.all(cmd.id)
+      };
+    });
 
-// 4. Créer une nouvelle commande
-app.post('/api/commandes', (req, res) => {
-  const { table, details } = req.body;
-  if (!table || !details) {
-    return res.status(400).json({ error: 'Informations manquantes' });
+    res.json(result);
+  } catch (err) {
+    console.error('Erreur GET /api/commandes :', err);
+    res.status(500).json({ error: 'Erreur base de données' });
   }
-
-  const maintenant = Date.now();
-  const nouvelleCommande = {
-    id: maintenant.toString(),
-    table: table.trim(),
-    details: details.trim(),
-    statut: 'En attente',
-    heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-    timestamp_creation: maintenant
-  };
-
-  ajouterCommande(nouvelleCommande);
-  io.emit('miseAJourCommandes', recupererCommandes());
-  io.emit('miseAJourStats');
-  res.json({ success: true, commande: nouvelleCommande });
 });
 
-// 5. Modifier le statut d'une commande
-app.patch('/api/commandes/:id/statut', (req, res) => {
-  const { id } = req.params;
-  const { statut } = req.body;
+// 2. Créer une nouvelle commande
+app.post('/api/commandes', (req, res) => {
+  try {
+    const { table_num, items, remarques } = req.body;
 
-  changerStatutCommande(id, statut);
+    const insertCmd = db.prepare(`
+      INSERT INTO commandes (table_num, statut, remarques) 
+      VALUES (?, 'en_attente', ?)
+    `);
+    const info = insertCmd.run(table_num || 1, remarques || '');
+    const commandeId = info.lastInsertRowid;
 
-  io.emit('miseAJourCommandes', recupererCommandes());
-  io.emit('miseAJourStats');
-  res.json({ success: true });
+    const insertItem = db.prepare(`
+      INSERT INTO commande_items (commande_id, article_nom, prix, quantite, remarques)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    if (items && Array.isArray(items)) {
+      items.forEach(it => {
+        insertItem.run(
+          commandeId,
+          it.article_nom || it.nom || 'Article',
+          it.prix || 0,
+          it.quantite || 1,
+          it.remarques || ''
+        );
+      });
+    }
+
+    // Récupérer la commande complète créée
+    const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
+    const completeOrder = {
+      id: commandeId,
+      table_num: table_num || 1,
+      statut: 'en_attente',
+      remarques: remarques || '',
+      date_creation: new Date().toISOString(),
+      items: getItems.all(commandeId)
+    };
+
+    // Diffusion temps réel à tous les écrans cuisine connectés
+    io.emit('nouvelle_commande', completeOrder);
+
+    res.status(201).json(completeOrder);
+  } catch (err) {
+    console.error('Erreur POST /api/commandes :', err);
+    res.status(500).json({ error: 'Erreur lors de la création de la commande' });
+  }
 });
 
-// 6. Supprimer définitivement une commande
-app.delete('/api/commandes/:id', (req, res) => {
-  supprimerCommande(req.params.id);
-  io.emit('miseAJourCommandes', recupererCommandes());
-  io.emit('miseAJourStats');
-  res.json({ success: true });
+// 3. Mise à jour du statut d'une commande
+app.put('/api/commandes/:id/statut', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { statut } = req.body;
+
+    const update = db.prepare(`UPDATE commandes SET statut = ? WHERE id = ?`);
+    update.run(statut, id);
+
+    io.emit('statut_mis_a_jour', { id, statut });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur PUT /api/commandes statut :', err);
+    res.status(500).json({ error: 'Erreur mise à jour' });
+  }
 });
 
-// Lancement du serveur
+// --- SOCKET.IO ---
+io.on('connection', (socket) => {
+  console.log('Client connecté en temps réel :', socket.id);
+
+  socket.on('changer_statut', (data) => {
+    io.emit('statut_mis_a_jour', data);
+  });
+});
+
 server.listen(PORT, () => {
-  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+  console.log(`Serveur en écoute sur le port ${PORT}`);
 });
