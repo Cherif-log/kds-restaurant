@@ -21,9 +21,12 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; }
 
-    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
     h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-    .header-info { display: flex; align-items: center; gap: 14px; }
+    
+    .header-controls { display: flex; align-items: center; gap: 12px; }
+    .btn-sound { background: #3b82f6; color: #fff; border: none; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-sound.enabled { background: #16a34a; }
     .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
 
     .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
@@ -59,11 +62,12 @@
     .btn-done { background: #475569; color: #fff; }
   </style>
 </head>
-<body>
+<body onclick="debloquerAudio()">
 
   <header>
     <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
-    <div class="header-info">
+    <div class="header-controls">
+      <button id="btn-sound-toggle" class="btn-sound" onclick="activerSon(event)">🔔 Activer le son</button>
       <span id="active-count" style="font-weight:700; font-size:0.9rem;">0 en cours</span>
       <span class="badge-status" id="socket-status">En direct</span>
     </div>
@@ -76,6 +80,62 @@
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
     let commandes = [];
+    let audioCtx = null;
+    let sonActive = false;
+
+    function initialiserAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function activerSon(e) {
+      if (e) e.stopPropagation();
+      initialiserAudio();
+      sonActive = true;
+      const btn = document.getElementById('btn-sound-toggle');
+      btn.classList.add('enabled');
+      btn.innerText = '🔊 Son activé';
+      jouerBip();
+    }
+
+    function debloquerAudio() {
+      if (!sonActive) {
+        initialiserAudio();
+        sonActive = true;
+        const btn = document.getElementById('btn-sound-toggle');
+        btn.classList.add('enabled');
+        btn.innerText = '🔊 Son activé';
+      }
+    }
+
+    function jouerBip() {
+      try {
+        initialiserAudio();
+        
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Ré5
+        osc1.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.15); // La5
+
+        osc1.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc1.start(audioCtx.currentTime);
+        osc1.stop(audioCtx.currentTime + 0.4);
+      } catch (err) {
+        console.warn('Erreur lecture audio :', err);
+      }
+    }
 
     async function chargerCommandes() {
       try {
@@ -95,6 +155,7 @@
         jouerBip();
         chargerCommandes();
       });
+
       socket.on('statut_mis_a_jour', () => {
         chargerCommandes();
       });
@@ -170,21 +231,6 @@
         });
         if (socket) socket.emit('changer_statut', { id, statut });
         chargerCommandes();
-      } catch (e) {}
-    }
-
-    function jouerBip() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 587.33;
-        gain.gain.value = 0.1;
-        osc.start();
-        setTimeout(() => { osc.frequency.value = 880; }, 100);
-        setTimeout(() => { osc.stop(); ctx.close(); }, 300);
       } catch (e) {}
     }
 
