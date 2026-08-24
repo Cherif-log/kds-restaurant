@@ -26,10 +26,10 @@
     header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; }
     .badge-status { background: var(--success); font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
 
-    /* Layout Principal */
+    /* Layout */
     .app-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 58px); }
     .main-content { flex: 1; overflow-y: auto; padding: 20px 25px; }
-    .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
+    .ticket-sidebar { width: 400px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
     /* Tables Bar */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; }
@@ -53,7 +53,13 @@
     .option-card:hover { border-color: #94a3b8; }
     .option-card.selected { background: #eff6ff; border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
-    .btn-add-formula { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+    /* Barre d'action Formule avec sélecteur de quantité */
+    .formula-action-bar { display: flex; gap: 12px; align-items: center; margin-top: 15px; }
+    .qty-picker-group { display: flex; align-items: center; background: #f1f5f9; border-radius: 8px; padding: 4px; border: 1px solid var(--border); }
+    .btn-qty-picker { width: 36px; height: 36px; border: none; background: #fff; border-radius: 6px; font-size: 1.2rem; font-weight: 700; cursor: pointer; color: var(--text); }
+    .qty-picker-val { font-size: 1.1rem; font-weight: 700; min-width: 35px; text-align: center; }
+
+    .btn-add-formula { flex: 1; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
     .btn-add-formula:disabled { background: #94a3b8; cursor: not-allowed; }
 
     /* Grille Carte Classique */
@@ -65,7 +71,7 @@
     .carte-card-info { flex: 1; padding-right: 10px; }
     .carte-card-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; line-height: 1.3; }
     .carte-card-price { font-weight: 700; color: var(--accent); font-size: 0.95rem; }
-    .btn-add-carte { background: #eff6ff; color: var(--accent); border: 1px solid #bfdbfe; width: 36px; height: 36px; border-radius: 8px; font-size: 1.2rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .btn-add-carte { background: #eff6ff; color: var(--accent); border: 1px solid #bfdbfe; width: 38px; height: 38px; border-radius: 8px; font-size: 1.3rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .btn-add-carte:hover { background: var(--accent); color: #fff; }
 
     /* Panneau Ticket */
@@ -73,13 +79,21 @@
     .ticket-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
     .ticket-empty { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: 40px; }
     
-    .ticket-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; position: relative; }
-    .ticket-item-header { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.92rem; margin-bottom: 4px; }
-    .ticket-item-sub { font-size: 0.8rem; color: #475569; margin-top: 3px; line-height: 1.35; padding-left: 8px; border-left: 2px solid var(--accent); }
-    .ticket-item-remove { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #ef4444; font-weight: 700; font-size: 1rem; cursor: pointer; }
+    .ticket-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .ticket-item-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .ticket-item-name { font-weight: 700; font-size: 0.92rem; color: var(--text); flex: 1; line-height: 1.3; }
+    .ticket-item-sub { font-size: 0.82rem; color: #475569; line-height: 1.35; padding-left: 8px; border-left: 2px solid var(--accent); margin-top: 2px; }
+    
+    .ticket-item-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1; }
+    .ticket-item-price { font-weight: 700; font-size: 0.95rem; color: var(--accent); }
+    
+    .ticket-qty-controls { display: flex; align-items: center; gap: 6px; }
+    .btn-t-qty { width: 28px; height: 28px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
+    .t-qty-val { font-weight: 800; font-size: 0.95rem; min-width: 22px; text-align: center; }
+    .btn-t-delete { background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; margin-left: 4px; }
 
     .ticket-footer { padding: 16px 20px; border-top: 1px solid var(--border); background: #fff; }
-    .ticket-total-row { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800; margin-bottom: 12px; }
+    .ticket-total-row { display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 800; margin-bottom: 12px; }
     .ticket-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; margin-bottom: 12px; outline: none; }
     .btn-send-order { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
     .btn-send-order:disabled { background: #94a3b8; cursor: not-allowed; }
@@ -93,7 +107,7 @@
 <body>
 
   <header>
-    <h1>Hôtel des Pins — Salle</h1>
+    <h1>Hôtel des Pins — Prise de commande</h1>
     <span class="badge-status">Connecté</span>
   </header>
 
@@ -129,9 +143,16 @@
           <div class="options-grid" id="grid-m40-desserts"></div>
         </div>
 
-        <button id="btn-add-m40" class="btn-add-formula" disabled onclick="ajouterMenu40AuTicket()">
-          Ajouter le Menu à 40 € au ticket
-        </button>
+        <div class="formula-action-bar">
+          <div class="qty-picker-group">
+            <button class="btn-qty-picker" onclick="ajusterQteM40(-1)">-</button>
+            <span class="qty-picker-val" id="qty-m40-val">1</span>
+            <button class="btn-qty-picker" onclick="ajusterQteM40(1)">+</button>
+          </div>
+          <button id="btn-add-m40" class="btn-add-formula" disabled onclick="ajouterMenu40AuTicket()">
+            Ajouter au ticket
+          </button>
+        </div>
       </section>
 
       <!-- VUE 2 : MENU ENFANT 15 € -->
@@ -146,9 +167,16 @@
           <div class="options-grid" id="grid-enfant-garnitures"></div>
         </div>
 
-        <button id="btn-add-enfant" class="btn-add-formula" disabled onclick="ajouterMenuEnfantAuTicket()">
-          Ajouter le Menu Enfant (15 €) au ticket
-        </button>
+        <div class="formula-action-bar">
+          <div class="qty-picker-group">
+            <button class="btn-qty-picker" onclick="ajusterQteEnfant(-1)">-</button>
+            <span class="qty-picker-val" id="qty-enfant-val">1</span>
+            <button class="btn-qty-picker" onclick="ajusterQteEnfant(1)">+</button>
+          </div>
+          <button id="btn-add-enfant" class="btn-add-formula" disabled onclick="ajouterMenuEnfantAuTicket()">
+            Ajouter au ticket
+          </button>
+        </div>
       </section>
 
       <!-- VUE 3 : LA CARTE -->
@@ -187,9 +215,11 @@
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
     let selectedTable = 1;
-    let ticket = []; // Liste des items du ticket
+    let ticket = []; 
 
-    // Sélections temporaires pour les menus guidés
+    // Quantités temporaires pour l'ajout
+    let qteM40 = 1;
+    let qteEnfant = 1;
     let selectionM40 = { entree: null, plat: null, dessert: null };
     let selectionEnfant = { plat: null, garniture: null };
 
@@ -265,9 +295,9 @@
 
     let currentCarteFilter = 'Tous';
 
-    // INITIALISATION DE L'INTERFACE
+    // INITIALISATION
     function init() {
-      // 1. Générer tables
+      // 1. Tables
       const tContainer = document.getElementById('tables-container');
       for (let i = 1; i <= 15; i++) {
         const btn = document.createElement('button');
@@ -282,16 +312,15 @@
         tContainer.appendChild(btn);
       }
 
-      // 2. Générer les options Menu 40€
+      // 2. Options Formules
       renderOptionsGrid('grid-m40-entrees', dataMenu40.entrees, 'entree', selectionM40, checkM40Validation);
       renderOptionsGrid('grid-m40-plats', dataMenu40.plats, 'plat', selectionM40, checkM40Validation);
       renderOptionsGrid('grid-m40-desserts', dataMenu40.desserts, 'dessert', selectionM40, checkM40Validation);
 
-      // 3. Générer les options Menu Enfant
       renderOptionsGrid('grid-enfant-plats', dataMenuEnfant.plats, 'plat', selectionEnfant, checkEnfantValidation);
       renderOptionsGrid('grid-enfant-garnitures', dataMenuEnfant.garnitures, 'garniture', selectionEnfant, checkEnfantValidation);
 
-      // 4. Générer la carte classique
+      // 3. Carte
       initCarteFilters();
       renderCarteGrid();
     }
@@ -305,7 +334,17 @@
       document.getElementById('view-carte').style.display = (mode === 'carte') ? 'block' : 'none';
     }
 
-    // GESTION DES GRILLES DE CHOIX
+    // Gestion Quantités sur le builder
+    function ajusterQteM40(delta) {
+      qteM40 = Math.max(1, qteM40 + delta);
+      document.getElementById('qty-m40-val').innerText = qteM40;
+    }
+
+    function ajusterQteEnfant(delta) {
+      qteEnfant = Math.max(1, qteEnfant + delta);
+      document.getElementById('qty-enfant-val').innerText = qteEnfant;
+    }
+
     function renderOptionsGrid(containerId, items, key, targetState, onSelectCallback) {
       const container = document.getElementById(containerId);
       container.innerHTML = '';
@@ -333,60 +372,103 @@
       document.getElementById('btn-add-enfant').disabled = !valid;
     }
 
-    // AJOUTS AU TICKET
+    // AJOUTS AU TICKET AVEC REGROUPEMENT
     function ajouterMenu40AuTicket() {
-      ticket.push({
-        type: 'formule',
-        nom: 'Menu à 40 €',
-        prix: 40.00,
-        details: [
-          `Entrée : ${selectionM40.entree}`,
-          `Plat : ${selectionM40.plat}`,
-          `Dessert : ${selectionM40.dessert}`
-        ]
-      });
+      const details = [
+        `Entrée : ${selectionM40.entree}`,
+        `Plat : ${selectionM40.plat}`,
+        `Dessert : ${selectionM40.dessert}`
+      ];
+      
+      const key = 'Menu à 40 €|' + details.join('|');
+      const existing = ticket.find(it => it.key === key);
 
-      // Reset sélection
+      if (existing) {
+        existing.quantite += qteM40;
+      } else {
+        ticket.push({
+          key: key,
+          type: 'formule',
+          nom: 'Menu à 40 €',
+          prix: 40.00,
+          quantite: qteM40,
+          details: details
+        });
+      }
+
+      // Reset
       selectionM40 = { entree: null, plat: null, dessert: null };
+      qteM40 = 1;
+      document.getElementById('qty-m40-val').innerText = '1';
       document.querySelectorAll('#view-menu40 .option-card').forEach(c => c.classList.remove('selected'));
       checkM40Validation();
       renderTicket();
     }
 
     function ajouterMenuEnfantAuTicket() {
-      ticket.push({
-        type: 'formule',
-        nom: 'Menu Enfant',
-        prix: 15.00,
-        details: [
-          `Plat : ${selectionEnfant.plat}`,
-          `Garniture : ${selectionEnfant.garniture}`
-        ]
-      });
+      const details = [
+        `Plat : ${selectionEnfant.plat}`,
+        `Garniture : ${selectionEnfant.garniture}`
+      ];
 
-      // Reset sélection
+      const key = 'Menu Enfant|' + details.join('|');
+      const existing = ticket.find(it => it.key === key);
+
+      if (existing) {
+        existing.quantite += qteEnfant;
+      } else {
+        ticket.push({
+          key: key,
+          type: 'formule',
+          nom: 'Menu Enfant',
+          prix: 15.00,
+          quantite: qteEnfant,
+          details: details
+        });
+      }
+
       selectionEnfant = { plat: null, garniture: null };
+      qteEnfant = 1;
+      document.getElementById('qty-enfant-val').innerText = '1';
       document.querySelectorAll('#view-menuEnfant .option-card').forEach(c => c.classList.remove('selected'));
       checkEnfantValidation();
       renderTicket();
     }
 
     function ajouterCarteAuTicket(plat) {
-      ticket.push({
-        type: 'carte',
-        nom: plat.nom,
-        prix: plat.prix,
-        details: []
-      });
+      const key = 'Carte|' + plat.nom;
+      const existing = ticket.find(it => it.key === key);
+
+      if (existing) {
+        existing.quantite += 1;
+      } else {
+        ticket.push({
+          key: key,
+          type: 'carte',
+          nom: plat.nom,
+          prix: plat.prix,
+          quantite: 1,
+          details: []
+        });
+      }
       renderTicket();
     }
 
-    function supprimerItemTicket(index) {
+    // CONTRÔLE DES QUANTITÉS DANS LE TICKET
+    function modifierQuantiteTicket(index, delta) {
+      ticket[index].quantite += delta;
+      if (ticket[index].quantite <= 0) {
+        ticket.splice(index, 1);
+      }
+      renderTicket();
+    }
+
+    function supprimerLigneTicket(index) {
       ticket.splice(index, 1);
       renderTicket();
     }
 
-    // AFFICHAGE DU TICKET
+    // RENDU TICKET
     function renderTicket() {
       const container = document.getElementById('ticket-items-container');
       const badgeCount = document.getElementById('ticket-count-badge');
@@ -403,23 +485,34 @@
 
       container.innerHTML = '';
       let total = 0;
+      let totalArticles = 0;
 
       ticket.forEach((item, index) => {
-        total += item.prix;
+        const itemTotal = item.prix * item.quantite;
+        total += itemTotal;
+        totalArticles += item.quantite;
+
         const div = document.createElement('div');
         div.className = 'ticket-item';
         div.innerHTML = `
-          <button class="ticket-item-remove" onclick="supprimerItemTicket(${index})">✕</button>
-          <div class="ticket-item-header">
-            <span>${item.nom}</span>
-            <span>${item.prix.toFixed(2)} €</span>
+          <div class="ticket-item-top">
+            <span class="ticket-item-name">${item.nom}</span>
+            <button class="btn-t-qty btn-t-delete" title="Supprimer" onclick="supprimerLigneTicket(${index})">✕</button>
           </div>
           ${item.details.map(d => `<div class="ticket-item-sub">${d}</div>`).join('')}
+          <div class="ticket-item-bottom">
+            <span class="ticket-item-price">${itemTotal.toFixed(2)} €</span>
+            <div class="ticket-qty-controls">
+              <button class="btn-t-qty" onclick="modifierQuantiteTicket(${index}, -1)">-</button>
+              <span class="t-qty-val">${item.quantite}</span>
+              <button class="btn-t-qty" onclick="modifierQuantiteTicket(${index}, 1)">+</button>
+            </div>
+          </div>
         `;
         container.appendChild(div);
       });
 
-      badgeCount.innerText = `${ticket.length} article${ticket.length > 1 ? 's' : ''}`;
+      badgeCount.innerText = `${totalArticles} article${totalArticles > 1 ? 's' : ''}`;
       totalDisplay.innerText = `${total.toFixed(2)} €`;
       btnSubmit.disabled = false;
     }
@@ -471,7 +564,7 @@
       const payloadItems = ticket.map(item => ({
         article_nom: item.nom,
         prix: item.prix,
-        quantite: 1,
+        quantite: item.quantite,
         remarques: item.details.join(' | ')
       }));
 
