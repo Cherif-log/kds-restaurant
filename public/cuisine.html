@@ -99,7 +99,7 @@
       const btn = document.getElementById('btn-sound-toggle');
       btn.classList.add('enabled');
       btn.innerText = '🔊 Son activé';
-      jouerBip();
+      jouerAlarme5s();
     }
 
     function debloquerAudio() {
@@ -112,28 +112,39 @@
       }
     }
 
-    function jouerBip() {
+    // ALARME FORTE DE 5 SECONDES
+    function jouerAlarme5s() {
       try {
         initialiserAudio();
-        
-        const osc1 = audioCtx.createOscillator();
-        const osc2 = audioCtx.createOscillator();
+        const now = audioCtx.currentTime;
+        const duration = 5.0; // 5 secondes complètes
+
+        const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
 
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        // Type "sawtooth" pour un son d'alerte très percutant en cuisine
+        osc.type = 'sawtooth';
 
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Ré5
-        osc1.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.15); // La5
+        // Alternance de tons aigus toutes les 250ms pendant 5 secondes
+        for (let t = 0; t < duration; t += 0.5) {
+          osc.frequency.setValueAtTime(950, now + t);
+          osc.frequency.setValueAtTime(750, now + t + 0.25);
+        }
 
-        osc1.connect(gain);
+        // Modulation de volume fort (bips répétés)
+        for (let t = 0; t < duration; t += 0.5) {
+          gain.gain.setValueAtTime(0.8, now + t);
+          gain.gain.setValueAtTime(0.05, now + t + 0.45);
+        }
+        gain.gain.setValueAtTime(0, now + duration);
+
+        osc.connect(gain);
         gain.connect(audioCtx.destination);
 
-        osc1.start(audioCtx.currentTime);
-        osc1.stop(audioCtx.currentTime + 0.4);
+        osc.start(now);
+        osc.stop(now + duration);
       } catch (err) {
-        console.warn('Erreur lecture audio :', err);
+        console.warn('Erreur audio :', err);
       }
     }
 
@@ -152,7 +163,7 @@
 
     if (socket) {
       socket.on('nouvelle_commande', () => {
-        jouerBip();
+        jouerAlarme5s();
         chargerCommandes();
       });
 
