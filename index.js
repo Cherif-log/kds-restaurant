@@ -20,6 +20,8 @@ db.exec(`
     table_num INTEGER NOT NULL,
     statut TEXT DEFAULT 'en_attente',
     mode_paiement TEXT,
+    remise_montant REAL DEFAULT 0,
+    total_paye REAL,
     remarques TEXT,
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
     date_fin DATETIME
@@ -36,9 +38,11 @@ db.exec(`
   );
 `);
 
-// Migration automatique des colonnes si besoin
+// Migrations automatiques
 try { db.exec(`ALTER TABLE commandes ADD COLUMN date_fin DATETIME`); } catch (e) {}
 try { db.exec(`ALTER TABLE commandes ADD COLUMN mode_paiement TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE commandes ADD COLUMN remise_montant REAL DEFAULT 0`); } catch (e) {}
+try { db.exec(`ALTER TABLE commandes ADD COLUMN total_paye REAL`); } catch (e) {}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -46,7 +50,7 @@ app.use(express.static(path.join(__dirname)));
 
 // --- ROUTES API ---
 
-// 1. Statut en direct de toutes les tables (1 à 15)
+// 1. Statut en direct des tables (1 à 15)
 app.get('/api/tables/statuts', (req, res) => {
   try {
     const activeOrders = db.prepare(`
@@ -59,9 +63,9 @@ app.get('/api/tables/statuts', (req, res) => {
 
     activeOrders.forEach(ord => {
       if (ord.statut === 'servi') {
-        statuts[ord.table_num] = 'servi'; // Prête à encaisser
+        statuts[ord.table_num] = 'servi';
       } else if (statuts[ord.table_num] !== 'servi') {
-        statuts[ord.table_num] = 'occupee'; // En cours en cuisine
+        statuts[ord.table_num] = 'occupee';
       }
     });
 
@@ -71,7 +75,7 @@ app.get('/api/tables/statuts', (req, res) => {
   }
 });
 
-// 2. Commandes actives (pour la cuisine)
+// 2. Commandes actives (Cuisine)
 app.get('/api/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`
@@ -92,7 +96,7 @@ app.get('/api/commandes', (req, res) => {
   }
 });
 
-// 3. Récupérer l'addition détaillée d'une table
+// 3. Récupérer l'addition d'une table
 app.get('/api/tables/:table_num/addition', (req, res) => {
   try {
     const { table_num } = req.params;
@@ -124,11 +128,11 @@ app.get('/api/tables/:table_num/addition', (req, res) => {
       tva: parseFloat((total - (total / 1.10)).toFixed(2))
     });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur calcul addition' });
+    res.status(500).json({ error: 'Erreur addition' });
   }
 });
 
-// 4. Créer une nouvelle commande
+// 4. Créer une commande
 app.post('/api/commandes', (req, res) => {
   try {
     const { table_num, items, remarques } = req.body;
@@ -176,18 +180,22 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 5. Encaisser et libérer une table
+// 5. Encaisser avec prise en compte de la remise et du total payé
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const { table_num } = req.params;
-    const { mode_paiement } = req.body;
+    const { mode_paiement, remise_montant, total_paye } = req.body;
 
     const update = db.prepare(`
       UPDATE commandes 
-      SET statut = 'encaisse', mode_paiement = ?, date_fin = datetime('now', 'localtime') 
+      SET statut = 'encaisse', 
+          mode_paiement = ?, 
+          remise_montant = ?, 
+          total_paye = ?, 
+          date_fin = datetime('now', 'localtime') 
       WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
     `);
-    update.run(mode_paiement || 'CB', table_num);
+    update.run(mode_paiement || 'CB', remise_montant || 0, total_paye || 0, table_num);
 
     io.emit('table_status_change');
     io.emit('statut_mis_a_jour');
@@ -197,7 +205,7 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
   }
 });
 
-// 6. Mise à jour statut commande individuelle
+// 6. Mise à jour statut commande
 app.put('/api/commandes/:id/statut', (req, res) => {
   try {
     const { id } = req.params;
@@ -219,7 +227,7 @@ app.put('/api/commandes/:id/statut', (req, res) => {
   }
 });
 
-// 7. TOUTES les commandes (pour Admin)
+// 7. TOUTES les commandes (Admin)
 app.get('/api/admin/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();

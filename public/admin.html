@@ -16,7 +16,6 @@
       --accent: #2563eb;
       --success: #16a34a;
       --warning: #f59e0b;
-      --purple: #8b5cf6;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -41,12 +40,12 @@
     .kpi-value.blue { color: var(--accent); }
     .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* Section Intermédiaire : Modes de Paiement + Top Ventes */
+    /* Règlements & Top Ventes */
     .dashboard-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
     @media (max-width: 800px) { .dashboard-split { grid-template-columns: 1fr; } }
 
     .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
-    .panel-title { font-size: 1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; }
+    .panel-title { font-size: 1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); }
 
     .pay-breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.92rem; }
     .pay-breakdown-row:last-child { border-bottom: none; }
@@ -55,7 +54,7 @@
     .top-item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; }
     .top-item-row:last-child { border-bottom: none; }
 
-    /* Tableau Historique */
+    /* Tableau Journal */
     .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); }
     .table-container { background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
     
@@ -72,7 +71,6 @@
     .stat-servi { background: #e0f2fe; color: #0369a1; }
     .stat-encaisse { background: #e2e8f0; color: #334155; }
 
-    /* MODAL D'IMPRESSION DU Z DE CAISSE */
     #z-caisse-print { display: none; }
     @media print {
       body * { visibility: hidden; }
@@ -87,7 +85,7 @@
     <header>
       <div>
         <h1>Hôtel des Pins — Administration & Ventes</h1>
-        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Rapport de service et journal de caisse en temps réel</p>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Journal de caisse & rapports financiers en direct</p>
       </div>
       <div class="header-actions">
         <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter Excel (CSV)</button>
@@ -98,7 +96,7 @@
     <!-- KPI PRINCIPAUX -->
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-title">Chiffre d'Affaires Encaissé</div>
+        <div class="kpi-title">Chiffre d'Affaires Net</div>
         <div class="kpi-value green" id="kpi-ca">0,00 €</div>
         <div class="kpi-sub">Dont TVA (10%) : <span id="kpi-tva">0,00 €</span></div>
       </div>
@@ -110,20 +108,20 @@
       <div class="kpi-card">
         <div class="kpi-title">Commandes en cours</div>
         <div class="kpi-value" id="kpi-actives" style="color:var(--warning);">0</div>
-        <div class="kpi-sub">En cuisine ou en salle</div>
+        <div class="kpi-sub">En cuisine ou salle</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-title">Temps Moyen Service</div>
         <div class="kpi-value" id="kpi-temps-moyen">0 min</div>
-        <div class="kpi-sub">De la commande au service</div>
+        <div class="kpi-sub">Commande $\rightarrow$ Service</div>
       </div>
     </div>
 
-    <!-- REPARTITION REGLEMENTS & TOP VENTES -->
+    <!-- RÈGLEMENTS & TOP VENTES -->
     <div class="dashboard-split">
       <div class="panel-card">
         <div class="panel-title">
-          <span>💳 Répartition des Règlements</span>
+          <span>💳 Répartition des Règlements Nets</span>
         </div>
         <div class="pay-breakdown-row">
           <span class="pay-tag">💳 Carte Bancaire (CB)</span>
@@ -149,7 +147,7 @@
       </div>
     </div>
 
-    <!-- HISTORIQUE COMPLET -->
+    <!-- TABLEAU COMPLET -->
     <h2 class="section-title">Journal détaillé des commandes</h2>
     <div class="table-container">
       <table>
@@ -159,18 +157,18 @@
             <th>Heure</th>
             <th>Statut</th>
             <th>Paiement</th>
-            <th>Total TTC</th>
+            <th>Total Payé TTC</th>
             <th>Détail du ticket</th>
           </tr>
         </thead>
         <tbody id="orders-table-body">
-          <tr><td colspan="6" style="text-align: center; padding: 30px;">Chargement des données...</td></tr>
+          <tr><td colspan="6" style="text-align: center; padding: 30px;">Chargement...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- ZONE D'IMPRESSION TICKET THERMIQUE Z DE CAISSE -->
+  <!-- ZONE D'IMPRESSION Z DE CAISSE -->
   <div id="z-caisse-print">
     <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
       <h2 style="font-size:14px; font-weight:800;">HÔTEL DES PINS</h2>
@@ -178,7 +176,7 @@
       <p style="font-size:10px;" id="print-z-date"></p>
     </div>
     <div style="margin-bottom:8px;">
-      <div style="display:flex; justify-content:space-between;"><span>Total CA TTC :</span><strong id="print-z-ca"></strong></div>
+      <div style="display:flex; justify-content:space-between;"><span>Total CA Net TTC :</span><strong id="print-z-ca"></strong></div>
       <div style="display:flex; justify-content:space-between;"><span>Total HT :</span><span id="print-z-ht"></span></div>
       <div style="display:flex; justify-content:space-between;"><span>TVA (10%) :</span><span id="print-z-tva"></span></div>
       <div style="display:flex; justify-content:space-between;"><span>Nbre Couverts/Tables :</span><span id="print-z-tables"></span></div>
@@ -205,9 +203,7 @@
           allOrders = await res.json();
           calculerKPIsEtAfficher(allOrders);
         }
-      } catch (err) {
-        console.error('Erreur chargement admin :', err);
-      }
+      } catch (err) {}
     }
 
     function calculerKPIsEtAfficher(commandes) {
@@ -221,19 +217,20 @@
       const itemCounts = {};
 
       encaissees.forEach(c => {
-        let ticketTotal = 0;
+        let brutTicket = 0;
         if (c.items && Array.isArray(c.items)) {
           c.items.forEach(it => {
-            const montantLigne = (it.prix || 0) * (it.quantite || 1);
-            ticketTotal += montantLigne;
+            brutTicket += (it.prix || 0) * (it.quantite || 1);
             itemCounts[it.article_nom] = (itemCounts[it.article_nom] || 0) + (it.quantite || 1);
           });
         }
-        totalCA += ticketTotal;
 
-        if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += ticketTotal;
-        else if (c.mode_paiement === 'Espèces') totalEsp += ticketTotal;
-        else if (c.mode_paiement === 'Titre Resto') totalTR += ticketTotal;
+        const montantNet = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brutTicket - (c.remise_montant || 0));
+        totalCA += montantNet;
+
+        if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += montantNet;
+        else if (c.mode_paiement === 'Espèces') totalEsp += montantNet;
+        else if (c.mode_paiement === 'Titre Resto') totalTR += montantNet;
       });
 
       const totalHT = totalCA / 1.10;
@@ -289,21 +286,23 @@
         const tr = document.createElement('tr');
         const heure = c.date_creation ? new Date(c.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-';
 
-        let montant = 0;
+        let brut = 0;
         let detailsHtml = '';
         if (c.items && Array.isArray(c.items)) {
           detailsHtml = c.items.map(it => {
-            montant += (it.prix || 0) * (it.quantite || 1);
+            brut += (it.prix || 0) * (it.quantite || 1);
             return `<div><strong>${it.quantite || 1}x</strong> ${it.article_nom}</div>`;
           }).join('');
         }
+
+        const montantAffiche = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
 
         tr.innerHTML = `
           <td><strong>Table ${c.table_num}</strong></td>
           <td>${heure}</td>
           <td><span class="badge-stat stat-${c.statut}">${getLibelleStatut(c.statut)}</span></td>
           <td>${c.mode_paiement ? `<strong>${c.mode_paiement}</strong>` : '-'}</td>
-          <td><strong>${montant > 0 ? montant.toFixed(2) + ' €' : '-'}</strong></td>
+          <td><strong>${montantAffiche > 0 ? montantAffiche.toFixed(2) + ' €' : '0,00 €'}</strong> ${c.remise_montant > 0 ? `<span style="font-size:0.75rem; color:#b91c1c;">(Remise -${c.remise_montant.toFixed(2)}€)</span>` : ''}</td>
           <td><div style="font-size:0.82rem; color:#475569;">${detailsHtml}</div></td>
         `;
         tbody.appendChild(tr);
@@ -318,30 +317,30 @@
       return 'En Attente';
     }
 
-    // EXPORT CSV / EXCEL
+    // EXPORT CSV
     function exporterExcelCSV() {
       if (allOrders.length === 0) {
         alert("Aucune donnée à exporter.");
         return;
       }
 
-      let csv = "\uFEFF"; // UTF-8 BOM pour accents sous Excel
-      csv += "ID;Table;Date_Creation;Date_Cloture;Statut;Mode_Paiement;Articles;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
+      let csv = "\uFEFF";
+      csv += "ID;Table;Date_Creation;Date_Cloture;Statut;Mode_Paiement;Articles;Remise_EUR;Total_Paye_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
 
       allOrders.forEach(c => {
-        let totalTTC = 0;
+        let brut = 0;
         const articlesList = [];
         if (c.items && Array.isArray(c.items)) {
           c.items.forEach(it => {
-            totalTTC += (it.prix || 0) * (it.quantite || 1);
+            brut += (it.prix || 0) * (it.quantite || 1);
             articlesList.push(`${it.quantite || 1}x ${it.article_nom}`);
           });
         }
-        const totalHT = (totalTTC / 1.10).toFixed(2);
-        const tva = (totalTTC - (totalTTC / 1.10)).toFixed(2);
-        const articlesStr = `"${articlesList.join(', ')}"`;
+        const net = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+        const totalHT = (net / 1.10).toFixed(2);
+        const tva = (net - (net / 1.10)).toFixed(2);
 
-        csv += `${c.id};Table ${c.table_num};${c.date_creation || ''};${c.date_fin || ''};${c.statut};${c.mode_paiement || ''};${articlesStr};${totalTTC.toFixed(2)};${totalHT};${tva}\n`;
+        csv += `${c.id};Table ${c.table_num};${c.date_creation || ''};${c.date_fin || ''};${c.statut};${c.mode_paiement || ''};"${articlesList.join(', ')}";${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${totalHT};${tva}\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -354,7 +353,7 @@
       document.body.removeChild(a);
     }
 
-    // IMPRESSION DU Z DE CAISSE
+    // IMPRESSION Z DE CAISSE
     function imprimerZCaisse() {
       const encaissees = allOrders.filter(c => c.statut === 'encaisse');
       let totalCA = 0;
@@ -363,12 +362,13 @@
       let totalTR = 0;
 
       encaissees.forEach(c => {
-        let t = 0;
-        if (c.items) c.items.forEach(it => t += (it.prix || 0) * (it.quantite || 1));
-        totalCA += t;
-        if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += t;
-        else if (c.mode_paiement === 'Espèces') totalEsp += t;
-        else if (c.mode_paiement === 'Titre Resto') totalTR += t;
+        let brut = 0;
+        if (c.items) c.items.forEach(it => brut += (it.prix || 0) * (it.quantite || 1));
+        const net = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+        totalCA += net;
+        if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += net;
+        else if (c.mode_paiement === 'Espèces') totalEsp += net;
+        else if (c.mode_paiement === 'Titre Resto') totalTR += net;
       });
 
       document.getElementById('print-z-date').innerText = new Date().toLocaleString('fr-FR');

@@ -92,12 +92,13 @@
     /* MODAL ADDITION & ENCAISSEMENT */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
     .modal-overlay.open { display: flex; }
-    .modal-card { background: #fff; width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: pop 0.2s ease; }
+    .modal-card { background: #fff; width: 100%; max-width: 470px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: pop 0.2s ease; }
     @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     .modal-head { background: var(--primary); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
-    .modal-body { padding: 18px; max-height: 75vh; overflow-y: auto; }
+    .modal-body { padding: 18px; max-height: 80vh; overflow-y: auto; }
 
+    /* TICKET DE CAISSE THERMIQUE 80MM */
     .receipt-container { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-family: 'Courier New', Courier, monospace; color: #111; }
     .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 12px; }
     .receipt-header h2 { font-size: 1.15rem; font-weight: 800; }
@@ -107,12 +108,29 @@
     .receipt-line { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; }
     
     .receipt-total-block { border-top: 2px solid #000; border-bottom: 1px dashed #000; margin-top: 8px; padding: 8px 0; }
-    .receipt-total-ttc { display: flex; justify-content: space-between; font-size: 1.15rem; font-weight: 800; }
+    .receipt-subtotal { display: flex; justify-content: space-between; font-size: 0.85rem; color: #555; }
+    .receipt-discount-line { display: none; justify-content: space-between; font-size: 0.88rem; color: #b91c1c; font-weight: 700; }
+    .receipt-total-ttc { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800; margin-top: 4px; }
     .receipt-tax-table { font-size: 0.75rem; margin-top: 6px; }
+    .receipt-split-box { display: none; justify-content: space-between; border-top: 1px dashed #000; margin-top: 6px; padding-top: 4px; font-size: 0.85rem; font-weight: 700; }
 
     .receipt-footer { text-align: center; font-size: 0.75rem; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; }
 
-    .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0 10px 0; }
+    /* CONTRÔLES DIVISION & REMISE DANS LA MODAL */
+    .caisse-controls-box { margin-top: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .control-row:last-child { margin-bottom: 0; }
+    .control-label { font-size: 0.8rem; font-weight: 700; color: var(--primary); }
+
+    .discount-btn-group { display: flex; gap: 4px; }
+    .btn-disc { padding: 5px 10px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+    .btn-disc.active { background: #b91c1c; color: #fff; border-color: #b91c1c; }
+
+    .split-stepper { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
+    .btn-split-q { border: none; background: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; color: var(--primary); }
+    .split-val { font-size: 0.88rem; font-weight: 800; min-width: 20px; text-align: center; }
+
+    .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 10px 0; }
     .btn-pay-method { padding: 10px 4px; border: 1.5px solid var(--border); background: #f8fafc; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-align: center; }
     .btn-pay-method.active { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
 
@@ -120,7 +138,7 @@
     .btn-print { flex: 1; background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
     .btn-encaisser { flex: 2; background: var(--success); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
 
-    /* Impression Thermique 80 mm */
+    /* Impression 80mm */
     @media print {
       body * { visibility: hidden; }
       #printable-receipt, #printable-receipt * { visibility: visible; }
@@ -200,7 +218,7 @@
 
   </div>
 
-  <!-- MODAL ADDITION & ENCAISSEMENT -->
+  <!-- MODAL ADDITION, DIVISION & REMISE -->
   <div class="modal-overlay" id="addition-modal">
     <div class="modal-card">
       <div class="modal-head">
@@ -210,7 +228,7 @@
       
       <div class="modal-body">
         
-        <!-- TICKET DE CAISSE AVEC MENTIONS LÉGALES OFFICIELLES -->
+        <!-- TICKET DE CAISSE THERMIQUE 80MM -->
         <div class="receipt-container" id="printable-receipt">
           <div class="receipt-header">
             <h2>HÔTEL DES PINS</h2>
@@ -236,6 +254,14 @@
           <div id="receipt-items-container"></div>
 
           <div class="receipt-total-block">
+            <div class="receipt-subtotal" id="receipt-subtotal-row" style="display:none;">
+              <span>Sous-total brut :</span>
+              <span id="receipt-subtotal-val">0,00 €</span>
+            </div>
+            <div class="receipt-discount-line" id="receipt-discount-row">
+              <span id="receipt-discount-label">Remise :</span>
+              <span id="receipt-discount-val">-0,00 €</span>
+            </div>
             <div class="receipt-total-ttc">
               <span>TOTAL TTC</span>
               <span id="modal-total-ttc">0,00 €</span>
@@ -243,6 +269,10 @@
             <div class="receipt-tax-table">
               <div style="display:flex; justify-content:space-between;"><span>Total HT :</span><span id="modal-total-ht">0,00 €</span></div>
               <div style="display:flex; justify-content:space-between;"><span>TVA (10 %) :</span><span id="modal-total-tva">0,00 €</span></div>
+            </div>
+            <div class="receipt-split-box" id="receipt-split-box">
+              <span>Partage (<span id="receipt-split-count">1</span> pers.) :</span>
+              <span id="receipt-split-val">0,00 € / pers.</span>
             </div>
           </div>
 
@@ -252,7 +282,29 @@
           </div>
         </div>
 
-        <div class="no-print" style="margin-top:16px;">
+        <!-- CONTRÔLES CAISSE (DIVISION & REMISES) -->
+        <div class="caisse-controls-box no-print">
+          <div class="control-row">
+            <span class="control-label">✂️ Remise / Réduction :</span>
+            <div class="discount-btn-group">
+              <button class="btn-disc active" onclick="appliquerRemise(0, this)">0%</button>
+              <button class="btn-disc" onclick="appliquerRemise(10, this)">-10%</button>
+              <button class="btn-disc" onclick="appliquerRemise(20, this)">-20%</button>
+              <button class="btn-disc" onclick="appliquerRemise(100, this)">Offert</button>
+            </div>
+          </div>
+          <div class="control-row">
+            <span class="control-label">👥 Partager la note :</span>
+            <div class="split-stepper">
+              <button class="btn-split-q" onclick="modifierParts(-1)">-</button>
+              <span class="split-val" id="split-display">1</span>
+              <button class="btn-split-q" onclick="modifierParts(1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODES DE PAIEMENT -->
+        <div class="no-print" style="margin-top:14px;">
           <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Moyen de règlement</div>
           <div class="payment-methods">
             <button class="btn-pay-method active" onclick="choisirPaiement(this, 'CB')">💳 Carte</button>
@@ -262,7 +314,7 @@
         </div>
 
         <div class="modal-actions no-print">
-          <button class="btn-print" onclick="imprimerTicketClient()">🖨️ Imprimer le ticket</button>
+          <button class="btn-print" onclick="imprimerTicketClient()">🖨️ Imprimer</button>
           <button class="btn-encaisser" id="btn-valider-encaissement" onclick="validerEncaissement()">
             ✔ Encaisser & Libérer
           </button>
@@ -278,6 +330,11 @@
     let cart = {}; 
     let tableStatuses = {};
     let selectedModePaiement = 'CB';
+
+    // Variables de calcul addition active
+    let rawTotalTTC = 0;
+    let discountPercent = 0;
+    let splitParts = 1;
 
     const menuData = [
       { id: "m40_formule", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00 },
@@ -529,12 +586,21 @@
       }
     }
 
-    // --- GESTION ADDITION & TICKET CLIENT ---
+    // --- GESTION ADDITION, DIVISION & REMISE ---
     async function ouvrirModalAddition() {
       document.getElementById('modal-table-num').innerText = currentTable;
       document.getElementById('receipt-table-num').innerText = currentTable;
       document.getElementById('receipt-date-print').innerText = new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
       document.getElementById('receipt-ticket-id').innerText = `TICK #${Date.now().toString().slice(-4)}`;
+
+      // Réinitialisation des paramètres
+      discountPercent = 0;
+      splitParts = 1;
+      document.getElementById('split-display').innerText = '1';
+      document.querySelectorAll('.btn-disc').forEach((b, i) => {
+        if (i === 0) b.classList.add('active');
+        else b.classList.remove('active');
+      });
 
       const modal = document.getElementById('addition-modal');
       const container = document.getElementById('receipt-items-container');
@@ -547,13 +613,13 @@
 
         if (!data.items || data.items.length === 0) {
           container.innerHTML = '<div style="text-align:center; padding:15px; color:var(--text-muted);">Aucune consommation active sur cette table.</div>';
-          document.getElementById('modal-total-ttc').innerText = '0,00 €';
-          document.getElementById('modal-total-ht').innerText = '0,00 €';
-          document.getElementById('modal-total-tva').innerText = '0,00 €';
+          rawTotalTTC = 0;
+          recalculerAddition();
           document.getElementById('btn-valider-encaissement').disabled = true;
           return;
         }
 
+        rawTotalTTC = data.total;
         container.innerHTML = '';
         data.items.forEach(it => {
           const row = document.createElement('div');
@@ -565,12 +631,63 @@
           container.appendChild(row);
         });
 
-        document.getElementById('modal-total-ttc').innerText = `${data.total.toFixed(2)} €`;
-        document.getElementById('modal-total-ht').innerText = `${data.total_ht.toFixed(2)} €`;
-        document.getElementById('modal-total-tva').innerText = `${data.tva.toFixed(2)} €`;
+        recalculerAddition();
         document.getElementById('btn-valider-encaissement').disabled = false;
       } catch (e) {
         container.innerHTML = '<div style="color:red;">Erreur chargement addition</div>';
+      }
+    }
+
+    function recalculerAddition() {
+      const discountAmount = (rawTotalTTC * discountPercent) / 100;
+      const netTotalTTC = Math.max(0, rawTotalTTC - discountAmount);
+      const totalHT = netTotalTTC / 1.10;
+      const totalTVA = netTotalTTC - totalHT;
+
+      // Affichage Remise
+      const subRow = document.getElementById('receipt-subtotal-row');
+      const discRow = document.getElementById('receipt-discount-row');
+      if (discountPercent > 0) {
+        subRow.style.display = 'flex';
+        document.getElementById('receipt-subtotal-val').innerText = `${rawTotalTTC.toFixed(2)} €`;
+        discRow.style.display = 'flex';
+        document.getElementById('receipt-discount-label').innerText = `Remise (${discountPercent === 100 ? 'Offert' : discountPercent + '%'}) :`;
+        document.getElementById('receipt-discount-val').innerText = `-${discountAmount.toFixed(2)} €`;
+      } else {
+        subRow.style.display = 'none';
+        discRow.style.display = 'none';
+      }
+
+      // Totaux Net
+      document.getElementById('modal-total-ttc').innerText = `${netTotalTTC.toFixed(2)} €`;
+      document.getElementById('modal-total-ht').innerText = `${totalHT.toFixed(2)} €`;
+      document.getElementById('modal-total-tva').innerText = `${totalTVA.toFixed(2)} €`;
+
+      // Division
+      const splitBox = document.getElementById('receipt-split-box');
+      if (splitParts > 1 && netTotalTTC > 0) {
+        splitBox.style.display = 'flex';
+        const perPerson = netTotalTTC / splitParts;
+        document.getElementById('receipt-split-count').innerText = splitParts;
+        document.getElementById('receipt-split-val').innerText = `${perPerson.toFixed(2)} € / pers.`;
+      } else {
+        splitBox.style.display = 'none';
+      }
+    }
+
+    function appliquerRemise(pct, btn) {
+      discountPercent = pct;
+      document.querySelectorAll('.btn-disc').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      recalculerAddition();
+    }
+
+    function modifierParts(delta) {
+      const next = splitParts + delta;
+      if (next >= 1 && next <= 20) {
+        splitParts = next;
+        document.getElementById('split-display').innerText = splitParts;
+        recalculerAddition();
       }
     }
 
@@ -589,16 +706,27 @@
     }
 
     async function validerEncaissement() {
-      if (!confirm(`Confirmer l'encaissement de la Table ${currentTable} par ${selectedModePaiement} ?`)) return;
+      const discountAmount = (rawTotalTTC * discountPercent) / 100;
+      const netTotalTTC = Math.max(0, rawTotalTTC - discountAmount);
+
+      let msg = `Confirmer l'encaissement Table ${currentTable} ?\n- Mode : ${selectedModePaiement}\n- Total : ${netTotalTTC.toFixed(2)} €`;
+      if (discountPercent > 0) msg += ` (Remise: ${discountPercent}%)`;
+      if (splitParts > 1) msg += `\n- Partage : ${splitParts} personnes (${(netTotalTTC / splitParts).toFixed(2)} €/pers.)`;
+
+      if (!confirm(msg)) return;
 
       try {
         const res = await fetch(`/api/tables/${currentTable}/encaisser`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode_paiement: selectedModePaiement })
+          body: JSON.stringify({
+            mode_paiement: selectedModePaiement,
+            remise_montant: discountAmount,
+            total_paye: netTotalTTC
+          })
         });
         if (res.ok) {
-          alert(`✅ Table ${currentTable} encaissée avec succès (${selectedModePaiement}). Table libérée !`);
+          alert(`✅ Table ${currentTable} encaissée avec succès (${selectedModePaiement} - ${netTotalTTC.toFixed(2)} €). Table libérée !`);
           fermerModalAddition();
           chargerStatutsTables();
         }
