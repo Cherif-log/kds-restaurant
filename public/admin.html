@@ -67,7 +67,7 @@
 
     .badge-perf { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; }
     .perf-actif { background: #dcfce7; color: #15803d; }
-    .perf-inactif { background: #fee2e2; color: #b91c1c; }
+    .perf-inactif { background: #fef3c7; color: #b45309; }
     .perf-neutre { background: #f1f5f9; color: #64748b; }
 
     /* Configuration */
@@ -227,7 +227,7 @@
         </div>
       </div>
 
-      <!-- 👥 MODULE GESTION DES SERVEURS (AVEC MODIFICATION PIN) -->
+      <!-- 👥 MODULE GESTION DES SERVEURS -->
       <div class="panel-card">
         <div class="panel-title">
           <span>👥 Équipe & Codes PIN</span>
@@ -313,6 +313,14 @@
     let planData = [];
     let enteredAdminPin = '';
 
+    // Utilitaire de conversion universelle de date (Résout les décalages horaires UTC vs France)
+    function parseSqliteDate(dateStr) {
+      if (!dateStr) return null;
+      if (dateStr.includes('T')) return new Date(dateStr);
+      // Format SQLite standard "YYYY-MM-DD HH:MM:SS" -> interprété en UTC
+      return new Date(dateStr.replace(' ', 'T') + 'Z');
+    }
+
     // --- AUTHENTIFICATION DIRECTION ---
     function checkAdminAuth() {
       const isAuth = sessionStorage.getItem('hdp_admin_auth');
@@ -382,7 +390,7 @@
       checkAdminAuth();
     }
 
-    // --- AUDIT & SURVEILLANCE SERVEURS ---
+    // --- AUDIT & SURVEILLANCE SERVEURS (CORRIGÉ) ---
     function calculerAuditServeurs(commandes, serveurs) {
       const tbody = document.getElementById('servers-audit-tbody');
       if (!serveurs || serveurs.length === 0) {
@@ -394,6 +402,7 @@
       tbody.innerHTML = serveurs.map(serv => {
         const cmdsServeur = commandes.filter(c => (c.serveur_nom || 'Salle').toLowerCase() === serv.nom.toLowerCase());
         const encaissees = cmdsServeur.filter(c => c.statut === 'encaisse');
+        const enCours = cmdsServeur.filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
 
         let caNet = 0;
         let tempsTotal = 0;
@@ -401,8 +410,8 @@
         let derniereDate = null;
 
         cmdsServeur.forEach(c => {
-          if (c.date_creation) {
-            const d = new Date(c.date_creation);
+          const d = parseSqliteDate(c.date_creation);
+          if (d && !isNaN(d.getTime())) {
             if (!derniereDate || d > derniereDate) derniereDate = d;
           }
           if (c.statut === 'encaisse') {
@@ -411,20 +420,33 @@
             caNet += (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
           }
           if (c.date_creation && c.date_fin) {
-            const diff = Math.round((new Date(c.date_fin) - new Date(c.date_creation)) / 60000);
-            if (diff >= 0) { tempsTotal += diff; tempsCount++; }
+            const dStart = parseSqliteDate(c.date_creation);
+            const dEnd = parseSqliteDate(c.date_fin);
+            if (dStart && dEnd) {
+              const diff = Math.round((dEnd - dStart) / 60000);
+              if (diff >= 0) { tempsTotal += diff; tempsCount++; }
+            }
           }
         });
 
+        // Calcul précis de l'activité
         let statutBadge = '<span class="badge-perf perf-neutre">⚪ Aucune activité</span>';
         let derniereHeureStr = '-';
 
         if (derniereDate) {
-          derniereHeureStr = derniereDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          const diffMinutes = Math.round((now - derniereDate) / 60000);
-          if (diffMinutes <= 45) {
-            statutBadge = '<span class="badge-perf perf-actif">🟢 Actif (En service)</span>';
-          } else {
+          derniereHeureStr = derniereDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          const diffMinutes = Math.max(0, Math.round((now - derniereDate) / 60000));
+
+          // 1. Si le serveur a des tables occupées en cours -> IMMÉDIATEMENT VERT
+          if (enCours.length > 0) {
+            statutBadge = `<span class="badge-perf perf-actif">🟢 En service (${enCours.length} table${enCours.length > 1 ? 's' : ''})</span>`;
+          } 
+          // 2. Si sa dernière commande date de moins de 45 minutes -> ACTIF
+          else if (diffMinutes <= 45) {
+            statutBadge = `<span class="badge-perf perf-actif">🟢 Actif (Il y a ${diffMinutes === 0 ? '1 min' : diffMinutes + ' min'})</span>`;
+          } 
+          // 3. Sinon -> INACTIF
+          else {
             statutBadge = `<span class="badge-perf perf-inactif">🟡 Inactif (${diffMinutes} min)</span>`;
           }
         }
@@ -499,8 +521,12 @@
       let countValides = 0;
       encaissees.forEach(c => {
         if (c.date_creation && c.date_fin) {
-          const diff = Math.round((new Date(c.date_fin) - new Date(c.date_creation)) / 60000);
-          if (diff >= 0) { durees += diff; countValides++; }
+          const dStart = parseSqliteDate(c.date_creation);
+          const dEnd = parseSqliteDate(c.date_fin);
+          if (dStart && dEnd) {
+            const diff = Math.round((dEnd - dStart) / 60000);
+            if (diff >= 0) { durees += diff; countValides++; }
+          }
         }
       });
       document.getElementById('kpi-temps-moyen').innerText = countValides > 0 ? `${Math.round(durees / countValides)} min` : '0 min';
@@ -512,7 +538,8 @@
       }
 
       tbody.innerHTML = commandes.map(c => {
-        const heure = c.date_creation ? new Date(c.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-';
+        const d = parseSqliteDate(c.date_creation);
+        const heure = d ? d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-';
         let brut = 0;
         let detailsHtml = '';
         if (c.items) {
@@ -657,10 +684,9 @@
       `).join('');
     }
 
-    // Fonction de modification du code PIN
     async function modifierPinServeur(id, nom, currentPin) {
       const nouveauPin = prompt(`Entrez le nouveau code PIN à 4 chiffres pour ${nom} :`, currentPin);
-      if (nouveauPin === null) return; // Annulé
+      if (nouveauPin === null) return;
 
       if (!nouveauPin || nouveauPin.trim().length !== 4 || !/^\d{4}$/.test(nouveauPin.trim())) {
         alert("❌ Erreur : Le code PIN doit comporter exactement 4 chiffres.");

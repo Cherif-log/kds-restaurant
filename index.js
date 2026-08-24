@@ -225,7 +225,7 @@ app.delete('/api/admin/tables/:id', (req, res) => {
   }
 });
 
-// 4. STATUT DES TABLES + SERVEUR ASSIGNÉ
+// 4. Statut des tables
 app.get('/api/tables/statuts', (req, res) => {
   try {
     const allTables = db.prepare(`SELECT numero FROM tables_plan`).all();
@@ -335,9 +335,10 @@ app.post('/api/commandes', (req, res) => {
   try {
     const { table_num, items, remarques, serveur_nom } = req.body;
     const tNum = parseInt(table_num, 10) || 1;
+    const nowIso = new Date().toISOString();
 
-    const insertCmd = db.prepare(`INSERT INTO commandes (table_num, statut, serveur_nom, remarques, date_creation) VALUES (?, 'en_attente', ?, ?, datetime('now', 'localtime'))`);
-    const info = insertCmd.run(tNum, serveur_nom || 'Salle', remarques || '');
+    const insertCmd = db.prepare(`INSERT INTO commandes (table_num, statut, serveur_nom, remarques, date_creation) VALUES (?, 'en_attente', ?, ?, ?)`);
+    const info = insertCmd.run(tNum, serveur_nom || 'Salle', remarques || '', nowIso);
     const commandeId = info.lastInsertRowid;
 
     const insertItem = db.prepare(`INSERT INTO commande_items (commande_id, article_nom, prix, quantite, remarques) VALUES (?, ?, ?, ?, ?)`);
@@ -353,7 +354,7 @@ app.post('/api/commandes', (req, res) => {
       statut: 'en_attente',
       serveur_nom: serveur_nom || 'Salle',
       remarques: remarques || '',
-      date_creation: new Date().toISOString(),
+      date_creation: nowIso,
       items: db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`).all(commandeId)
     };
 
@@ -370,13 +371,14 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
     const { mode_paiement, remise_montant, total_paye, serveur_nom } = req.body;
+    const nowIso = new Date().toISOString();
 
     const update = db.prepare(`
       UPDATE commandes 
-      SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, total_paye = ?, serveur_nom = COALESCE(?, serveur_nom), date_fin = datetime('now', 'localtime') 
+      SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, total_paye = ?, serveur_nom = COALESCE(?, serveur_nom), date_fin = ? 
       WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
     `);
-    update.run(mode_paiement || 'CB', remise_montant || 0, total_paye || 0, serveur_nom || null, table_num);
+    update.run(mode_paiement || 'CB', remise_montant || 0, total_paye || 0, serveur_nom || null, nowIso, table_num);
 
     io.emit('table_status_change');
     io.emit('statut_mis_a_jour');
@@ -390,7 +392,8 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
 app.post('/api/tables/:table_num/reset', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
-    db.prepare(`UPDATE commandes SET statut = 'annule', date_fin = datetime('now', 'localtime') WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).run(table_num);
+    const nowIso = new Date().toISOString();
+    db.prepare(`UPDATE commandes SET statut = 'annule', date_fin = ? WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).run(nowIso, table_num);
     io.emit('table_status_change');
     io.emit('statut_mis_a_jour');
     res.json({ success: true });
@@ -435,9 +438,10 @@ app.put('/api/commandes/:id/statut', (req, res) => {
   try {
     const { id } = req.params;
     const { statut } = req.body;
+    const nowIso = new Date().toISOString();
 
     if (statut === 'servi') {
-      db.prepare(`UPDATE commandes SET statut = ?, date_fin = datetime('now', 'localtime') WHERE id = ?`).run(statut, id);
+      db.prepare(`UPDATE commandes SET statut = ?, date_fin = ? WHERE id = ?`).run(statut, nowIso, id);
     } else {
       db.prepare(`UPDATE commandes SET statut = ? WHERE id = ?`).run(statut, id);
     }
