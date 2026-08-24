@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Prise de commande</title>
+  <title>Hôtel des Pins — Prise de commande & Caisse</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -11,6 +11,8 @@
       --accent: #2563eb;
       --accent-light: #eff6ff;
       --success: #16a34a;
+      --warning: #f97316;
+      --served: #0284c7;
       --bg: #f8fafc;
       --card-bg: #ffffff;
       --border: #e2e8f0;
@@ -21,34 +23,45 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
-    /* Bannière Notification Prêt */
-    #notif-ready-bar { display: none; background: #16a34a; color: #fff; text-align: center; padding: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; animation: slideDown 0.3s ease; }
-    @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-
     header { background: var(--primary); color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
     header h1 { font-size: 1.15rem; font-weight: 700; }
-    .header-links { display: flex; gap: 10px; align-items: center; }
-    .btn-nav-top { background: #334155; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+    .header-links { display: flex; gap: 10px; }
+    .btn-nav-link { background: #334155; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+    .btn-nav-link:hover { background: #475569; }
 
     .app-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 54px); }
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; }
+    /* Tables bar avec statuts */
+    .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
+    .table-legend { font-size: 0.7rem; display: flex; gap: 8px; }
+    .dot-legend { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; }
+
     .tables-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; scrollbar-width: none; }
     .tables-scroll::-webkit-scrollbar { display: none; }
-    .btn-table { flex: 0 0 62px; height: 42px; background: #fff; border: 1.5px solid var(--border); border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; color: var(--text); }
-    .btn-table.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 10px rgba(37,99,235,0.25); }
+    
+    .btn-table { flex: 0 0 62px; height: 46px; background: #fff; border: 2px solid var(--border); border-radius: 8px; font-weight: 800; font-size: 0.95rem; cursor: pointer; color: var(--text); position: relative; transition: all 0.15s; }
+    .btn-table.status-occupee { border-color: var(--warning); color: var(--warning); background: #fff7ed; }
+    .btn-table.status-servi { border-color: var(--served); color: var(--served); background: #f0f9ff; }
+    .btn-table.active { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; box-shadow: 0 4px 10px rgba(37,99,235,0.3); }
 
+    /* Barre d'action rapide Table */
+    .table-action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
+    .btn-addition { flex: 1; background: #0284c7; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-addition:hover { background: #0369a1; }
+
+    /* Onglets Catégories */
     .cat-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; scrollbar-width: none; }
     .cat-tabs::-webkit-scrollbar { display: none; }
     .btn-cat-tab { white-space: nowrap; padding: 8px 16px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; color: #475569; }
     .btn-cat-tab.active { background: var(--primary); color: #fff; }
 
+    /* Grille des Plats */
     .section-header { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin: 16px 0 10px 0; padding-bottom: 4px; border-bottom: 2px solid #e2e8f0; }
     .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 15px; }
     
-    .dish-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s; }
+    .dish-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
     .dish-card.active { border-color: var(--accent); background: var(--accent-light); }
     .dish-info { flex: 1; padding-right: 10px; }
     .dish-name { font-weight: 600; font-size: 0.88rem; line-height: 1.3; color: var(--text); }
@@ -60,6 +73,7 @@
     .dish-card.active .btn-q.plus { background: var(--accent); color: #fff; }
     .q-val { font-weight: 800; font-size: 0.95rem; min-width: 22px; text-align: center; color: var(--text); }
 
+    /* Sidebar Ticket */
     .ticket-header { padding: 14px 18px; background: var(--primary); color: #fff; font-size: 1rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
     .ticket-body { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
     .ticket-empty { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: 40px; }
@@ -76,30 +90,62 @@
     .btn-send { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
     .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
 
-    @media (max-width: 900px) {
-      .app-layout { flex-direction: column; height: auto; }
-      .ticket-sidebar { width: 100%; border-left: none; border-top: 2px solid var(--border); height: auto; }
+    /* MODAL ADDITION & ENCAISSEMENT */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { background: #fff; width: 100%; max-width: 440px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: pop 0.2s ease; }
+    @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .modal-head { background: var(--primary); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+    .modal-body { padding: 18px; max-height: 65vh; overflow-y: auto; }
+    .receipt-line { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+    .receipt-line.total-row { border-top: 2px solid var(--text); border-bottom: none; font-size: 1.2rem; font-weight: 800; margin-top: 10px; padding-top: 10px; }
+    .receipt-tax { font-size: 0.8rem; color: var(--text-muted); text-align: right; margin-top: 4px; }
+
+    .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0 10px 0; }
+    .btn-pay-method { padding: 10px 4px; border: 1.5px solid var(--border); background: #f8fafc; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-align: center; }
+    .btn-pay-method.active { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-print { flex: 1; background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .btn-encaisser { flex: 2; background: var(--success); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+
+    /* Impression Ticket Thermique */
+    @media print {
+      body * { visibility: hidden; }
+      #printable-receipt, #printable-receipt * { visibility: visible; }
+      #printable-receipt { position: absolute; left: 0; top: 0; width: 80mm; font-family: monospace; font-size: 12px; padding: 5mm; }
     }
   </style>
 </head>
 <body>
 
-  <div id="notif-ready-bar" onclick="masquerNotifReady()">
-    🍽️ <span id="notif-ready-text">Table 1 est prête à être servie !</span> (Cliquer pour fermer)
-  </div>
-
   <header>
-    <h1>Hôtel des Pins — Prise de commande</h1>
+    <h1>Hôtel des Pins — Salle & Caisse</h1>
     <div class="header-links">
-      <a href="/cuisine.html" target="_blank" class="btn-nav-top">👨‍🍳 Écran Cuisine</a>
-      <a href="/admin.html" target="_blank" class="btn-nav-top">📊 Caisse & Stats</a>
+      <a href="/cuisine.html" class="btn-nav-link" target="_blank">👨‍🍳 Cuisine</a>
+      <a href="/admin.html" class="btn-nav-link" target="_blank">📊 Admin</a>
     </div>
   </header>
 
   <div class="app-layout">
+    
     <main class="main-content">
-      <div class="section-label">1. Sélectionner la table</div>
+      <div class="section-label">
+        <span>1. Sélectionner la table</span>
+        <div class="table-legend">
+          <span><span class="dot-legend" style="background:#cbd5e1;"></span>Libre</span>
+          <span><span class="dot-legend" style="background:var(--warning);"></span>En cuisine</span>
+          <span><span class="dot-legend" style="background:var(--served);"></span>À encaisser</span>
+        </div>
+      </div>
       <div class="tables-scroll" id="tables-container"></div>
+
+      <div class="table-action-bar">
+        <button class="btn-addition" onclick="ouvrirModalAddition()">
+          🧾 Consulter l'addition / Encaisser Table <span id="btn-add-table-num">1</span>
+        </button>
+      </div>
 
       <div class="section-label">2. Choisir la catégorie</div>
       <div class="cat-tabs" id="cat-tabs-container"></div>
@@ -109,7 +155,7 @@
 
     <aside class="ticket-sidebar">
       <div class="ticket-header">
-        <span>Table <span id="current-table-title">1</span></span>
+        <span>Nouvelle Commande Table <span id="current-table-title">1</span></span>
         <span id="ticket-items-count" style="font-size:0.8rem; font-weight:500;">0 article</span>
       </div>
 
@@ -128,13 +174,58 @@
         </button>
       </div>
     </aside>
+
+  </div>
+
+  <!-- MODAL ADDITION & ENCAISSEMENT -->
+  <div class="modal-overlay" id="addition-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <span>Addition Table <span id="modal-table-num">1</span></span>
+        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalAddition()">✕</button>
+      </div>
+      <div class="modal-body" id="printable-receipt">
+        <div style="text-align:center; margin-bottom:12px;">
+          <h3 style="font-size:1.1rem; font-weight:800;">HÔTEL DES PINS</h3>
+          <p style="font-size:0.75rem; color:var(--text-muted);">Le Cap Ferret — Note de Table</p>
+        </div>
+
+        <div id="receipt-items-container"></div>
+
+        <div class="receipt-line total-row">
+          <span>TOTAL TTC</span>
+          <span id="modal-total-ttc">0,00 €</span>
+        </div>
+        <div class="receipt-tax">
+          Dont Total HT : <span id="modal-total-ht">0,00 €</span> | TVA (10%) : <span id="modal-total-tva">0,00 €</span>
+        </div>
+
+        <div style="margin-top:16px;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Moyen de paiement</div>
+          <div class="payment-methods">
+            <button class="btn-pay-method active" onclick="choisirPaiement(this, 'CB')">💳 Carte</button>
+            <button class="btn-pay-method" onclick="choisirPaiement(this, 'Espèces')">💵 Espèces</button>
+            <button class="btn-pay-method" onclick="choisirPaiement(this, 'Titre Resto')">🎫 Titre Resto</button>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+          <button class="btn-encaisser" id="btn-valider-encaissement" onclick="validerEncaissement()">
+            ✔ Encaisser & Libérer
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
     let currentTable = 1;
     let currentTab = "Menu 40 €";
-    let cart = {};
+    let cart = {}; 
+    let tableStatuses = {};
+    let selectedModePaiement = 'CB';
 
     const menuData = [
       { id: "m40_formule", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00 },
@@ -145,6 +236,7 @@
       { id: "m40_e5", nom: "Cornet de friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
       { id: "m40_e6", nom: "Assiette de charcuterie (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
       { id: "m40_e7", nom: "Asperges blanches & jambon (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+
       { id: "m40_p1", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
       { id: "m40_p2", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
       { id: "m40_p3", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
@@ -152,6 +244,7 @@
       { id: "m40_p5", nom: "Carpaccio de bœuf & Parmesan (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
       { id: "m40_p6", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
       { id: "m40_p7", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+
       { id: "m40_d1", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
       { id: "m40_d2", nom: "Assiette de fromages (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
       { id: "m40_d3", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
@@ -161,63 +254,72 @@
       { id: "m40_d7", nom: "Mousse au chocolat noir (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
       { id: "m40_d8", nom: "Cheesecake au citron (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
       { id: "m40_d9", nom: "Coupe glacée 2 boules (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-      { id: "c_e1", nom: "Terrine de foie de canard maison, chutney", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+
+      { id: "c_e1", nom: "Terrine de foie de canard maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e2", nom: "Soupe de poissons et accompagnement", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e3", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e4", nom: "Cornet de friture de calamars, tartare", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e5", nom: "Assiette de charcuterie", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
       { id: "c_e6", nom: "Asperges blanches, jambon & vierge", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+
       { id: "c_p1", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
       { id: "c_p2", nom: "Dos de maigre, sauce vierge", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
       { id: "c_p3", nom: "Pavé de cabillaud rôti, légumes iodés", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
       { id: "c_p4", nom: "Blanquette de seiche safranée", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
+
       { id: "c_v1", nom: "Carpaccio de bœuf maison basilic & Parmesan", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
       { id: "c_v2", nom: "Entrecôte de bœuf, échalotes confites", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
       { id: "c_v3", nom: "Magret de canard, sauce au poivre", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
+
       { id: "c_d1", nom: "Dessert du jour", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
       { id: "c_d2", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00 },
-      { id: "c_d3", nom: "Fromage blanc fermier & fruits exotiques", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d3", nom: "Fromage blanc fermier & fruits", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
       { id: "c_d4", nom: "Mousse au chocolat", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
       { id: "c_d5", nom: "Assiette de fromages", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-      { id: "c_d6", nom: "Crème brûlée à la vanille de Madagascar", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d6", nom: "Crème brûlée à la vanille", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
       { id: "c_d7", nom: "Cheesecake au citron", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
       { id: "c_d8", nom: "Tiramisu au café", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-      { id: "c_d9", nom: "Coupe de glaces 2 boules au choix", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d9", nom: "Coupe de glaces 2 boules", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+
       { id: "enf_p1", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
       { id: "enf_p2", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
       { id: "enf_p3", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
       { id: "enf_g1", nom: "Garniture : Salade du jardin", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
       { id: "enf_g2", nom: "Garniture : Frites maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
       { id: "enf_g3", nom: "Garniture : Purée maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
-      { id: "enf_g4", nom: "Garniture : Légumes sautés maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
-      { id: "gl_1", nom: "Parfum Glace : Vanille", cat: "Glaces", section: "Parfums", prix: 0.00 },
-      { id: "gl_2", nom: "Parfum Glace : Café", cat: "Glaces", section: "Parfums", prix: 0.00 },
-      { id: "gl_3", nom: "Parfum Glace : Chocolat", cat: "Glaces", section: "Parfums", prix: 0.00 },
-      { id: "gl_4", nom: "Parfum Glace : Fraise", cat: "Glaces", section: "Parfums", prix: 0.00 },
-      { id: "gl_5", nom: "Parfum Glace : Citron", cat: "Glaces", section: "Parfums", prix: 0.00 },
-      { id: "gl_6", nom: "Parfum Glace : Coco", cat: "Glaces", section: "Parfums", prix: 0.00 },
-      { id: "gl_7", nom: "Parfum Glace : Rhum raisin", cat: "Glaces", section: "Parfums", prix: 0.00 },
-      { id: "gl_8", nom: "Parfum Glace : Caramel beurre salé", cat: "Glaces", section: "Parfums", prix: 0.00 },
-      { id: "gl_9", nom: "Parfum Glace : Poire", cat: "Glaces", section: "Parfums", prix: 0.00 }
+      { id: "enf_g4", nom: "Garniture : Légumes sautés", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 }
     ];
 
-    function init() {
+    async function chargerStatutsTables() {
+      try {
+        const res = await fetch('/api/tables/statuts');
+        if (res.ok) {
+          tableStatuses = await res.json();
+          renderTablesBar();
+        }
+      } catch (e) {}
+    }
+
+    function renderTablesBar() {
       const tContainer = document.getElementById('tables-container');
       tContainer.innerHTML = '';
       for (let i = 1; i <= 15; i++) {
         const btn = document.createElement('button');
-        btn.className = `btn-table ${i === currentTable ? 'active' : ''}`;
+        const st = tableStatuses[i] || 'libre';
+        btn.className = `btn-table status-${st} ${i === currentTable ? 'active' : ''}`;
         btn.innerText = `T${i}`;
         btn.onclick = () => {
-          document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
           currentTable = i;
           document.getElementById('current-table-title').innerText = i;
+          document.getElementById('btn-add-table-num').innerText = i;
+          renderTablesBar();
         };
         tContainer.appendChild(btn);
       }
+    }
 
-      const categories = ["Menu 40 €", "Entrées (15 €)", "Poissons (25 €)", "Viandes (25 €)", "Desserts", "Menu Enfant (15 €)", "Glaces"];
+    function init() {
+      const categories = ["Menu 40 €", "Entrées (15 €)", "Poissons (25 €)", "Viandes (25 €)", "Desserts", "Menu Enfant (15 €)"];
       const catContainer = document.getElementById('cat-tabs-container');
       catContainer.innerHTML = '';
       categories.forEach(cat => {
@@ -235,6 +337,7 @@
 
       afficherPlats();
       mettreAJourTicket();
+      chargerStatutsTables();
     }
 
     function afficherPlats() {
@@ -271,12 +374,14 @@
           `;
           grid.appendChild(card);
         });
+
         container.appendChild(grid);
       });
     }
 
     function modifierQuantite(id, delta) {
-      const next = (cart[id] || 0) + delta;
+      const current = cart[id] || 0;
+      const next = current + delta;
       if (next <= 0) delete cart[id];
       else cart[id] = next;
 
@@ -312,7 +417,6 @@
       itemIds.forEach(id => {
         const plat = menuData.find(d => d.id === id);
         if (!plat) return;
-
         const qte = cart[id];
         const ligneTotal = plat.prix * qte;
         total += ligneTotal;
@@ -341,17 +445,12 @@
     }
 
     async function envoyerCommande() {
-      const btn = document.getElementById('btn-submit');
-      btn.disabled = true;
-      btn.innerText = 'Envoi...';
-
       const items = Object.keys(cart).map(id => {
         const plat = menuData.find(d => d.id === id);
         return {
           article_nom: plat.nom,
           prix: plat.prix,
-          quantite: cart[id],
-          remarques: ''
+          quantite: cart[id]
         };
       });
 
@@ -367,37 +466,93 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
-        if (socket) socket.emit('nouvelle_commande', payload);
-
-        alert(`✅ Commande de la Table ${currentTable} envoyée en cuisine !`);
+        alert(`✅ Commande Table ${currentTable} envoyée en cuisine !`);
         cart = {};
         document.getElementById('order-notes').value = '';
         afficherPlats();
         mettreAJourTicket();
+        chargerStatutsTables();
       } catch (err) {
-        alert("Erreur envoi");
-        btn.disabled = false;
-        btn.innerText = 'Envoyer en cuisine';
+        alert("Erreur lors de l'envoi.");
       }
     }
 
-    // Gestion de la notification "Prêt à servir"
-    if (socket) {
-      socket.on('statut_mis_a_jour', (data) => {
-        if (data && data.statut === 'pret') {
-          const bar = document.getElementById('notif-ready-bar');
-          const txt = document.getElementById('notif-ready-text');
-          txt.innerText = `Table ${data.table_num || ''} est PRÊTE à être servie !`;
-          bar.style.display = 'block';
+    // --- GESTION ADDITION & CAISSE ---
+    async function ouvrirModalAddition() {
+      document.getElementById('modal-table-num').innerText = currentTable;
+      const modal = document.getElementById('addition-modal');
+      const container = document.getElementById('receipt-items-container');
+      container.innerHTML = '<div style="text-align:center; padding:20px;">Chargement de l\'addition...</div>';
+      modal.classList.add('open');
+
+      try {
+        const res = await fetch(`/api/tables/${currentTable}/addition`);
+        const data = await res.json();
+
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Aucune consommation active sur cette table.</div>';
+          document.getElementById('modal-total-ttc').innerText = '0,00 €';
+          document.getElementById('modal-total-ht').innerText = '0,00 €';
+          document.getElementById('modal-total-tva').innerText = '0,00 €';
+          document.getElementById('btn-valider-encaissement').disabled = true;
+          return;
         }
-      });
+
+        container.innerHTML = '';
+        data.items.forEach(it => {
+          const row = document.createElement('div');
+          row.className = 'receipt-line';
+          row.innerHTML = `
+            <span>${it.quantite}x ${it.article_nom}</span>
+            <strong>${it.total_ligne > 0 ? it.total_ligne.toFixed(2) + ' €' : '-'}</strong>
+          `;
+          container.appendChild(row);
+        });
+
+        document.getElementById('modal-total-ttc').innerText = `${data.total.toFixed(2)} €`;
+        document.getElementById('modal-total-ht').innerText = `${data.total_ht.toFixed(2)} €`;
+        document.getElementById('modal-total-tva').innerText = `${data.tva.toFixed(2)} €`;
+        document.getElementById('btn-valider-encaissement').disabled = false;
+      } catch (e) {
+        container.innerHTML = '<div style="color:red;">Erreur chargement addition</div>';
+      }
     }
 
-    function masquerNotifReady() {
-      document.getElementById('notif-ready-bar').style.display = 'none';
+    function fermerModalAddition() {
+      document.getElementById('addition-modal').classList.remove('open');
     }
 
+    function choisirPaiement(btn, mode) {
+      document.querySelectorAll('.btn-pay-method').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedModePaiement = mode;
+    }
+
+    async function validerEncaissement() {
+      if (!confirm(`Confirmer l'encaissement de la Table ${currentTable} par ${selectedModePaiement} ?`)) return;
+
+      try {
+        const res = await fetch(`/api/tables/${currentTable}/encaisser`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode_paiement: selectedModePaiement })
+        });
+        if (res.ok) {
+          alert(`✅ Table ${currentTable} encaissée avec succès (${selectedModePaiement}). Table libérée !`);
+          fermerModalAddition();
+          chargerStatutsTables();
+        }
+      } catch (err) {
+        alert("Erreur lors de l'encaissement.");
+      }
+    }
+
+    if (socket) {
+      socket.on('table_status_change', () => chargerStatutsTables());
+      socket.on('statut_mis_a_jour', () => chargerStatutsTables());
+    }
+
+    setInterval(chargerStatutsTables, 6000);
     init();
   </script>
 </body>

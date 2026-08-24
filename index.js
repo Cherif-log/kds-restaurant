@@ -13,12 +13,13 @@ const PORT = process.env.PORT || 10000;
 // Base de données SQLite
 const db = new Database('restaurant.db');
 
-// Création des tables
+// Structure des tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS commandes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     table_num INTEGER NOT NULL,
     statut TEXT DEFAULT 'en_attente',
+    mode_paiement TEXT,
     remarques TEXT,
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
     date_fin DATETIME
@@ -35,10 +36,9 @@ db.exec(`
   );
 `);
 
-// Migration légère si date_fin n'existe pas encore
-try {
-  db.exec(`ALTER TABLE commandes ADD COLUMN date_fin DATETIME`);
-} catch (e) {}
+// Migration automatique des colonnes si besoin
+try { db.exec(`ALTER TABLE commandes ADD COLUMN date_fin DATETIME`); } catch (e) {}
+try { db.exec(`ALTER TABLE commandes ADD COLUMN mode_paiement TEXT`); } catch (e) {}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -46,12 +46,37 @@ app.use(express.static(path.join(__dirname)));
 
 // --- ROUTES API ---
 
-// 1. Commandes actives (pour la cuisine)
+// 1. Statut en direct de toutes les tables (1 à 15)
+app.get('/api/tables/statuts', (req, res) => {
+  try {
+    const activeOrders = db.prepare(`
+      SELECT table_num, statut FROM commandes 
+      WHERE statut NOT IN ('encaisse', 'annule')
+    `).all();
+
+    const statuts = {};
+    for (let i = 1; i <= 15; i++) statuts[i] = 'libre';
+
+    activeOrders.forEach(ord => {
+      if (ord.statut === 'servi') {
+        statuts[ord.table_num] = 'servi'; // Prête à encaisser
+      } else if (statuts[ord.table_num] !== 'servi') {
+        statuts[ord.table_num] = 'occupee'; // En cours en cuisine
+      }
+    });
+
+    res.json(statuts);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur statuts tables' });
+  }
+});
+
+// 2. Commandes actives (pour la cuisine)
 app.get('/api/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`
       SELECT * FROM commandes 
-      WHERE statut != 'servi' AND statut != 'annule' 
+      WHERE statut NOT IN ('servi', 'encaisse', 'annule') 
       ORDER BY id DESC
     `).all();
 
@@ -63,30 +88,47 @@ app.get('/api/commandes', (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error('Erreur GET /api/commandes :', err);
     res.status(500).json({ error: 'Erreur base de données' });
   }
 });
 
-// 2. TOUTES les commandes (pour l'Administration & Historique)
-app.get('/api/admin/commandes', (req, res) => {
+// 3. Récupérer l'addition détaillée d'une table
+app.get('/api/tables/:table_num/addition', (req, res) => {
   try {
-    const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
-    const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
+    const { table_num } = req.params;
+    const commandes = db.prepare(`
+      SELECT id FROM commandes 
+      WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
+    `).all(table_num);
 
-    const result = commandes.map(cmd => ({
-      ...cmd,
-      items: getItems.all(cmd.id)
-    }));
+    if (commandes.length === 0) {
+      return res.json({ table_num, items: [], total: 0 });
+    }
 
-    res.json(result);
+    const commandeIds = commandes.map(c => c.id);
+    const getItems = db.prepare(`
+      SELECT article_nom, prix, SUM(quantite) as quantite, (prix * SUM(quantite)) as total_ligne 
+      FROM commande_items 
+      WHERE commande_id IN (${commandeIds.join(',')})
+      GROUP BY article_nom, prix
+    `);
+
+    const items = getItems.all();
+    const total = items.reduce((acc, it) => acc + it.total_ligne, 0);
+
+    res.json({
+      table_num,
+      items,
+      total: parseFloat(total.toFixed(2)),
+      total_ht: parseFloat((total / 1.10).toFixed(2)),
+      tva: parseFloat((total - (total / 1.10)).toFixed(2))
+    });
   } catch (err) {
-    console.error('Erreur GET /api/admin/commandes :', err);
-    res.status(500).json({ error: 'Erreur base de données' });
+    res.status(500).json({ error: 'Erreur calcul addition' });
   }
 });
 
-// 3. Créer une nouvelle commande
+// 4. Créer une nouvelle commande
 app.post('/api/commandes', (req, res) => {
   try {
     const { table_num, items, remarques } = req.body;
@@ -126,25 +168,43 @@ app.post('/api/commandes', (req, res) => {
     };
 
     io.emit('nouvelle_commande', completeOrder);
+    io.emit('table_status_change');
+
     res.status(201).json(completeOrder);
   } catch (err) {
-    console.error('Erreur POST /api/commandes :', err);
     res.status(500).json({ error: 'Erreur création' });
   }
 });
 
-// 4. Mettre à jour le statut d'une commande
+// 5. Encaisser et libérer une table
+app.post('/api/tables/:table_num/encaisser', (req, res) => {
+  try {
+    const { table_num } = req.params;
+    const { mode_paiement } = req.body;
+
+    const update = db.prepare(`
+      UPDATE commandes 
+      SET statut = 'encaisse', mode_paiement = ?, date_fin = datetime('now', 'localtime') 
+      WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
+    `);
+    update.run(mode_paiement || 'CB', table_num);
+
+    io.emit('table_status_change');
+    io.emit('statut_mis_a_jour');
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur encaissement' });
+  }
+});
+
+// 6. Mise à jour statut commande individuelle
 app.put('/api/commandes/:id/statut', (req, res) => {
   try {
     const { id } = req.params;
     const { statut } = req.body;
 
     if (statut === 'servi') {
-      const update = db.prepare(`
-        UPDATE commandes 
-        SET statut = ?, date_fin = datetime('now', 'localtime') 
-        WHERE id = ?
-      `);
+      const update = db.prepare(`UPDATE commandes SET statut = ?, date_fin = datetime('now', 'localtime') WHERE id = ?`);
       update.run(statut, id);
     } else {
       const update = db.prepare(`UPDATE commandes SET statut = ? WHERE id = ?`);
@@ -152,10 +212,25 @@ app.put('/api/commandes/:id/statut', (req, res) => {
     }
 
     io.emit('statut_mis_a_jour', { id, statut });
+    io.emit('table_status_change');
     res.json({ success: true });
   } catch (err) {
-    console.error('Erreur PUT /api/commandes statut :', err);
-    res.status(500).json({ error: 'Erreur mise à jour' });
+    res.status(500).json({ error: 'Erreur mise à jour statut' });
+  }
+});
+
+// 7. TOUTES les commandes (pour Admin)
+app.get('/api/admin/commandes', (req, res) => {
+  try {
+    const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
+    const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
+    const result = commandes.map(cmd => ({
+      ...cmd,
+      items: getItems.all(cmd.id)
+    }));
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur base de données' });
   }
 });
 
@@ -163,6 +238,7 @@ app.put('/api/commandes/:id/statut', (req, res) => {
 io.on('connection', (socket) => {
   socket.on('changer_statut', (data) => {
     io.emit('statut_mis_a_jour', data);
+    io.emit('table_status_change');
   });
 });
 

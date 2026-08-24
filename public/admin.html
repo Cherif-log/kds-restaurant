@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Administration</title>
+  <title>Hôtel des Pins — Administration & Ventes</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -15,28 +15,22 @@
       --primary: #1e293b;
       --accent: #2563eb;
       --success: #16a34a;
-      --warning: #eab308;
-      --orange: #f97316;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 30px; }
-
     .container { max-width: 1200px; margin: 0 auto; }
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
     h1 { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
-    .badge-live { background: #dcfce7; color: var(--success); padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
 
-    /* Grille des KPI Cards */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
     .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
     .kpi-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 8px; }
-    .kpi-value { font-size: 2.2rem; font-weight: 800; color: var(--primary); }
+    .kpi-value { font-size: 2rem; font-weight: 800; color: var(--primary); }
     .kpi-value.green { color: var(--success); }
     .kpi-value.blue { color: var(--accent); }
 
-    /* Section Historique */
     .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 16px; color: var(--primary); }
     .table-container { background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
     
@@ -46,47 +40,41 @@
     tr:last-child td { border-bottom: none; }
     tr:hover { background: #f8fafc; }
 
-    /* Badges de Statut */
-    .badge-stat { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
+    .badge-stat { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
     .stat-en_attente { background: #fef9c3; color: #854d0e; }
     .stat-en_cours, .stat-en_preparation { background: #ffedd5; color: #9a3412; }
     .stat-pret { background: #dcfce7; color: #166534; }
-    .stat-servi { background: #e2e8f0; color: #475569; }
-
-    .ticket-details-list { font-size: 0.82rem; color: #334155; line-height: 1.4; }
-    .table-tag { font-weight: 800; font-size: 1rem; color: var(--primary); }
+    .stat-servi { background: #e0f2fe; color: #0369a1; }
+    .stat-encaisse { background: #e2e8f0; color: #334155; }
   </style>
 </head>
 <body>
 
   <div class="container">
     <header>
-      <h1>Hôtel des Pins — Administration</h1>
-      <span class="badge-live">● Direct</span>
+      <h1>Hôtel des Pins — Administration & Ventes</h1>
     </header>
 
-    <!-- KPI STATS -->
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-title">Commandes actives</div>
+        <div class="kpi-title">Chiffre d'Affaires Encaissé</div>
+        <div class="kpi-value green" id="kpi-ca">0,00 €</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Commandes Actives</div>
         <div class="kpi-value" id="kpi-actives">0</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-title">Commandes servies</div>
-        <div class="kpi-value green" id="kpi-servies">0</div>
+        <div class="kpi-title">Tables Encaissées</div>
+        <div class="kpi-value blue" id="kpi-encaissees">0</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-title">Temps moyen de service</div>
+        <div class="kpi-title">Temps Moyen Service</div>
         <div class="kpi-value" id="kpi-temps-moyen">0 min</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-title">Total tickets créés</div>
-        <div class="kpi-value blue" id="kpi-total">0</div>
       </div>
     </div>
 
-    <!-- TABLEAU HISTORIQUE -->
-    <h2 class="section-title">Historique des commandes</h2>
+    <h2 class="section-title">Historique des commandes & Encaissements</h2>
     <div class="table-container">
       <table>
         <thead>
@@ -94,14 +82,13 @@
             <th>Table</th>
             <th>Heure</th>
             <th>Statut</th>
-            <th>Durée de traitement</th>
+            <th>Paiement</th>
+            <th>Montant</th>
             <th>Détail du ticket</th>
           </tr>
         </thead>
         <tbody id="orders-table-body">
-          <tr>
-            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px;">Chargement des données...</td>
-          </tr>
+          <tr><td colspan="6" style="text-align: center; padding: 30px;">Chargement...</td></tr>
         </tbody>
       </table>
     </div>
@@ -117,73 +104,63 @@
           const commandes = await res.json();
           calculerKPIsEtAfficher(commandes);
         }
-      } catch (err) {
-        console.error('Erreur chargement admin :', err);
-      }
+      } catch (err) {}
     }
 
     function calculerKPIsEtAfficher(commandes) {
-      const actives = commandes.filter(c => c.statut !== 'servi' && c.statut !== 'annule');
-      const servies = commandes.filter(c => c.statut === 'servi');
+      const actives = commandes.filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
+      const encaissees = commandes.filter(c => c.statut === 'encaisse');
       
-      document.getElementById('kpi-actives').innerText = actives.length;
-      document.getElementById('kpi-servies').innerText = servies.length;
-      document.getElementById('kpi-total').innerText = commandes.length;
-
-      // Calcul du temps moyen pour les commandes servies
-      let dureesTotalesMinutes = 0;
-      let nbServiesValides = 0;
-
-      servies.forEach(c => {
-        if (c.date_creation && c.date_fin) {
-          const t1 = new Date(c.date_creation).getTime();
-          const t2 = new Date(c.date_fin).getTime();
-          const diffMinutes = Math.round((t2 - t1) / (1000 * 60));
-          if (diffMinutes >= 0) {
-            dureesTotalesMinutes += diffMinutes;
-            nbServiesValides++;
-          }
+      let totalCA = 0;
+      encaissees.forEach(c => {
+        if (c.items && Array.isArray(c.items)) {
+          c.items.forEach(it => totalCA += (it.prix || 0) * (it.quantite || 1));
         }
       });
 
-      const moyenne = nbServiesValides > 0 ? Math.round(dureesTotalesMinutes / nbServiesValides) : 0;
-      document.getElementById('kpi-temps-moyen').innerText = `${moyenne} min`;
+      document.getElementById('kpi-ca').innerText = `${totalCA.toFixed(2)} €`;
+      document.getElementById('kpi-actives').innerText = actives.length;
+      document.getElementById('kpi-encaissees').innerText = encaissees.length;
 
-      // Remplissage du tableau
+      // Temps moyen
+      let durees = 0;
+      let countValides = 0;
+      encaissees.forEach(c => {
+        if (c.date_creation && c.date_fin) {
+          const diff = Math.round((new Date(c.date_fin) - new Date(c.date_creation)) / 60000);
+          if (diff >= 0) { durees += diff; countValides++; }
+        }
+      });
+      document.getElementById('kpi-temps-moyen').innerText = countValides > 0 ? `${Math.round(durees / countValides)} min` : '0 min';
+
+      // Rendu tableau
       const tbody = document.getElementById('orders-table-body');
       if (commandes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #64748b; padding: 30px;">Aucune commande pour le moment</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">Aucune commande</td></tr>';
         return;
       }
 
       tbody.innerHTML = '';
       commandes.forEach(c => {
         const tr = document.createElement('tr');
+        const heure = c.date_creation ? new Date(c.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-';
         
-        const dateObj = new Date(c.date_creation);
-        const heure = isNaN(dateObj) ? '-' : dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-        // Calcul durée
-        let dureeText = '-';
-        if (c.date_creation) {
-          const debut = new Date(c.date_creation).getTime();
-          const fin = c.date_fin ? new Date(c.date_fin).getTime() : Date.now();
-          const diffMin = Math.max(0, Math.round((fin - debut) / (1000 * 60)));
-          dureeText = `${diffMin} min ${c.statut !== 'servi' ? '(en cours)' : ''}`;
-        }
-
-        // Détails des items
+        let montant = 0;
         let detailsHtml = '';
         if (c.items && Array.isArray(c.items)) {
-          detailsHtml = c.items.map(it => `<div><strong>${it.quantite || 1}x</strong> ${it.article_nom}</div>`).join('');
+          detailsHtml = c.items.map(it => {
+            montant += (it.prix || 0) * (it.quantite || 1);
+            return `<div><strong>${it.quantite || 1}x</strong> ${it.article_nom}</div>`;
+          }).join('');
         }
 
         tr.innerHTML = `
-          <td><span class="table-tag">Table ${c.table_num}</span></td>
+          <td><strong>Table ${c.table_num}</strong></td>
           <td>${heure}</td>
           <td><span class="badge-stat stat-${c.statut}">${getLibelleStatut(c.statut)}</span></td>
-          <td>${dureeText}</td>
-          <td><div class="ticket-details-list">${detailsHtml || 'Sans détails'}</div></td>
+          <td>${c.mode_paiement ? `<strong>${c.mode_paiement}</strong>` : '-'}</td>
+          <td><strong>${montant > 0 ? montant.toFixed(2) + ' €' : '-'}</strong></td>
+          <td><div style="font-size:0.82rem; color:#475569;">${detailsHtml}</div></td>
         `;
         tbody.appendChild(tr);
       });
@@ -193,12 +170,14 @@
       if (st === 'en_cours' || st === 'en_preparation') return 'En Prépa';
       if (st === 'pret') return 'Prêt';
       if (st === 'servi') return 'Servi';
+      if (st === 'encaisse') return 'Encaissé';
       return 'En Attente';
     }
 
     if (socket) {
       socket.on('nouvelle_commande', () => chargerDonneesAdmin());
       socket.on('statut_mis_a_jour', () => chargerDonneesAdmin());
+      socket.on('table_status_change', () => chargerDonneesAdmin());
     }
 
     setInterval(chargerDonneesAdmin, 5000);
