@@ -11,12 +11,12 @@
       --accent: #2563eb;
       --accent-light: #eff6ff;
       --success: #16a34a;
-      --warning: #f97316;
+      --warning: #f59e0b;
       --served: #0284c7;
       --danger: #ef4444;
       --bg: #f8fafc;
       --card-bg: #ffffff;
-      --border: #e2e8f0;
+      --border: #cbd5e1;
       --text: #1e293b;
       --text-muted: #64748b;
     }
@@ -35,20 +35,31 @@
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* PLAN DE SALLE */
+    /* PLAN DE SALLE & CODES COULEURS STRICTS */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
-    .table-legend { font-size: 0.7rem; display: flex; gap: 8px; }
-    .dot-legend { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; }
+    .table-legend { font-size: 0.72rem; display: flex; gap: 12px; font-weight: 600; }
+    .dot-legend { display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-right: 4px; vertical-align: middle; }
 
     .floorplan-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 16px; }
     .floor-zone { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
     .floor-zone-header { font-size: 0.78rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }
     
-    .zone-tables-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .btn-table { height: 44px; background: #f8fafc; border: 1.5px solid var(--border); border-radius: 6px; font-weight: 800; font-size: 0.88rem; cursor: pointer; color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.15s; }
-    .btn-table.status-occupee { border-color: var(--warning); color: var(--warning); background: #fff7ed; }
-    .btn-table.status-servi { border-color: var(--served); color: var(--served); background: #f0f9ff; }
-    .btn-table.active { background: var(--accent) !important; color: #fff !important; border-color: var(--accent) !important; box-shadow: 0 3px 8px rgba(37,99,235,0.3); }
+    .zone-tables-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    
+    /* BOUTONS TABLES */
+    .btn-table { height: 46px; border-radius: 8px; font-weight: 800; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; position: relative; border: 2px solid transparent; }
+    
+    /* 1. LIBRE : Gris neutre / Blanc (Pas de bleu) */
+    .btn-table.status-libre { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
+    
+    /* 2. EN CUISINE : Jaune / Orange */
+    .btn-table.status-occupee { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
+    
+    /* 3. À ENCAISSER : Bleu ciel */
+    .btn-table.status-servi { background: #eff6ff; border-color: #0284c7; color: #0369a1; }
+    
+    /* 4. SÉLECTION : Cadre noir visible sans altérer la couleur de fond */
+    .btn-table.is-selected { border-color: #0f172a !important; box-shadow: 0 0 0 2px #0f172a !important; transform: scale(1.03); }
 
     .table-action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
     .btn-addition { flex: 1; background: #0284c7; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
@@ -66,7 +77,7 @@
     
     .dish-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
     .dish-card.active { border-color: var(--accent); background: var(--accent-light); }
-    .dish-card.epuise { opacity: 0.5; background: #f1f5f9; border-color: #cbd5e1; }
+    .dish-card.epuise { opacity: 0.45; background: #f1f5f9; border-color: #cbd5e1; }
     
     .dish-info { flex: 1; padding-right: 10px; }
     .dish-name { font-weight: 600; font-size: 0.88rem; line-height: 1.3; color: var(--text); }
@@ -108,7 +119,7 @@
     .pin-dot.filled { background: #38bdf8; }
 
     .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
-    .btn-key { background: #334155; color: #fff; border: none; border-radius: 12px; height: 58px; font-size: 1.4rem; font-weight: 800; cursor: pointer; transition: background 0.1s; }
+    .btn-key { background: #334155; color: #fff; border: none; border-radius: 12px; height: 58px; font-size: 1.4rem; font-weight: 800; cursor: pointer; }
     .btn-key:active { background: #475569; }
     .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
 
@@ -228,9 +239,9 @@
       <div class="section-label">
         <span>1. Plan de salle</span>
         <div class="table-legend">
-          <span><span class="dot-legend" style="background:#cbd5e1;"></span>Libre</span>
-          <span><span class="dot-legend" style="background:var(--warning);"></span>En cuisine</span>
-          <span><span class="dot-legend" style="background:var(--served);"></span>À encaisser</span>
+          <span><span class="dot-legend" style="background:#f8fafc; border:1px solid #cbd5e1;"></span>Libre</span>
+          <span><span class="dot-legend" style="background:#fffbeb; border:1px solid #f59e0b;"></span>En cuisine</span>
+          <span><span class="dot-legend" style="background:#eff6ff; border:1px solid #0284c7;"></span>À encaisser</span>
         </div>
       </div>
 
@@ -390,7 +401,6 @@
     let discountPercent = 0;
     let splitParts = 1;
 
-    // Plats avec leur slug partagé
     const menuData = [
       { id: "m40_formule", slug: "formule_40", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00 },
       { id: "m40_e1", slug: "entree_jour", nom: "Entrée du jour (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
@@ -454,7 +464,6 @@
       { id: "enf_g4", slug: "garn_legumes", nom: "Garniture : Légumes sautés", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 }
     ];
 
-    // --- AUTHENTIFICATION CODE PIN ---
     function checkAuth() {
       if (!currentServeur) {
         document.getElementById('pin-lock-overlay').style.display = 'flex';
@@ -520,7 +529,6 @@
       checkAuth();
     }
 
-    // --- PLAN DE SALLE & STATUTS ---
     async function chargerPlanSalle() {
       try {
         const [resPlan, resStatuts] = await Promise.all([
@@ -551,8 +559,9 @@
       container.innerHTML = dynamicPlan.map(zone => {
         const tablesHtml = zone.tables.map(t => {
           const st = tableStatuses[t.numero] || 'libre';
+          const isSel = (t.numero === currentTable);
           return `
-            <button class="btn-table status-${st} ${t.numero === currentTable ? 'active' : ''}" onclick="selectionnerTable(${t.numero})">
+            <button class="btn-table status-${st} ${isSel ? 'is-selected' : ''}" onclick="selectionnerTable(${t.numero})">
               <strong>T${t.numero}</strong>
             </button>
           `;
@@ -629,7 +638,7 @@
         const platsDeLaSection = platsFiltres.filter(d => d.section === secTitle);
         platsDeLaSection.forEach(plat => {
           const qte = cart[plat.id] || 0;
-          const isOut = indisponibles.includes(plat.slug); // Vérification par slug unique
+          const isOut = indisponibles.includes(plat.slug);
 
           const card = document.createElement('div');
           card.className = `dish-card ${qte > 0 ? 'active' : ''} ${isOut ? 'epuise' : ''}`;
@@ -908,6 +917,7 @@
       }
     }
 
+    // RÉCEPTION TEMPS RÉEL
     if (socket) {
       socket.on('table_status_change', () => chargerPlanSalle());
       socket.on('statut_mis_a_jour', () => chargerPlanSalle());
@@ -918,7 +928,7 @@
       });
     }
 
-    setInterval(chargerPlanSalle, 6000);
+    setInterval(chargerPlanSalle, 5000);
     init();
   </script>
 </body>
