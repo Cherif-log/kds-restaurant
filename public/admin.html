@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Administration & Équipe</title>
+  <title>Hôtel des Pins — Administration & Configuration</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -39,7 +39,7 @@
     .kpi-value.blue { color: var(--accent); }
     .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* Panels dashboard */
+    /* Panels Grid */
     .dashboard-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 28px; }
     .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
     .panel-title { font-size: 1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
@@ -48,13 +48,19 @@
     .breakdown-row:last-child { border-bottom: none; }
     .tag-bold { font-weight: 700; display: flex; align-items: center; gap: 6px; }
 
-    /* Formulaire Ajout Serveur */
-    .add-server-form { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
-    .add-server-input { flex: 2; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
-    .add-server-pin { flex: 1; max-width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; text-align: center; font-weight: 700; outline: none; }
-    .btn-add-server { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
-    .btn-del-server { background: none; border: none; color: #94a3b8; font-weight: 800; font-size: 1rem; cursor: pointer; padding: 2px 8px; border-radius: 4px; }
-    .btn-del-server:hover { color: var(--danger); background: #fee2e2; }
+    /* FORMULAIRES & BOUTONS */
+    .inline-form { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+    .form-input { flex: 2; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
+    .form-input-short { flex: 1; max-width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; text-align: center; font-weight: 700; outline: none; }
+    .btn-action-primary { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+    .btn-del { background: none; border: none; color: #94a3b8; font-weight: 800; font-size: 1rem; cursor: pointer; padding: 2px 8px; border-radius: 4px; }
+    .btn-del:hover { color: var(--danger); background: #fee2e2; }
+
+    /* Zone Plan Management Cards */
+    .plan-zone-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .plan-zone-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 0.9rem; margin-bottom: 8px; }
+    .plan-tables-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .table-chip { background: #fff; border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
 
     /* Tableau Journal */
     .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); }
@@ -86,8 +92,8 @@
   <div class="container">
     <header>
       <div>
-        <h1>Hôtel des Pins — Administration & Équipe</h1>
-        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Suivi des encaissements, gestion des codes serveurs et Z de caisse</p>
+        <h1>Hôtel des Pins — Administration & Configuration</h1>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Plan de salle modulable, gestion de l'équipe et clôture de caisse</p>
       </div>
       <div class="header-actions">
         <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter Excel (CSV)</button>
@@ -119,30 +125,43 @@
       </div>
     </div>
 
-    <!-- PANELS : GESTION DES SERVEURS, RÈGLEMENTS & VENTES -->
+    <!-- MODULES CONFIGURATION & RAPPORTS -->
     <div class="dashboard-split">
       
-      <!-- 👥 MODULE GESTION DE L'ÉQUIPE (SERVEURS & CODES PIN) -->
-      <div class="panel-card">
+      <!-- 📐 CONFIGURATION MODULABLE DU PLAN DE SALLE -->
+      <div class="panel-card" style="grid-column: 1 / -1;">
         <div class="panel-title">
-          <span>👥 Équipe & Codes PIN</span>
-          <span id="server-count-badge" style="font-size:0.75rem; background:#eff6ff; color:var(--accent); padding:2px 8px; border-radius:12px;">0 membres</span>
+          <span>📐 Configuration du Plan de Salle (Zones & Tables)</span>
+          <span style="font-size:0.75rem; color:var(--text-muted);">Modifications appliquées en temps réel sur les écrans</span>
         </div>
 
-        <div id="servers-list-container" style="max-height:220px; overflow-y:auto;">
-          <div style="color:var(--text-muted); font-size:0.85rem;">Chargement des serveurs...</div>
+        <div id="plan-zones-management" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; margin-bottom:14px;">
+          <!-- Injecté en JS -->
         </div>
 
-        <div class="add-server-form">
-          <input type="text" id="new-server-name" class="add-server-input" placeholder="Nom du serveur (ex: Paul)">
-          <input type="text" id="new-server-pin" class="add-server-pin" maxlength="4" placeholder="PIN (4 ch.)">
-          <button class="btn-add-server" onclick="ajouterNouveauServeur()">➕ Ajouter</button>
+        <div class="inline-form" style="border-top:1px solid var(--border); padding-top:14px;">
+          <input type="text" id="new-zone-name" class="form-input" placeholder="Ajouter une nouvelle zone (ex: Mezzanine, Bar Piscine...)">
+          <button class="btn-action-primary" onclick="ajouterNouvelleZone()">➕ Créer la zone</button>
         </div>
       </div>
 
-      <!-- 👤 PERFORMANCE DU CA PAR SERVEUR -->
+      <!-- 👥 MODULE GESTION DES SERVEURS -->
       <div class="panel-card">
-        <div class="panel-title">📊 Ventes par Serveur (Service actif)</div>
+        <div class="panel-title">
+          <span>👥 Équipe & Codes PIN</span>
+          <span id="server-count-badge" style="font-size:0.75rem; background:#eff6ff; color:var(--accent); padding:2px 8px; border-radius:12px;">0</span>
+        </div>
+        <div id="servers-list-container" style="max-height:220px; overflow-y:auto;"></div>
+        <div class="inline-form">
+          <input type="text" id="new-server-name" class="form-input" placeholder="Nom serveur">
+          <input type="text" id="new-server-pin" class="form-input-short" maxlength="4" placeholder="PIN (4 ch.)">
+          <button class="btn-action-primary" onclick="ajouterNouveauServeur()">➕ Ajouter</button>
+        </div>
+      </div>
+
+      <!-- 👤 PERFORMANCE DES VENTES -->
+      <div class="panel-card">
+        <div class="panel-title">📊 Ventes par Serveur</div>
         <div id="servers-breakdown-container">
           <div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>
         </div>
@@ -189,7 +208,7 @@
     </div>
   </div>
 
-  <!-- ZONE D'IMPRESSION Z DE CAISSE -->
+  <!-- ZONE IMPRESSION Z DE CAISSE -->
   <div id="z-caisse-print">
     <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
       <h2 style="font-size:14px; font-weight:800;">HÔTEL DES PINS</h2>
@@ -217,8 +236,103 @@
     const socket = typeof io !== 'undefined' ? io() : null;
     let allOrders = [];
     let allServeurs = [];
+    let planData = [];
 
-    // --- GESTION DU PERSONNEL & CODES PIN ---
+    // --- GESTION DU PLAN DE SALLE (ZONES & TABLES) ---
+    async function chargerPlanAdmin() {
+      try {
+        const res = await fetch('/api/plan/zones-tables');
+        if (res.ok) {
+          planData = await res.json();
+          renderPlanAdmin();
+        }
+      } catch (e) {}
+    }
+
+    function renderPlanAdmin() {
+      const container = document.getElementById('plan-zones-management');
+      if (planData.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">Aucune zone définie pour le moment.</div>';
+        return;
+      }
+
+      container.innerHTML = planData.map(z => {
+        const tablesChips = z.tables.map(t => `
+          <div class="table-chip">
+            <span>Table <strong>${t.numero}</strong></span>
+            <button class="btn-del" title="Supprimer Table ${t.numero}" onclick="supprimerTable(${t.id})">✕</button>
+          </div>
+        `).join('');
+
+        return `
+          <div class="plan-zone-card">
+            <div class="plan-zone-header">
+              <span>${z.nom} (${z.tables.length} table${z.tables.length > 1 ? 's' : ''})</span>
+              <button class="btn-del" title="Supprimer toute la zone" onclick="supprimerZone(${z.id}, '${z.nom.replace(/'/g, "\\'")}')">🗑️</button>
+            </div>
+            <div class="plan-tables-chips">${tablesChips || '<span style="color:var(--text-muted); font-size:0.75rem;">Aucune table</span>'}</div>
+            <div style="display:flex; gap:6px;">
+              <input type="number" id="input-new-table-${z.id}" class="form-input-short" placeholder="N° table">
+              <button class="btn-action-primary" style="padding:4px 10px; font-size:0.75rem;" onclick="ajouterTableAZone(${z.id})">➕ Ajouter Table</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function ajouterNouvelleZone() {
+      const nom = document.getElementById('new-zone-name').value.trim();
+      if (!nom) return alert("Veuillez indiquer un nom pour la zone.");
+      try {
+        const res = await fetch('/api/admin/zones', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nom })
+        });
+        if (res.ok) {
+          document.getElementById('new-zone-name').value = '';
+          chargerPlanAdmin();
+        }
+      } catch (e) { alert("Erreur création zone."); }
+    }
+
+    async function supprimerZone(id, nom) {
+      if (!confirm(`Supprimer la zone « ${nom} » et toutes les tables qu'elle contient ?`)) return;
+      try {
+        await fetch(`/api/admin/zones/${id}`, { method: 'DELETE' });
+        chargerPlanAdmin();
+      } catch (e) { alert("Erreur suppression zone."); }
+    }
+
+    async function ajouterTableAZone(zone_id) {
+      const input = document.getElementById(`input-new-table-${zone_id}`);
+      const numero = parseInt(input.value, 10);
+      if (isNaN(numero) || numero <= 0) return alert("Veuillez indiquer un numéro de table valide.");
+
+      try {
+        const res = await fetch('/api/admin/tables', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zone_id, numero })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          input.value = '';
+          chargerPlanAdmin();
+        } else {
+          alert(data.error || "Erreur ajout table.");
+        }
+      } catch (e) { alert("Erreur ajout table."); }
+    }
+
+    async function supprimerTable(id) {
+      try {
+        await fetch(`/api/admin/tables/${id}`, { method: 'DELETE' });
+        chargerPlanAdmin();
+      } catch (e) { alert("Erreur suppression table."); }
+    }
+
+    // --- GESTION SERVEURS & CODES PIN ---
     async function chargerServeurs() {
       try {
         const res = await fetch('/api/admin/serveurs');
@@ -242,7 +356,7 @@
       container.innerHTML = allServeurs.map(s => `
         <div class="breakdown-row">
           <span class="tag-bold">👤 ${s.nom} <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b;">PIN: ${s.pin}</span></span>
-          <button class="btn-del-server" title="Supprimer ce serveur" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
+          <button class="btn-del" title="Supprimer ce serveur" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
         </div>
       `).join('');
     }
@@ -250,12 +364,9 @@
     async function ajouterNouveauServeur() {
       const nom = document.getElementById('new-server-name').value.trim();
       const pin = document.getElementById('new-server-pin').value.trim();
-
       if (!nom || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-        alert("Veuillez renseigner un nom et un code PIN composé de 4 chiffres exactement.");
-        return;
+        return alert("Veuillez renseigner un nom et un code PIN de 4 chiffres.");
       }
-
       try {
         const res = await fetch('/api/admin/serveurs', {
           method: 'POST',
@@ -267,25 +378,19 @@
           document.getElementById('new-server-name').value = '';
           document.getElementById('new-server-pin').value = '';
           chargerServeurs();
-        } else {
-          alert(data.error || "Erreur lors de l'ajout.");
-        }
-      } catch (e) {
-        alert("Erreur connexion.");
-      }
+        } else { alert(data.error || "Erreur ajout serveur."); }
+      } catch (e) { alert("Erreur."); }
     }
 
     async function supprimerServeur(id, nom) {
-      if (!confirm(`Supprimer le serveur « ${nom} » ? Son code PIN sera désactivé.`)) return;
+      if (!confirm(`Supprimer le serveur « ${nom} » ?`)) return;
       try {
         await fetch(`/api/admin/serveurs/${id}`, { method: 'DELETE' });
         chargerServeurs();
-      } catch (e) {
-        alert("Erreur suppression.");
-      }
+      } catch (e) {}
     }
 
-    // --- KPI & VENTES ---
+    // --- KPI & HISTORIQUE ---
     async function chargerDonneesAdmin() {
       try {
         const res = await fetch('/api/admin/commandes');
@@ -408,11 +513,7 @@
     }
 
     function exporterExcelCSV() {
-      if (allOrders.length === 0) {
-        alert("Aucune donnée à exporter.");
-        return;
-      }
-
+      if (allOrders.length === 0) return alert("Aucune donnée à exporter.");
       let csv = "\uFEFF";
       csv += "ID;Table;Serveur;Date_Creation;Date_Cloture;Statut;Mode_Paiement;Articles;Remise_EUR;Total_Paye_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
 
@@ -475,9 +576,11 @@
       socket.on('nouvelle_commande', () => chargerDonneesAdmin());
       socket.on('statut_mis_a_jour', () => chargerDonneesAdmin());
       socket.on('table_status_change', () => chargerDonneesAdmin());
+      socket.on('plan_update', () => chargerPlanAdmin());
     }
 
     setInterval(chargerDonneesAdmin, 5000);
+    chargerPlanAdmin();
     chargerServeurs();
     chargerDonneesAdmin();
   </script>

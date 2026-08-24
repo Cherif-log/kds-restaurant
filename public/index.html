@@ -35,7 +35,7 @@
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* PLAN DE SALLE PAR ZONES */
+    /* PLAN DE SALLE DYNAMIQUE */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
     .table-legend { font-size: 0.7rem; display: flex; gap: 8px; }
     .dot-legend { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; }
@@ -226,9 +226,9 @@
     
     <main class="main-content">
       
-      <!-- PLAN DE SALLE PAR ZONES -->
+      <!-- PLAN DE SALLE DYNAMIQUE GÉNÉRÉ PAR L'API -->
       <div class="section-label">
-        <span>1. Plan de salle interactif</span>
+        <span>1. Plan de salle</span>
         <div class="table-legend">
           <span><span class="dot-legend" style="background:#cbd5e1;"></span>Libre</span>
           <span><span class="dot-legend" style="background:var(--warning);"></span>En cuisine</span>
@@ -236,33 +236,8 @@
         </div>
       </div>
 
-      <div class="floorplan-container">
-        <!-- Zone 1 : Terrasse -->
-        <div class="floor-zone">
-          <div class="floor-zone-header">
-            <span>🌲 Terrasse & Pinède</span>
-            <span style="font-size:0.7rem; color:var(--text-muted);">T1 - T6</span>
-          </div>
-          <div class="zone-tables-grid" id="zone-terrasse"></div>
-        </div>
-
-        <!-- Zone 2 : Salle Intérieure -->
-        <div class="floor-zone">
-          <div class="floor-zone-header">
-            <span>🍽️ Salle Intérieure</span>
-            <span style="font-size:0.7rem; color:var(--text-muted);">T7 - T12</span>
-          </div>
-          <div class="zone-tables-grid" id="zone-salle"></div>
-        </div>
-
-        <!-- Zone 3 : Patio & Véranda -->
-        <div class="floor-zone">
-          <div class="floor-zone-header">
-            <span>🌿 Patio & Véranda</span>
-            <span style="font-size:0.7rem; color:var(--text-muted);">T13 - T15</span>
-          </div>
-          <div class="zone-tables-grid" id="zone-patio"></div>
-        </div>
+      <div class="floorplan-container" id="floorplan-dynamic-container">
+        <!-- Zones et tables injectées en direct -->
       </div>
 
       <div class="table-action-bar">
@@ -408,6 +383,7 @@
     let currentTab = "Menu 40 €";
     let cart = {}; 
     let tableStatuses = {};
+    let dynamicPlan = [];
     let indisponibles = [];
     let selectedModePaiement = 'CB';
 
@@ -547,46 +523,62 @@
       checkAuth();
     }
 
-    // --- RENDU DU PLAN DE SALLE PAR ZONES ---
-    async function chargerStatutsTables() {
+    // --- GESTION DYNAMIQUE DU PLAN DE SALLE ---
+    async function chargerPlanSalle() {
       try {
-        const res = await fetch('/api/tables/statuts');
-        if (res.ok) {
-          tableStatuses = await res.json();
-          renderFloorPlan();
-        }
+        const [resPlan, resStatuts] = await Promise.all([
+          fetch('/api/plan/zones-tables'),
+          fetch('/api/tables/statuts')
+        ]);
+        if (resPlan.ok) dynamicPlan = await resPlan.json();
+        if (resStatuts.ok) tableStatuses = await resStatuts.json();
+        renderDynamicFloorPlan();
       } catch (e) {}
     }
 
-    function renderFloorPlan() {
-      const zTerrasse = document.getElementById('zone-terrasse');
-      const zSalle = document.getElementById('zone-salle');
-      const zPatio = document.getElementById('zone-patio');
+    function renderDynamicFloorPlan() {
+      const container = document.getElementById('floorplan-dynamic-container');
+      if (dynamicPlan.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); padding:10px;">Aucune table configurée. Rendez-vous dans l\'Admin.</div>';
+        return;
+      }
 
-      zTerrasse.innerHTML = '';
-      zSalle.innerHTML = '';
-      zPatio.innerHTML = '';
+      // Vérifier si la table courante existe toujours
+      let allTableNumbers = [];
+      dynamicPlan.forEach(z => z.tables.forEach(t => allTableNumbers.push(t.numero)));
+      if (allTableNumbers.length > 0 && !allTableNumbers.includes(currentTable)) {
+        currentTable = allTableNumbers[0];
+        document.getElementById('current-table-title').innerText = currentTable;
+        document.getElementById('btn-add-table-num').innerText = currentTable;
+      }
 
-      // T1 à T6 : Terrasse
-      for (let i = 1; i <= 6; i++) zTerrasse.appendChild(creerBoutonTable(i));
-      // T7 à T12 : Salle Intérieure
-      for (let i = 7; i <= 12; i++) zSalle.appendChild(creerBoutonTable(i));
-      // T13 à T15 : Patio
-      for (let i = 13; i <= 15; i++) zPatio.appendChild(creerBoutonTable(i));
+      container.innerHTML = dynamicPlan.map(zone => {
+        const tablesHtml = zone.tables.map(t => {
+          const st = tableStatuses[t.numero] || 'libre';
+          return `
+            <button class="btn-table status-${st} ${t.numero === currentTable ? 'active' : ''}" onclick="selectionnerTable(${t.numero})">
+              <strong>T${t.numero}</strong>
+            </button>
+          `;
+        }).join('');
+
+        return `
+          <div class="floor-zone">
+            <div class="floor-zone-header">
+              <span>${zone.nom}</span>
+              <span style="font-size:0.7rem; color:var(--text-muted);">${zone.tables.length} table${zone.tables.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="zone-tables-grid">${tablesHtml || '<span style="color:var(--text-muted); font-size:0.75rem; grid-column:1/-1;">Aucune table</span>'}</div>
+          </div>
+        `;
+      }).join('');
     }
 
-    function creerBoutonTable(num) {
-      const btn = document.createElement('button');
-      const st = tableStatuses[num] || 'libre';
-      btn.className = `btn-table status-${st} ${num === currentTable ? 'active' : ''}`;
-      btn.innerHTML = `<strong>T${num}</strong>`;
-      btn.onclick = () => {
-        currentTable = num;
-        document.getElementById('current-table-title').innerText = num;
-        document.getElementById('btn-add-table-num').innerText = num;
-        renderFloorPlan();
-      };
-      return btn;
+    function selectionnerTable(num) {
+      currentTable = num;
+      document.getElementById('current-table-title').innerText = num;
+      document.getElementById('btn-add-table-num').innerText = num;
+      renderDynamicFloorPlan();
     }
 
     async function chargerStock() {
@@ -619,7 +611,7 @@
 
       afficherPlats();
       mettreAJourTicket();
-      chargerStatutsTables();
+      chargerPlanSalle();
       chargerStock();
     }
 
@@ -762,7 +754,7 @@
         document.getElementById('order-notes').value = '';
         afficherPlats();
         mettreAJourTicket();
-        chargerStatutsTables();
+        chargerPlanSalle();
       } catch (err) {
         alert("Erreur lors de l'envoi.");
       }
@@ -912,7 +904,7 @@
         if (res.ok) {
           alert(`✅ Table ${currentTable} encaissée avec succès (${selectedModePaiement} - ${netTotalTTC.toFixed(2)} €). Table libérée !`);
           fermerModalAddition();
-          chargerStatutsTables();
+          chargerPlanSalle();
         }
       } catch (err) {
         alert("Erreur lors de l'encaissement.");
@@ -920,15 +912,16 @@
     }
 
     if (socket) {
-      socket.on('table_status_change', () => chargerStatutsTables());
-      socket.on('statut_mis_a_jour', () => chargerStatutsTables());
+      socket.on('table_status_change', () => chargerPlanSalle());
+      socket.on('statut_mis_a_jour', () => chargerPlanSalle());
+      socket.on('plan_update', () => chargerPlanSalle());
       socket.on('stock_update', (data) => {
         indisponibles = data;
         afficherPlats();
       });
     }
 
-    setInterval(chargerStatutsTables, 6000);
+    setInterval(chargerPlanSalle, 6000);
     init();
   </script>
 </body>
