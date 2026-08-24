@@ -2,273 +2,242 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Hôtel des Pins — Cuisine</title>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      margin: 0;
-      padding: 24px;
-      background-color: #1e1e24;
-      color: #fff;
-    }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #333;
-      padding-bottom: 12px;
-      margin-bottom: 24px;
-    }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .btn-audio {
-      background: #3a3a4c;
-      color: #fff;
-      border: 1px solid #555;
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-    }
-    .btn-audio.actif {
-      background: #28a745;
-      border-color: #28a745;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 16px;
-    }
-    .ticket {
-      background: #2b2b36;
-      border: 2px solid #444;
-      border-radius: 8px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 220px;
-      transition: border-color 0.3s ease;
-    }
-    .ticket-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #444;
-      padding-bottom: 8px;
-      margin-bottom: 10px;
-    }
-    .ticket-table { font-weight: 700; font-size: 18px; color: #ffcc00; }
-    
-    .meta-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .chrono {
-      font-weight: 700;
-      font-size: 13px;
-      padding: 3px 8px;
-      border-radius: 4px;
-    }
-    .chrono-ok { background: #1e4620; color: #4ade80; }
-    .chrono-warn { background: #543b0c; color: #fbbf24; }
-    .chrono-danger { 
-      background: #5c1d1d; 
-      color: #f87171; 
-      animation: clignotement 1s infinite alternate;
-    }
-
-    @keyframes clignotement {
-      from { opacity: 1; }
-      to { opacity: 0.5; }
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .badge-attente { background: #ff9800; color: #000; }
-    .badge-prepa { background: #007aff; color: #fff; }
-    .badge-prete { background: #28a745; color: #fff; }
-    
-    .ticket-content { font-size: 15px; line-height: 1.4; white-space: pre-wrap; flex: 1; margin-bottom: 12px; }
-    .btn-action {
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      color: white;
-    }
-    .btn-prepa { background: #007aff; }
-    .btn-prete { background: #28a745; }
-    .btn-servie { background: #6c757d; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hôtel des Pins — Écran Cuisine (KDS)</title>
   <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --attente: #eab308;
+      --prepa: #f97316;
+      --pret: #22c55e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 15px; }
+
+    /* Header */
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+    h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .header-info { display: flex; align-items: center; gap: 15px; }
+    .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+
+    /* Grille des Tickets */
+    .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+    
+    .empty-state { grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 1.1rem; padding: 80px 20px; }
+
+    /* Carte Ticket */
+    .ticket-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 20px rgba(0,0,0,0.3); animation: slideIn 0.3s ease; }
+    
+    @keyframes slideIn {
+      from { transform: translateY(-10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .ticket-top { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
+    .ticket-table { font-size: 1.25rem; }
+    .ticket-time { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* Statuts */
+    .status-en_attente .ticket-top { background: rgba(234, 179, 8, 0.15); border-bottom: 2px solid var(--attente); }
+    .status-en_attente .badge-stat { background: var(--attente); color: #000; }
+
+    .status-en_cours .ticket-top, .status-en_preparation .ticket-top { background: rgba(249, 115, 22, 0.15); border-bottom: 2px solid var(--prepa); }
+    .status-en_cours .badge-stat, .status-en_preparation .badge-stat { background: var(--prepa); color: #fff; }
+
+    .status-pret .ticket-top { background: rgba(34, 197, 94, 0.15); border-bottom: 2px solid var(--pret); }
+    .status-pret .badge-stat { background: var(--pret); color: #fff; }
+
+    .badge-stat { padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
+
+    .ticket-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+
+    .ticket-item { border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
+    .ticket-item:last-child { border-bottom: none; }
+    .item-main { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.05rem; }
+    .item-qty { color: var(--accent); margin-right: 6px; }
+    .item-details { font-size: 0.85rem; color: #cbd5e1; margin-top: 4px; padding-left: 8px; border-left: 2px solid var(--accent); line-height: 1.35; white-space: pre-line; }
+
+    .ticket-remarque { background: #334155; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; color: #fde047; font-weight: 600; margin-top: 6px; }
+
+    .ticket-actions { padding: 12px 16px; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border); display: flex; gap: 8px; }
+    .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: opacity 0.2s; }
+    .btn-action:hover { opacity: 0.9; }
+    .btn-start { background: var(--prepa); color: #fff; }
+    .btn-ready { background: var(--pret); color: #fff; }
+    .btn-done { background: #475569; color: #fff; }
+  </style>
 </head>
 <body>
+
   <header>
-   <h1>Hôtel des Pins — Cuisine</h1>
-    <div class="header-actions">
-      <button id="btnSon" class="btn-audio" onclick="activerSon()">Activer le son</button>
-      <span id="compteur">0 commande(s)</span>
+    <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
+    <div class="header-info">
+      <span id="active-count" style="font-weight:700; font-size:0.9rem;">0 en cours</span>
+      <span class="badge-status" id="socket-status">En direct</span>
     </div>
   </header>
 
-  <div class="grid" id="grilleCommandes"></div>
+  <div class="tickets-grid" id="tickets-container">
+    <div class="empty-state">En attente de commandes...</div>
+  </div>
 
   <script>
-    const socket = io();
-    const grille = document.getElementById('grilleCommandes');
-    const compteur = document.getElementById('compteur');
-    const btnSon = document.getElementById('btnSon');
-    
-    let audioCtx = null;
-    let nombreCommandesPrecedent = 0;
-    let commandesEnCours = [];
+    const socket = typeof io !== 'undefined' ? io() : null;
+    let commandes = [];
 
-    function activerSon() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      btnSon.innerText = 'Son activé';
-      btnSon.classList.add('actif');
-    }
-
-    function emettreBip() {
-      if (!audioCtx || audioCtx.state !== 'running') return;
-
-      const buzzer = (frequence, debut, duree) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(frequence, audioCtx.currentTime + debut);
-        gain.gain.setValueAtTime(1.0, audioCtx.currentTime + debut);
-        gain.gain.setValueAtTime(1.0, audioCtx.currentTime + debut + duree - 0.02);
-        gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + debut + duree);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(audioCtx.currentTime + debut);
-        osc.stop(audioCtx.currentTime + debut + duree);
-      };
-
-      buzzer(2600, 0.00, 0.25);
-      buzzer(2600, 0.35, 0.25);
-      buzzer(2600, 0.70, 0.25);
-      buzzer(2600, 1.05, 0.25);
-      buzzer(3200, 1.40, 0.60);
-    }
-
-    function calculerTemps(timestampMs) {
-      const ecartSec = Math.max(0, Math.floor((Date.now() - timestampMs) / 1000));
-      const minutes = Math.floor(ecartSec / 60);
-      const secondes = ecartSec % 60;
-      const texte = `${minutes}m ${secondes < 10 ? '0' : ''}${secondes}s`;
-
-      let classe = 'chrono-ok';
-      if (minutes >= 15) {
-        classe = 'chrono-danger';
-      } else if (minutes >= 7) {
-        classe = 'chrono-warn';
-      }
-      return { texte, classe };
-    }
-
-    function boutonAction(cmd) {
-      if (cmd.statut === 'En attente') {
-        return `<button class="btn-action btn-prepa" onclick="changerStatut('${cmd.id}', 'En préparation')">Lancer la préparation</button>`;
-      }
-      if (cmd.statut === 'En préparation') {
-        return `<button class="btn-action btn-prete" onclick="changerStatut('${cmd.id}', 'Prête')">Marquer comme Prête</button>`;
-      }
-      if (cmd.statut === 'Prête') {
-        return `<button class="btn-action btn-servie" onclick="changerStatut('${cmd.id}', 'Servie')">Archiver / Servie</button>`;
+    // 1. CHARGEMENT INITIAL DEPUIS L'API
+    async function chargerCommandes() {
+      try {
+        const res = await fetch('/api/commandes');
+        if (res.ok) {
+          const data = await res.json();
+          // Ne garder que les commandes non terminées
+          commandes = data.filter(c => c.statut !== 'servi' && c.statut !== 'annule');
+          afficherTickets();
+        }
+      } catch (e) {
+        console.error("Erreur chargement API:", e);
       }
     }
 
-    function badgeStatut(statut) {
-      if (statut === 'En attente') return '<span class="badge badge-attente">En attente</span>';
-      if (statut === 'En préparation') return '<span class="badge badge-prepa">En préparation</span>';
-      if (statut === 'Prête') return '<span class="badge badge-prete">Prête</span>';
-      return '';
+    // 2. ÉCOUTE TEMPS RÉEL SOCKET.IO
+    if (socket) {
+      socket.on('connect', () => {
+        document.getElementById('socket-status').innerText = 'En direct';
+        document.getElementById('socket-status').style.background = '#22c55e';
+      });
+
+      socket.on('disconnect', () => {
+        document.getElementById('socket-status').innerText = 'Déconnecté';
+        document.getElementById('socket-status').style.background = '#ef4444';
+      });
+
+      // Écoute de l'envoi de commande
+      socket.on('nouvelle_commande', (data) => {
+        jouerBip();
+        // Recharge la liste pour avoir l'ID généré et les détails exacts
+        chargerCommandes();
+      });
+
+      socket.on('statut_mis_a_jour', () => {
+        chargerCommandes();
+      });
     }
 
-    function afficherCommandes(commandes) {
-      commandesEnCours = commandes;
-      compteur.innerText = `${commandes.length} commande(s) active(s)`;
-
-      if (commandes.length > nombreCommandesPrecedent) {
-        emettreBip();
-      }
-      nombreCommandesPrecedent = commandes.length;
+    // 3. AFFICHAGE DES TICKETS
+    function afficherTickets() {
+      const container = document.getElementById('tickets-container');
+      const countEl = document.getElementById('active-count');
+      
+      countEl.innerText = `${commandes.length} commande${commandes.length > 1 ? 's' : ''}`;
 
       if (commandes.length === 0) {
-        grille.innerHTML = '<p style="color: #888;">Aucune commande en cours.</p>';
+        container.innerHTML = '<div class="empty-state">Aucune commande en attente 🎉</div>';
         return;
       }
 
-      grille.innerHTML = commandes.map(cmd => {
-        const chrono = calculerTemps(parseInt(cmd.id, 10));
-        return `
-          <div class="ticket" id="ticket-${cmd.id}">
-            <div>
-              <div class="ticket-header">
-                <span class="ticket-table">${cmd.table}</span>
-                <span class="chrono ${chrono.classe}" id="chrono-${cmd.id}">${chrono.texte}</span>
+      container.innerHTML = '';
+
+      commandes.forEach(cmd => {
+        const div = document.createElement('div');
+        const statutClass = `status-${cmd.statut || 'en_attente'}`;
+        div.className = `ticket-card ${statutClass}`;
+
+        const heure = cmd.date_creation ? new Date(cmd.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+
+        // Formatage des articles
+        let itemsHtml = '';
+        if (cmd.items && Array.isArray(cmd.items)) {
+          itemsHtml = cmd.items.map(it => {
+            const nom = it.article_nom || it.nom || 'Article';
+            const details = (it.remarques || '').split(' | ').join('<br>• ');
+            return `
+              <div class="ticket-item">
+                <div class="item-main">
+                  <span><span class="item-qty">${it.quantite || 1}x</span> ${nom}</span>
+                </div>
+                ${details ? `<div class="item-details">• ${details}</div>` : ''}
               </div>
-              <div class="meta-bar">
-                ${badgeStatut(cmd.statut)}
-                <span style="font-size: 12px; color: #888;">${cmd.heure}</span>
-              </div>
-              <div class="ticket-content">${cmd.details}</div>
-            </div>
-            ${boutonAction(cmd)}
+            `;
+          }).join('');
+        }
+
+        // Boutons selon l'état
+        let actionsHtml = '';
+        if (cmd.statut === 'en_attente' || !cmd.statut) {
+          actionsHtml = `<button class="btn-action btn-start" onclick="changerStatut(${cmd.id}, 'en_cours')">▶ Lancer Prépa</button>`;
+        } else if (cmd.statut === 'en_cours' || cmd.statut === 'en_preparation') {
+          actionsHtml = `<button class="btn-action btn-ready" onclick="changerStatut(${cmd.id}, 'pret')">✔ Prêt à Servir</button>`;
+        } else if (cmd.statut === 'pret') {
+          actionsHtml = `<button class="btn-action btn-done" onclick="changerStatut(${cmd.id}, 'servi')">✓ Servi / Archiver</button>`;
+        }
+
+        div.innerHTML = `
+          <div class="ticket-top">
+            <span class="ticket-table">Table ${cmd.table_num}</span>
+            <span class="badge-stat">${getLibelleStatut(cmd.statut)}</span>
+            <span class="ticket-time">${heure}</span>
+          </div>
+          <div class="ticket-body">
+            ${itemsHtml}
+            ${cmd.remarques ? `<div class="ticket-remarque">Note : ${cmd.remarques}</div>` : ''}
+          </div>
+          <div class="ticket-actions">
+            ${actionsHtml}
           </div>
         `;
-      }).join('');
+        container.appendChild(div);
+      });
     }
 
-    // Mise à jour continue des chronomètres chaque seconde
-    setInterval(() => {
-      commandesEnCours.forEach(cmd => {
-        const chronoEl = document.getElementById(`chrono-${cmd.id}`);
-        if (chronoEl) {
-          const chrono = calculerTemps(parseInt(cmd.id, 10));
-          chronoEl.innerText = chrono.texte;
-          chronoEl.className = `chrono ${chrono.classe}`;
-        }
-      });
-    }, 1000);
+    function getLibelleStatut(st) {
+      if (st === 'en_cours' || st === 'en_preparation') return 'En Prépa';
+      if (st === 'pret') return 'Prêt';
+      return 'En Attente';
+    }
 
+    // 4. CHANGEMENT DE STATUT
     async function changerStatut(id, statut) {
-      await fetch(`/api/commandes/${id}/statut`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ statut })
-      });
+      try {
+        await fetch(`/api/commandes/${id}/statut`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ statut })
+        });
+        if (socket) socket.emit('changer_statut', { id, statut });
+        chargerCommandes();
+      } catch (e) {
+        console.error(e);
+      }
     }
 
-    async function chargerCommandes() {
-      const res = await fetch('/api/commandes');
-      const data = await res.json();
-      nombreCommandesPrecedent = data.length;
-      afficherCommandes(data);
+    // Signal sonore
+    function jouerBip() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 587.33; // Ré
+        gain.gain.value = 0.1;
+        osc.start();
+        setTimeout(() => { osc.frequency.value = 880; }, 100);
+        setTimeout(() => { osc.stop(); ctx.close(); }, 300);
+      } catch (e) {}
     }
 
-    socket.on('miseAJourCommandes', (commandes) => afficherCommandes(commandes));
+    // Actualisation de secours toutes les 10s
+    setInterval(chargerCommandes, 10000);
+
+    // Initialisation
     chargerCommandes();
   </script>
 </body>
