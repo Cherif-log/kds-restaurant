@@ -40,19 +40,15 @@
     .kpi-value.blue { color: var(--accent); }
     .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* Règlements & Top Ventes */
-    .dashboard-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
-    @media (max-width: 800px) { .dashboard-split { grid-template-columns: 1fr; } }
+    /* Règlements, Serveurs & Top Ventes */
+    .dashboard-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 28px; }
 
     .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
     .panel-title { font-size: 1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); }
 
-    .pay-breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.92rem; }
-    .pay-breakdown-row:last-child { border-bottom: none; }
-    .pay-tag { font-weight: 700; display: flex; align-items: center; gap: 8px; }
-
-    .top-item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; }
-    .top-item-row:last-child { border-bottom: none; }
+    .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+    .breakdown-row:last-child { border-bottom: none; }
+    .tag-bold { font-weight: 700; display: flex; align-items: center; gap: 6px; }
 
     /* Tableau Journal */
     .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); }
@@ -117,30 +113,33 @@
       </div>
     </div>
 
-    <!-- RÈGLEMENTS & TOP VENTES -->
+    <!-- PANELS : MODES DE PAIEMENT, PERFORMANCE SERVEURS & TOP VENTES -->
     <div class="dashboard-split">
       <div class="panel-card">
-        <div class="panel-title">
-          <span>💳 Répartition des Règlements Nets</span>
-        </div>
-        <div class="pay-breakdown-row">
-          <span class="pay-tag">💳 Carte Bancaire (CB)</span>
+        <div class="panel-title">💳 Règlements Nets</div>
+        <div class="breakdown-row">
+          <span class="tag-bold">💳 Carte Bancaire</span>
           <strong id="pay-total-cb">0,00 €</strong>
         </div>
-        <div class="pay-breakdown-row">
-          <span class="pay-tag">💵 Espèces</span>
+        <div class="breakdown-row">
+          <span class="tag-bold">💵 Espèces</span>
           <strong id="pay-total-esp">0,00 €</strong>
         </div>
-        <div class="pay-breakdown-row">
-          <span class="pay-tag">🎫 Titres Restaurant</span>
+        <div class="breakdown-row">
+          <span class="tag-bold">🎫 Titres Resto</span>
           <strong id="pay-total-tr">0,00 €</strong>
         </div>
       </div>
 
       <div class="panel-card">
-        <div class="panel-title">
-          <span>🏆 Top des Ventes du Service</span>
+        <div class="panel-title">👤 Ventes par Serveur</div>
+        <div id="servers-breakdown-container">
+          <div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>
         </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">🏆 Top Plats Vendus</div>
         <div id="top-items-container">
           <div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>
         </div>
@@ -154,6 +153,7 @@
         <thead>
           <tr>
             <th>Table</th>
+            <th>Serveur</th>
             <th>Heure</th>
             <th>Statut</th>
             <th>Paiement</th>
@@ -162,7 +162,7 @@
           </tr>
         </thead>
         <tbody id="orders-table-body">
-          <tr><td colspan="6" style="text-align: center; padding: 30px;">Chargement...</td></tr>
+          <tr><td colspan="7" style="text-align: center; padding: 30px;">Chargement...</td></tr>
         </tbody>
       </table>
     </div>
@@ -215,6 +215,7 @@
       let totalEsp = 0;
       let totalTR = 0;
       const itemCounts = {};
+      const serverSales = {};
 
       encaissees.forEach(c => {
         let brutTicket = 0;
@@ -227,6 +228,12 @@
 
         const montantNet = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brutTicket - (c.remise_montant || 0));
         totalCA += montantNet;
+
+        // Ventes par serveur
+        const servName = c.serveur_nom || 'Salle';
+        if (!serverSales[servName]) serverSales[servName] = { ca: 0, count: 0 };
+        serverSales[servName].ca += montantNet;
+        serverSales[servName].count += 1;
 
         if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += montantNet;
         else if (c.mode_paiement === 'Espèces') totalEsp += montantNet;
@@ -260,6 +267,20 @@
       });
       document.getElementById('kpi-temps-moyen').innerText = countValides > 0 ? `${Math.round(durees / countValides)} min` : '0 min';
 
+      // Rendu Serveurs
+      const serverContainer = document.getElementById('servers-breakdown-container');
+      const serverEntries = Object.entries(serverSales);
+      if (serverEntries.length === 0) {
+        serverContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>';
+      } else {
+        serverContainer.innerHTML = serverEntries.map(([nom, data]) => `
+          <div class="breakdown-row">
+            <span class="tag-bold">👤 ${nom} (${data.count} tbl)</span>
+            <strong style="color:var(--accent);">${data.ca.toFixed(2)} €</strong>
+          </div>
+        `).join('');
+      }
+
       // Top Ventes
       const sortedItems = Object.entries(itemCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
       const topContainer = document.getElementById('top-items-container');
@@ -267,7 +288,7 @@
         topContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>';
       } else {
         topContainer.innerHTML = sortedItems.map(([nom, qte], idx) => `
-          <div class="top-item-row">
+          <div class="breakdown-row">
             <span><strong>#${idx+1}</strong> ${nom}</span>
             <strong style="color:var(--accent);">${qte}x</strong>
           </div>
@@ -277,7 +298,7 @@
       // Remplissage Tableau
       const tbody = document.getElementById('orders-table-body');
       if (commandes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
         return;
       }
 
@@ -299,10 +320,11 @@
 
         tr.innerHTML = `
           <td><strong>Table ${c.table_num}</strong></td>
+          <td><span style="font-weight:700; color:var(--primary);">👤 ${c.serveur_nom || 'Salle'}</span></td>
           <td>${heure}</td>
           <td><span class="badge-stat stat-${c.statut}">${getLibelleStatut(c.statut)}</span></td>
           <td>${c.mode_paiement ? `<strong>${c.mode_paiement}</strong>` : '-'}</td>
-          <td><strong>${montantAffiche > 0 ? montantAffiche.toFixed(2) + ' €' : '0,00 €'}</strong> ${c.remise_montant > 0 ? `<span style="font-size:0.75rem; color:#b91c1c;">(Remise -${c.remise_montant.toFixed(2)}€)</span>` : ''}</td>
+          <td><strong>${montantAffiche > 0 ? montantAffiche.toFixed(2) + ' €' : '0,00 €'}</strong> ${c.remise_montant > 0 ? `<span style="font-size:0.75rem; color:#b91c1c;">(-${c.remise_montant.toFixed(2)}€)</span>` : ''}</td>
           <td><div style="font-size:0.82rem; color:#475569;">${detailsHtml}</div></td>
         `;
         tbody.appendChild(tr);
@@ -325,7 +347,7 @@
       }
 
       let csv = "\uFEFF";
-      csv += "ID;Table;Date_Creation;Date_Cloture;Statut;Mode_Paiement;Articles;Remise_EUR;Total_Paye_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
+      csv += "ID;Table;Serveur;Date_Creation;Date_Cloture;Statut;Mode_Paiement;Articles;Remise_EUR;Total_Paye_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
 
       allOrders.forEach(c => {
         let brut = 0;
@@ -340,7 +362,7 @@
         const totalHT = (net / 1.10).toFixed(2);
         const tva = (net - (net / 1.10)).toFixed(2);
 
-        csv += `${c.id};Table ${c.table_num};${c.date_creation || ''};${c.date_fin || ''};${c.statut};${c.mode_paiement || ''};"${articlesList.join(', ')}";${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${totalHT};${tva}\n`;
+        csv += `${c.id};Table ${c.table_num};${c.serveur_nom || 'Salle'};${c.date_creation || ''};${c.date_fin || ''};${c.statut};${c.mode_paiement || ''};"${articlesList.join(', ')}";${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${totalHT};${tva}\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

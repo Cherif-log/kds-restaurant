@@ -15,10 +15,17 @@ const db = new Database('restaurant.db');
 
 // Structure des tables
 db.exec(`
+  CREATE TABLE IF NOT EXISTS serveurs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    pin TEXT NOT NULL UNIQUE
+  );
+
   CREATE TABLE IF NOT EXISTS commandes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     table_num INTEGER NOT NULL,
     statut TEXT DEFAULT 'en_attente',
+    serveur_nom TEXT DEFAULT 'Salle',
     mode_paiement TEXT,
     remise_montant REAL DEFAULT 0,
     total_paye REAL,
@@ -48,6 +55,17 @@ try { db.exec(`ALTER TABLE commandes ADD COLUMN date_fin DATETIME`); } catch (e)
 try { db.exec(`ALTER TABLE commandes ADD COLUMN mode_paiement TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE commandes ADD COLUMN remise_montant REAL DEFAULT 0`); } catch (e) {}
 try { db.exec(`ALTER TABLE commandes ADD COLUMN total_paye REAL`); } catch (e) {}
+try { db.exec(`ALTER TABLE commandes ADD COLUMN serveur_nom TEXT DEFAULT 'Salle'`); } catch (e) {}
+
+// Initialisation des serveurs par défaut
+const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
+if (countServeurs.count === 0) {
+  const insertServ = db.prepare(`INSERT INTO serveurs (nom, pin) VALUES (?, ?)`);
+  insertServ.run('Thomas', '1234');
+  insertServ.run('Sarah', '5678');
+  insertServ.run('Maxime', '0000');
+  insertServ.run('Direction', '9999');
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -55,7 +73,22 @@ app.use(express.static(path.join(__dirname)));
 
 // --- ROUTES API ---
 
-// 1. Statut en direct des tables
+// 1. Authentification Serveur par PIN
+app.post('/api/auth/pin', (req, res) => {
+  try {
+    const { pin } = req.body;
+    const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(pin);
+    if (serveur) {
+      res.json({ success: true, serveur });
+    } else {
+      res.status(401).json({ success: false, error: 'Code PIN incorrect' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur authentification' });
+  }
+});
+
+// 2. Statut des tables
 app.get('/api/tables/statuts', (req, res) => {
   try {
     const activeOrders = db.prepare(`
@@ -80,13 +113,13 @@ app.get('/api/tables/statuts', (req, res) => {
   }
 });
 
-// 2. Gestion des Ruptures de Stock (86-List)
+// 3. Ruptures de Stock (86-List)
 app.get('/api/stock/indisponibles', (req, res) => {
   try {
     const rows = db.prepare(`SELECT article_id FROM articles_indisponibles`).all();
     res.json(rows.map(r => r.article_id));
   } catch (err) {
-    res.status(500).json({ error: 'Erreur récupération stock' });
+    res.status(500).json({ error: 'Erreur stock' });
   }
 });
 
@@ -107,11 +140,11 @@ app.post('/api/stock/toggle', (req, res) => {
     io.emit('stock_update', indisponibles);
     res.json({ success: true, indisponibles });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur mise à jour stock' });
+    res.status(500).json({ error: 'Erreur stock' });
   }
 });
 
-// 3. Commandes actives (Cuisine)
+// 4. Commandes actives (Cuisine)
 app.get('/api/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`
@@ -132,17 +165,17 @@ app.get('/api/commandes', (req, res) => {
   }
 });
 
-// 4. Addition d'une table
+// 5. Addition d'une table
 app.get('/api/tables/:table_num/addition', (req, res) => {
   try {
     const { table_num } = req.params;
     const commandes = db.prepare(`
-      SELECT id FROM commandes 
+      SELECT id, serveur_nom FROM commandes 
       WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
     `).all(table_num);
 
     if (commandes.length === 0) {
-      return res.json({ table_num, items: [], total: 0 });
+      return res.json({ table_num, items: [], total: 0, serveur_nom: 'Salle' });
     }
 
     const commandeIds = commandes.map(c => c.id);
@@ -159,6 +192,7 @@ app.get('/api/tables/:table_num/addition', (req, res) => {
     res.json({
       table_num,
       items,
+      serveur_nom: commandes[0].serveur_nom || 'Salle',
       total: parseFloat(total.toFixed(2)),
       total_ht: parseFloat((total / 1.10).toFixed(2)),
       tva: parseFloat((total - (total / 1.10)).toFixed(2))
@@ -168,16 +202,16 @@ app.get('/api/tables/:table_num/addition', (req, res) => {
   }
 });
 
-// 5. Créer une commande
+// 6. Créer une commande
 app.post('/api/commandes', (req, res) => {
   try {
-    const { table_num, items, remarques } = req.body;
+    const { table_num, items, remarques, serveur_nom } = req.body;
 
     const insertCmd = db.prepare(`
-      INSERT INTO commandes (table_num, statut, remarques, date_creation) 
-      VALUES (?, 'en_attente', ?, datetime('now', 'localtime'))
+      INSERT INTO commandes (table_num, statut, serveur_nom, remarques, date_creation) 
+      VALUES (?, 'en_attente', ?, ?, datetime('now', 'localtime'))
     `);
-    const info = insertCmd.run(table_num || 1, remarques || '');
+    const info = insertCmd.run(table_num || 1, serveur_nom || 'Salle', remarques || '');
     const commandeId = info.lastInsertRowid;
 
     const insertItem = db.prepare(`
@@ -202,6 +236,7 @@ app.post('/api/commandes', (req, res) => {
       id: commandeId,
       table_num: table_num || 1,
       statut: 'en_attente',
+      serveur_nom: serveur_nom || 'Salle',
       remarques: remarques || '',
       date_creation: new Date().toISOString(),
       items: getItems.all(commandeId)
@@ -216,11 +251,11 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 6. Encaisser table
+// 7. Encaisser table
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const { table_num } = req.params;
-    const { mode_paiement, remise_montant, total_paye } = req.body;
+    const { mode_paiement, remise_montant, total_paye, serveur_nom } = req.body;
 
     const update = db.prepare(`
       UPDATE commandes 
@@ -228,10 +263,11 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
           mode_paiement = ?, 
           remise_montant = ?, 
           total_paye = ?, 
+          serveur_nom = COALESCE(?, serveur_nom),
           date_fin = datetime('now', 'localtime') 
       WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
     `);
-    update.run(mode_paiement || 'CB', remise_montant || 0, total_paye || 0, table_num);
+    update.run(mode_paiement || 'CB', remise_montant || 0, total_paye || 0, serveur_nom || null, table_num);
 
     io.emit('table_status_change');
     io.emit('statut_mis_a_jour');
@@ -241,7 +277,7 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
   }
 });
 
-// 7. Statut commande
+// 8. Statut commande
 app.put('/api/commandes/:id/statut', (req, res) => {
   try {
     const { id } = req.params;
@@ -263,7 +299,7 @@ app.put('/api/commandes/:id/statut', (req, res) => {
   }
 });
 
-// 8. Admin historique
+// 9. Admin historique
 app.get('/api/admin/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();

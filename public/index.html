@@ -24,11 +24,12 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
-    header { background: var(--primary); color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 1.15rem; font-weight: 700; }
-    .header-links { display: flex; gap: 10px; }
-    .btn-nav-link { background: #334155; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
-    .btn-nav-link:hover { background: #475569; }
+    header { background: var(--primary); color: #fff; padding: 10px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    header h1 { font-size: 1.1rem; font-weight: 700; }
+    .header-user-zone { display: flex; align-items: center; gap: 10px; }
+    .user-badge { background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .user-badge:hover { background: #475569; }
+    .btn-nav-link { background: #1e293b; border: 1px solid #475569; color: #fff; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
 
     .app-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 54px); }
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
@@ -93,6 +94,21 @@
     .ticket-note { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; outline: none; }
     .btn-send { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
     .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* MODAL VERROUILLAGE CODE PIN */
+    .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 15px; }
+    .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
+    .pin-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+    .pin-subtitle { font-size: 0.8rem; color: #94a3b8; margin-bottom: 20px; }
+    
+    .pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
+    .pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #38bdf8; }
+    .pin-dot.filled { background: #38bdf8; }
+
+    .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+    .btn-key { background: #334155; color: #fff; border: none; border-radius: 12px; height: 58px; font-size: 1.4rem; font-weight: 800; cursor: pointer; transition: background 0.1s; }
+    .btn-key:active { background: #475569; }
+    .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
 
     /* MODAL ADDITION & ENCAISSEMENT */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
@@ -163,9 +179,46 @@
 </head>
 <body>
 
+  <!-- ÉCRAN DE VERROUILLAGE CODE PIN -->
+  <div class="lock-overlay" id="pin-lock-overlay">
+    <div class="pin-card">
+      <div class="pin-title">Hôtel des Pins</div>
+      <div class="pin-subtitle">Saisissez votre code PIN serveur</div>
+
+      <div class="pin-dots">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
+
+      <div class="keypad-grid">
+        <button class="btn-key" onclick="pressPin('1')">1</button>
+        <button class="btn-key" onclick="pressPin('2')">2</button>
+        <button class="btn-key" onclick="pressPin('3')">3</button>
+        <button class="btn-key" onclick="pressPin('4')">4</button>
+        <button class="btn-key" onclick="pressPin('5')">5</button>
+        <button class="btn-key" onclick="pressPin('6')">6</button>
+        <button class="btn-key" onclick="pressPin('7')">7</button>
+        <button class="btn-key" onclick="pressPin('8')">8</button>
+        <button class="btn-key" onclick="pressPin('9')">9</button>
+        <button class="btn-key action" onclick="clearPin()">C</button>
+        <button class="btn-key" onclick="pressPin('0')">0</button>
+        <button class="btn-key action" onclick="deletePin()">⌫</button>
+      </div>
+
+      <div style="font-size:0.75rem; color:#64748b; margin-top:10px;">
+        Codes tests : Thomas (1234) | Sarah (5678)
+      </div>
+    </div>
+  </div>
+
   <header>
     <h1>Hôtel des Pins — Salle & Caisse</h1>
-    <div class="header-links">
+    <div class="header-user-zone">
+      <div class="user-badge" onclick="deconnecterServeur()">
+        👤 <span id="active-server-name">Serveur</span> (Changer)
+      </div>
       <a href="/cuisine.html" class="btn-nav-link" target="_blank">👨‍🍳 Cuisine</a>
       <a href="/admin.html" class="btn-nav-link" target="_blank">📊 Admin</a>
     </div>
@@ -243,7 +296,7 @@
           <div class="receipt-info">
             <div style="display:flex; justify-content:space-between;">
               <span>TABLE : <strong id="receipt-table-num">1</strong></span>
-              <span>SERVEUR : Salle</span>
+              <span>SERVEUR : <strong id="receipt-server-name">Salle</strong></span>
             </div>
             <div style="display:flex; justify-content:space-between; margin-top:2px;">
               <span id="receipt-date-print"></span>
@@ -330,6 +383,10 @@
     let indisponibles = [];
     let selectedModePaiement = 'CB';
 
+    // Gestion Serveur & Code PIN
+    let currentServeur = localStorage.getItem('hdp_serveur_nom') || null;
+    let enteredPin = '';
+
     let rawTotalTTC = 0;
     let discountPercent = 0;
     let splitParts = 1;
@@ -397,6 +454,75 @@
       { id: "enf_g4", nom: "Garniture : Légumes sautés", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 }
     ];
 
+    // --- AUTHENTIFICATION CODE PIN ---
+    function checkAuth() {
+      if (!currentServeur) {
+        document.getElementById('pin-lock-overlay').style.display = 'flex';
+      } else {
+        document.getElementById('pin-lock-overlay').style.display = 'none';
+        document.getElementById('active-server-name').innerText = currentServeur;
+      }
+    }
+
+    function pressPin(num) {
+      if (enteredPin.length < 4) {
+        enteredPin += num;
+        updatePinDots();
+        if (enteredPin.length === 4) {
+          verifierPin();
+        }
+      }
+    }
+
+    function deletePin() {
+      enteredPin = enteredPin.slice(0, -1);
+      updatePinDots();
+    }
+
+    function clearPin() {
+      enteredPin = '';
+      updatePinDots();
+    }
+
+    function updatePinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < enteredPin.length) dot.classList.add('filled');
+        else dot.classList.remove('filled');
+      }
+    }
+
+    async function verifierPin() {
+      try {
+        const res = await fetch('/api/auth/pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: enteredPin })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          currentServeur = data.serveur.nom;
+          localStorage.setItem('hdp_serveur_nom', currentServeur);
+          clearPin();
+          checkAuth();
+        } else {
+          alert("❌ Code PIN incorrect !");
+          clearPin();
+        }
+      } catch (e) {
+        alert("Erreur connexion serveur.");
+        clearPin();
+      }
+    }
+
+    function deconnecterServeur() {
+      currentServeur = null;
+      localStorage.removeItem('hdp_serveur_nom');
+      clearPin();
+      checkAuth();
+    }
+
+    // --- LOGIQUE SALLE & TABLES ---
     async function chargerStatutsTables() {
       try {
         const res = await fetch('/api/tables/statuts');
@@ -436,6 +562,7 @@
     }
 
     function init() {
+      checkAuth();
       const categories = ["Menu 40 €", "Entrées (15 €)", "Poissons (25 €)", "Viandes (25 €)", "Desserts", "Menu Enfant (15 €)"];
       const catContainer = document.getElementById('cat-tabs-container');
       catContainer.innerHTML = '';
@@ -581,6 +708,7 @@
 
       const payload = {
         table_num: currentTable,
+        serveur_nom: currentServeur || 'Salle',
         items: items,
         remarques: document.getElementById('order-notes').value.trim()
       };
@@ -591,7 +719,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        alert(`✅ Commande Table ${currentTable} envoyée en cuisine !`);
+        alert(`✅ Commande Table ${currentTable} envoyée en cuisine par ${currentServeur || 'Salle'} !`);
         cart = {};
         document.getElementById('order-notes').value = '';
         afficherPlats();
@@ -602,10 +730,11 @@
       }
     }
 
-    // GESTION ADDITION
+    // --- ADDITION & ENCAISSEMENT ---
     async function ouvrirModalAddition() {
       document.getElementById('modal-table-num').innerText = currentTable;
       document.getElementById('receipt-table-num').innerText = currentTable;
+      document.getElementById('receipt-server-name').innerText = currentServeur || 'Salle';
       document.getElementById('receipt-date-print').innerText = new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
       document.getElementById('receipt-ticket-id').innerText = `TICK #${Date.now().toString().slice(-4)}`;
 
@@ -625,6 +754,10 @@
       try {
         const res = await fetch(`/api/tables/${currentTable}/addition`);
         const data = await res.json();
+
+        if (data.serveur_nom) {
+          document.getElementById('receipt-server-name').innerText = data.serveur_nom;
+        }
 
         if (!data.items || data.items.length === 0) {
           container.innerHTML = '<div style="text-align:center; padding:15px; color:var(--text-muted);">Aucune consommation active sur cette table.</div>';
@@ -721,9 +854,9 @@
       const discountAmount = (rawTotalTTC * discountPercent) / 100;
       const netTotalTTC = Math.max(0, rawTotalTTC - discountAmount);
 
-      let msg = `Confirmer l'encaissement Table ${currentTable} ?\n- Mode : ${selectedModePaiement}\n- Total : ${netTotalTTC.toFixed(2)} €`;
+      let msg = `Confirmer l'encaissement Table ${currentTable} par ${currentServeur || 'Salle'} ?\n- Mode : ${selectedModePaiement}\n- Total : ${netTotalTTC.toFixed(2)} €`;
       if (discountPercent > 0) msg += ` (Remise: ${discountPercent}%)`;
-      if (splitParts > 1) msg += `\n- Partage : ${splitParts} personnes (${(netTotalTTC / splitParts).toFixed(2)} €/pers.)`;
+      if (splitParts > 1) msg += `\n- Partage : ${splitParts} pers. (${(netTotalTTC / splitParts).toFixed(2)} €/pers.)`;
 
       if (!confirm(msg)) return;
 
@@ -734,7 +867,8 @@
           body: JSON.stringify({
             mode_paiement: selectedModePaiement,
             remise_montant: discountAmount,
-            total_paye: netTotalTTC
+            total_paye: netTotalTTC,
+            serveur_nom: currentServeur || 'Salle'
           })
         });
         if (res.ok) {
