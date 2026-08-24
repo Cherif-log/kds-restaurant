@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
   <!-- Optimisations PWA & Mobile Plein écran -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Pins Caisse">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pins Caisse">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0f172a">
+
   <title>Hôtel des Pins — Salle & Caisse</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
@@ -41,7 +43,7 @@
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* PLAN DE SALLE & CODES COULEURS STRICTS */
+    /* PLAN DE SALLE */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
     .table-legend { font-size: 0.72rem; display: flex; gap: 12px; font-weight: 600; }
     .dot-legend { display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-right: 4px; vertical-align: middle; }
@@ -51,25 +53,18 @@
     .floor-zone-header { font-size: 0.78rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }
     
     .zone-tables-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    
-    /* BOUTONS TABLES */
-    .btn-table { height: 46px; border-radius: 8px; font-weight: 800; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; position: relative; border: 2px solid transparent; }
-    
-    /* 1. LIBRE : Gris neutre / Blanc (Pas de bleu) */
+    .btn-table { height: 46px; border-radius: 8px; font-weight: 800; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; border: 2px solid transparent; }
     .btn-table.status-libre { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
-    
-    /* 2. EN CUISINE : Jaune / Orange */
     .btn-table.status-occupee { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
-    
-    /* 3. À ENCAISSER : Bleu ciel */
     .btn-table.status-servi { background: #eff6ff; border-color: #0284c7; color: #0369a1; }
-    
-    /* 4. SÉLECTION : Cadre noir visible sans altérer la couleur de fond */
     .btn-table.is-selected { border-color: #0f172a !important; box-shadow: 0 0 0 2px #0f172a !important; transform: scale(1.03); }
 
+    /* BARRE D'ACTIONS TABLE */
     .table-action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
-    .btn-addition { flex: 1; background: #0284c7; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-addition { flex: 2; background: #0284c7; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-addition:hover { background: #0369a1; }
+    .btn-transfer { flex: 1; background: #475569; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-transfer:hover { background: #334155; }
 
     /* Catégories */
     .cat-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; scrollbar-width: none; }
@@ -114,22 +109,19 @@
     .btn-send { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
     .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
 
-    /* MODAL VERROUILLAGE PIN */
+    /* MODALS */
     .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 15px; }
     .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
     .pin-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
     .pin-subtitle { font-size: 0.8rem; color: #94a3b8; margin-bottom: 20px; }
-    
     .pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
     .pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #38bdf8; }
     .pin-dot.filled { background: #38bdf8; }
-
     .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
     .btn-key { background: #334155; color: #fff; border: none; border-radius: 12px; height: 58px; font-size: 1.4rem; font-weight: 800; cursor: pointer; }
     .btn-key:active { background: #475569; }
     .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
 
-    /* MODAL ADDITION */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
     .modal-overlay.open { display: flex; }
     .modal-card { background: #fff; width: 100%; max-width: 470px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: pop 0.2s ease; }
@@ -138,21 +130,19 @@
     .modal-head { background: var(--primary); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
     .modal-body { padding: 18px; max-height: 80vh; overflow-y: auto; }
 
+    /* TICKET IMPRESSION */
     .receipt-container { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-family: 'Courier New', Courier, monospace; color: #111; }
     .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 12px; }
     .receipt-header h2 { font-size: 1.15rem; font-weight: 800; }
     .receipt-header p { font-size: 0.75rem; margin-top: 2px; }
-
     .receipt-info { font-size: 0.78rem; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 8px; }
     .receipt-line { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; }
-    
     .receipt-total-block { border-top: 2px solid #000; border-bottom: 1px dashed #000; margin-top: 8px; padding: 8px 0; }
     .receipt-subtotal { display: flex; justify-content: space-between; font-size: 0.85rem; color: #555; }
     .receipt-discount-line { display: none; justify-content: space-between; font-size: 0.88rem; color: #b91c1c; font-weight: 700; }
     .receipt-total-ttc { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800; margin-top: 4px; }
     .receipt-tax-table { font-size: 0.75rem; margin-top: 6px; }
     .receipt-split-box { display: none; justify-content: space-between; border-top: 1px dashed #000; margin-top: 6px; padding-top: 4px; font-size: 0.85rem; font-weight: 700; }
-
     .receipt-footer { text-align: center; font-size: 0.75rem; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; }
 
     .caisse-controls-box { margin-top: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
@@ -179,19 +169,7 @@
     @media print {
       body * { visibility: hidden; }
       #printable-receipt, #printable-receipt * { visibility: visible; }
-      #printable-receipt {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 80mm;
-        margin: 0;
-        padding: 4mm;
-        background: #fff;
-        color: #000;
-        border: none;
-        box-shadow: none;
-        font-family: 'Courier New', Courier, monospace;
-      }
+      #printable-receipt { position: absolute; left: 0; top: 0; width: 80mm; margin: 0; padding: 4mm; background: #fff; color: #000; border: none; }
       .no-print { display: none !important; }
     }
   </style>
@@ -203,14 +181,12 @@
     <div class="pin-card">
       <div class="pin-title">Hôtel des Pins</div>
       <div class="pin-subtitle">Saisissez votre code PIN serveur</div>
-
       <div class="pin-dots">
         <div class="pin-dot" id="dot-0"></div>
         <div class="pin-dot" id="dot-1"></div>
         <div class="pin-dot" id="dot-2"></div>
         <div class="pin-dot" id="dot-3"></div>
       </div>
-
       <div class="keypad-grid">
         <button class="btn-key" onclick="pressPin('1')">1</button>
         <button class="btn-key" onclick="pressPin('2')">2</button>
@@ -257,6 +233,9 @@
         <button class="btn-addition" onclick="ouvrirModalAddition()">
           🧾 Note & Encaissement : Table <span id="btn-add-table-num">1</span>
         </button>
+        <button class="btn-transfer" onclick="ouvrirModalTransfert()">
+          🔀 Transférer / Fusionner
+        </button>
       </div>
 
       <div class="section-label">2. Choisir la catégorie</div>
@@ -287,6 +266,32 @@
       </div>
     </aside>
 
+  </div>
+
+  <!-- MODAL TRANSFERT / FUSION DE TABLES -->
+  <div class="modal-overlay" id="transfer-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <span>🔀 Transférer / Fusionner la Table <span id="transfer-source-num">1</span></span>
+        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalTransfert()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.88rem; color:#475569; margin-bottom:14px; line-height:1.4;">
+          Sélectionnez la <strong>table de destination</strong>. Toutes les commandes actives de la Table <strong id="transfer-source-bold">1</strong> seront immédiatement transférées.
+        </p>
+        <div style="background:#f1f5f9; padding:10px; border-radius:8px; font-size:0.8rem; color:#334155; margin-bottom:16px;">
+          💡 <strong>Fusion automatique :</strong> Si la table cible est déjà occupée, les consommations s'ajouteront à son addition en cours.
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:0.85rem; font-weight:700; color:var(--primary); display:block; margin-bottom:6px;">Table de destination :</label>
+          <select id="transfer-target-select" style="width:100%; padding:10px; border:1.5px solid var(--border); border-radius:8px; font-size:1rem; font-weight:700; outline:none; background:#fff;"></select>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button style="flex:1; background:#e2e8f0; color:#334155; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;" onclick="fermerModalTransfert()">Annuler</button>
+          <button style="flex:2; background:var(--accent); color:#fff; border:none; padding:12px; border-radius:8px; font-weight:700; font-size:0.95rem; cursor:pointer;" onclick="validerTransfertTable()">✔ Confirmer le transfert</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- MODAL ADDITION -->
@@ -923,6 +928,73 @@
       }
     }
 
+    // --- TRANSFERT ET FUSION DE TABLES ---
+    function ouvrirModalTransfert() {
+      document.getElementById('transfer-source-num').innerText = currentTable;
+      document.getElementById('transfer-source-bold').innerText = currentTable;
+
+      const select = document.getElementById('transfer-target-select');
+      select.innerHTML = '';
+
+      let allTables = [];
+      dynamicPlan.forEach(z => z.tables.forEach(t => allTables.push(t.numero)));
+      allTables.sort((a, b) => a - b);
+
+      const otherTables = allTables.filter(t => t !== currentTable);
+
+      if (otherTables.length === 0) {
+        alert("Aucune autre table disponible sur le plan.");
+        return;
+      }
+
+      otherTables.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        const st = tableStatuses[t] || 'libre';
+        let stLabel = ' (Libre)';
+        if (st === 'occupee') stLabel = ' (En cuisine - Fusionnera)';
+        if (st === 'servi') stLabel = ' (À encaisser - Fusionnera)';
+        opt.innerText = `Table ${t}${stLabel}`;
+        select.appendChild(opt);
+      });
+
+      document.getElementById('transfer-modal').classList.add('open');
+    }
+
+    function fermerModalTransfert() {
+      document.getElementById('transfer-modal').classList.remove('open');
+    }
+
+    async function validerTransfertTable() {
+      const targetTable = document.getElementById('transfer-target-select').value;
+      if (!targetTable) return;
+
+      if (!confirm(`Confirmer le transfert de la Table ${currentTable} vers la Table ${targetTable} ?`)) return;
+
+      try {
+        const res = await fetch(`/api/tables/${currentTable}/transfer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            target_table: targetTable,
+            serveur_nom: currentServeur || 'Salle'
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Table ${currentTable} transférée avec succès vers la Table ${targetTable} !`);
+          fermerModalTransfert();
+          selectionnerTable(targetTable);
+          await chargerPlanSalle();
+        } else {
+          alert(`❌ ${data.error || "Erreur lors du transfert."}`);
+        }
+      } catch (e) {
+        alert("Erreur de connexion lors du transfert.");
+      }
+    }
+
     // RÉCEPTION TEMPS RÉEL
     if (socket) {
       socket.on('table_status_change', () => chargerPlanSalle());
@@ -936,19 +1008,20 @@
 
     setInterval(chargerPlanSalle, 5000);
     init();
+
     // Anti-mise en veille automatique (Wake Lock)
-let wakeLock = null;
-async function requestWakeLock() {
-  try {
-    if ('wakeLock' in navigator) {
-      wakeLock = await navigator.wakeLock.request('screen');
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {}
     }
-  } catch (err) {}
-}
-requestWakeLock();
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') requestWakeLock();
-});
+    requestWakeLock();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    });
   </script>
 </body>
 </html>

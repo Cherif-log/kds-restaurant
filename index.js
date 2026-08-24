@@ -138,7 +138,6 @@ app.delete('/api/admin/serveurs/:id', (req, res) => {
   }
 });
 
-// 👉 MODIFICATION DU CODE PIN SERVEUR PAR LA DIRECTION
 app.put('/api/admin/serveurs/:id/pin', (req, res) => {
   try {
     const { id } = req.params;
@@ -389,6 +388,40 @@ app.post('/api/tables/:table_num/reset', (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Erreur reset table' });
+  }
+});
+
+// 👉 9ter. NOUVEAU : TRANSFERT ET FUSION DE TABLES (SPLIT & JOIN)
+app.post('/api/tables/:table_num/transfer', (req, res) => {
+  try {
+    const sourceTable = parseInt(req.params.table_num, 10);
+    const targetTable = parseInt(req.body.target_table, 10);
+    const serveurNom = req.body.serveur_nom || 'Salle';
+
+    if (!targetTable || isNaN(targetTable) || sourceTable === targetTable) {
+      return res.status(400).json({ error: 'Table de destination invalide.' });
+    }
+
+    // Vérifier si la table source a des commandes actives
+    const activeOrders = db.prepare(`SELECT id FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(sourceTable);
+    if (activeOrders.length === 0) {
+      return res.status(400).json({ error: `La Table ${sourceTable} n'a aucune commande active à transférer.` });
+    }
+
+    // Réassigner toutes les commandes actives de la table source vers la table cible
+    db.prepare(`
+      UPDATE commandes 
+      SET table_num = ?, serveur_nom = ? 
+      WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
+    `).run(targetTable, serveurNom, sourceTable);
+
+    // Mettre à jour tous les terminaux en direct
+    io.emit('table_status_change');
+    io.emit('statut_mis_a_jour');
+
+    res.json({ success: true, message: `Table ${sourceTable} transférée/fusionnée vers Table ${targetTable}` });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur lors du transfert de table.' });
   }
 });
 
