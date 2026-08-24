@@ -225,19 +225,27 @@ app.delete('/api/admin/tables/:id', (req, res) => {
   }
 });
 
-// 4. Statut des tables
+// 4. STATUT DES TABLES + SERVEUR ASSIGNÉ
 app.get('/api/tables/statuts', (req, res) => {
   try {
     const allTables = db.prepare(`SELECT numero FROM tables_plan`).all();
-    const activeOrders = db.prepare(`SELECT table_num, statut FROM commandes WHERE statut NOT IN ('encaisse', 'annule')`).all();
+    const activeOrders = db.prepare(`SELECT table_num, statut, serveur_nom FROM commandes WHERE statut NOT IN ('encaisse', 'annule') ORDER BY id DESC`).all();
 
     const statuts = {};
-    allTables.forEach(t => { statuts[t.numero] = 'libre'; });
+    allTables.forEach(t => { 
+      statuts[t.numero] = { statut: 'libre', serveur: null }; 
+    });
 
     activeOrders.forEach(ord => {
       const tNum = parseInt(ord.table_num, 10);
-      if (ord.statut === 'servi') statuts[tNum] = 'servi';
-      else if (statuts[tNum] !== 'servi') statuts[tNum] = 'occupee';
+      if (!statuts[tNum] || statuts[tNum].statut === 'libre') {
+        statuts[tNum] = {
+          statut: ord.statut === 'servi' ? 'servi' : 'occupee',
+          serveur: ord.serveur_nom || 'Salle'
+        };
+      } else if (ord.statut === 'servi') {
+        statuts[tNum].statut = 'servi';
+      }
     });
 
     res.json(statuts);
@@ -391,7 +399,7 @@ app.post('/api/tables/:table_num/reset', (req, res) => {
   }
 });
 
-// 👉 9ter. NOUVEAU : TRANSFERT ET FUSION DE TABLES (SPLIT & JOIN)
+// 9ter. Transfert & Fusion
 app.post('/api/tables/:table_num/transfer', (req, res) => {
   try {
     const sourceTable = parseInt(req.params.table_num, 10);
@@ -402,20 +410,17 @@ app.post('/api/tables/:table_num/transfer', (req, res) => {
       return res.status(400).json({ error: 'Table de destination invalide.' });
     }
 
-    // Vérifier si la table source a des commandes actives
     const activeOrders = db.prepare(`SELECT id FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(sourceTable);
     if (activeOrders.length === 0) {
       return res.status(400).json({ error: `La Table ${sourceTable} n'a aucune commande active à transférer.` });
     }
 
-    // Réassigner toutes les commandes actives de la table source vers la table cible
     db.prepare(`
       UPDATE commandes 
       SET table_num = ?, serveur_nom = ? 
       WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
     `).run(targetTable, serveurNom, sourceTable);
 
-    // Mettre à jour tous les terminaux en direct
     io.emit('table_status_change');
     io.emit('statut_mis_a_jour');
 

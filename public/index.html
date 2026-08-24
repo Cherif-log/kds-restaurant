@@ -43,7 +43,7 @@
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* PLAN DE SALLE */
+    /* PLAN DE SALLE & BOUTONS TABLES */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
     .table-legend { font-size: 0.72rem; display: flex; gap: 12px; font-weight: 600; }
     .dot-legend { display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-right: 4px; vertical-align: middle; }
@@ -53,11 +53,15 @@
     .floor-zone-header { font-size: 0.78rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }
     
     .zone-tables-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .btn-table { height: 46px; border-radius: 8px; font-weight: 800; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; border: 2px solid transparent; }
+    
+    .btn-table { min-height: 52px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.15s; border: 2px solid transparent; padding: 4px 2px; }
     .btn-table.status-libre { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
     .btn-table.status-occupee { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
     .btn-table.status-servi { background: #eff6ff; border-color: #0284c7; color: #0369a1; }
     .btn-table.is-selected { border-color: #0f172a !important; box-shadow: 0 0 0 2px #0f172a !important; transform: scale(1.03); }
+
+    .table-num-txt { font-weight: 800; font-size: 0.95rem; line-height: 1.1; }
+    .table-server-badge { font-size: 0.65rem; font-weight: 700; margin-top: 3px; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.3px; }
 
     /* BARRE D'ACTIONS TABLE */
     .table-action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
@@ -268,7 +272,7 @@
 
   </div>
 
-  <!-- MODAL TRANSFERT / FUSION DE TABLES -->
+  <!-- MODAL TRANSFERT / FUSION -->
   <div class="modal-overlay" id="transfer-modal">
     <div class="modal-card">
       <div class="modal-head">
@@ -569,11 +573,15 @@
 
       container.innerHTML = dynamicPlan.map(zone => {
         const tablesHtml = zone.tables.map(t => {
-          const st = tableStatuses[t.numero] || 'libre';
+          const tableInfo = tableStatuses[t.numero] || { statut: 'libre', serveur: null };
+          const st = (typeof tableInfo === 'string') ? tableInfo : (tableInfo.statut || 'libre');
+          const serv = (typeof tableInfo === 'object' && tableInfo.serveur) ? tableInfo.serveur : null;
           const isSel = (t.numero === currentTable);
+
           return `
             <button class="btn-table status-${st} ${isSel ? 'is-selected' : ''}" onclick="selectionnerTable(${t.numero})">
-              <strong>T${t.numero}</strong>
+              <span class="table-num-txt">T${t.numero}</span>
+              ${serv && st !== 'libre' ? `<span class="table-server-badge">${serv}</span>` : ''}
             </button>
           `;
         }).join('');
@@ -950,10 +958,14 @@
       otherTables.forEach(t => {
         const opt = document.createElement('option');
         opt.value = t;
-        const st = tableStatuses[t] || 'libre';
+        const tableInfo = tableStatuses[t] || { statut: 'libre', serveur: null };
+        const st = (typeof tableInfo === 'string') ? tableInfo : (tableInfo.statut || 'libre');
+        const serv = (typeof tableInfo === 'object' && tableInfo.serveur) ? ` (${tableInfo.serveur})` : '';
+
         let stLabel = ' (Libre)';
-        if (st === 'occupee') stLabel = ' (En cuisine - Fusionnera)';
-        if (st === 'servi') stLabel = ' (À encaisser - Fusionnera)';
+        if (st === 'occupee') stLabel = ` (En cuisine${serv} - Fusionnera)`;
+        if (st === 'servi') stLabel = ` (À encaisser${serv} - Fusionnera)`;
+        
         opt.innerText = `Table ${t}${stLabel}`;
         select.appendChild(opt);
       });
