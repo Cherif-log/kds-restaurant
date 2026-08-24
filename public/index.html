@@ -35,6 +35,13 @@
     header { background: var(--primary); color: #fff; padding: 10px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     header h1 { font-size: 1.1rem; font-weight: 700; }
     .header-user-zone { display: flex; align-items: center; gap: 10px; }
+    
+    /* BADGE RÉSEAU HORS-LIGNE */
+    .network-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: inline-flex; align-items: center; gap: 5px; }
+    .network-online { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
+    .network-offline { background: #b91c1c; color: #fff; border: 1px solid #ef4444; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
     .user-badge { background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px; cursor: pointer; }
     .user-badge:hover { background: #475569; }
     .btn-nav-link { background: #1e293b; border: 1px solid #475569; color: #fff; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
@@ -211,6 +218,8 @@
   <header>
     <h1>Hôtel des Pins — Salle & Caisse</h1>
     <div class="header-user-zone">
+      <!-- INDICATEUR DE CONNEXION RÉSEAU / HORS-LIGNE -->
+      <span class="network-badge network-online" id="network-status-badge">🟢 En ligne</span>
       <div class="user-badge" onclick="deconnecterServeur()">
         👤 <span id="active-server-name">Serveur</span> (Changer)
       </div>
@@ -479,6 +488,68 @@
       { id: "enf_g4", slug: "garn_legumes", nom: "Garniture : Légumes sautés", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 }
     ];
 
+    // --- GESTION DU MODE HORS-LIGNE & SYNCHRONISATION AUTOMATIQUE ---
+    function getOfflineQueue() {
+      return JSON.parse(localStorage.getItem('hdp_offline_orders') || '[]');
+    }
+
+    function saveOfflineQueue(queue) {
+      localStorage.setItem('hdp_offline_orders', JSON.stringify(queue));
+      updateNetworkBadge();
+    }
+
+    function updateNetworkBadge() {
+      const badge = document.getElementById('network-status-badge');
+      const queue = getOfflineQueue();
+
+      if (!navigator.onLine) {
+        badge.className = 'network-badge network-offline';
+        badge.innerText = `🔴 Hors-ligne (${queue.length} en attente)`;
+      } else if (queue.length > 0) {
+        badge.className = 'network-badge network-offline';
+        badge.innerText = `⏳ Synchro (${queue.length} en attente)...`;
+      } else {
+        badge.className = 'network-badge network-online';
+        badge.innerText = '🟢 En ligne';
+      }
+    }
+
+    async function synchroniserCommandesHorsLigne() {
+      if (!navigator.onLine) return;
+      const queue = getOfflineQueue();
+      if (queue.length === 0) return;
+
+      const remainingQueue = [];
+      for (const cmd of queue) {
+        try {
+          const res = await fetch('/api/commandes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cmd)
+          });
+          if (!res.ok) remainingQueue.push(cmd);
+        } catch (e) {
+          remainingQueue.push(cmd);
+        }
+      }
+
+      saveOfflineQueue(remainingQueue);
+      if (remainingQueue.length === 0) {
+        updateNetworkBadge();
+        chargerPlanSalle();
+      }
+    }
+
+    window.addEventListener('online', () => {
+      updateNetworkBadge();
+      synchroniserCommandesHorsLigne();
+    });
+
+    window.addEventListener('offline', () => {
+      updateNetworkBadge();
+    });
+
+    // --- AUTHENTIFICATION CODE PIN ---
     function checkAuth() {
       if (!currentServeur) {
         document.getElementById('pin-lock-overlay').style.display = 'flex';
@@ -532,6 +603,14 @@
           clearPin();
         }
       } catch (e) {
+        // Support déverrouillage de secours si hors ligne
+        if (!navigator.onLine && enteredPin.length === 4) {
+          currentServeur = 'Serveur (Mode Dégradé)';
+          localStorage.setItem('hdp_serveur_nom', currentServeur);
+          clearPin();
+          checkAuth();
+          return;
+        }
         alert("Erreur connexion serveur.");
         clearPin();
       }
@@ -544,16 +623,28 @@
       checkAuth();
     }
 
+    // --- PLAN DE SALLE & STATUTS ---
     async function chargerPlanSalle() {
       try {
         const [resPlan, resStatuts] = await Promise.all([
           fetch('/api/plan/zones-tables'),
           fetch('/api/tables/statuts')
         ]);
-        if (resPlan.ok) dynamicPlan = await resPlan.json();
-        if (resStatuts.ok) tableStatuses = await resStatuts.json();
+        if (resPlan.ok) {
+          dynamicPlan = await resPlan.json();
+          localStorage.setItem('hdp_cached_plan', JSON.stringify(dynamicPlan));
+        }
+        if (resStatuts.ok) {
+          tableStatuses = await resStatuts.json();
+          localStorage.setItem('hdp_cached_statuses', JSON.stringify(tableStatuses));
+        }
         renderDynamicFloorPlan();
-      } catch (e) {}
+      } catch (e) {
+        // Chargement du cache local en cas de coupure réseau
+        dynamicPlan = JSON.parse(localStorage.getItem('hdp_cached_plan') || '[]');
+        tableStatuses = JSON.parse(localStorage.getItem('hdp_cached_statuses') || '{}');
+        renderDynamicFloorPlan();
+      }
     }
 
     function renderDynamicFloorPlan() {
@@ -617,6 +708,7 @@
 
     function init() {
       checkAuth();
+      updateNetworkBadge();
       const categories = ["Menu 40 €", "Entrées (15 €)", "Poissons (25 €)", "Viandes (25 €)", "Desserts", "Menu Enfant (15 €)"];
       const catContainer = document.getElementById('cat-tabs-container');
       catContainer.innerHTML = '';
@@ -637,6 +729,7 @@
       mettreAJourTicket();
       chargerPlanSalle();
       chargerStock();
+      synchroniserCommandesHorsLigne();
     }
 
     function afficherPlats() {
@@ -751,6 +844,7 @@
       btnSend.disabled = false;
     }
 
+    // --- ENVOI DE COMMANDE (AVEC FILE HORS-LIGNE) ---
     async function envoyerCommande() {
       const items = Object.keys(cart).map(id => {
         const plat = menuData.find(d => d.id === id);
@@ -768,12 +862,28 @@
         remarques: document.getElementById('order-notes').value.trim()
       };
 
+      // Si l'appareil est hors-ligne -> Enregistrement local immédiat
+      if (!navigator.onLine) {
+        const queue = getOfflineQueue();
+        queue.push(payload);
+        saveOfflineQueue(queue);
+        alert(`📡 MODE HORS-LIGNE : Commande Table ${currentTable} enregistrée sur l'appareil. Elle sera envoyée dès le retour du réseau !`);
+        cart = {};
+        document.getElementById('order-notes').value = '';
+        afficherPlats();
+        mettreAJourTicket();
+        return;
+      }
+
       try {
-        await fetch('/api/commandes', {
+        const res = await fetch('/api/commandes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+
+        if (!res.ok) throw new Error('Erreur HTTP');
+
         alert(`✅ Commande Table ${currentTable} envoyée en cuisine !`);
         cart = {};
         document.getElementById('order-notes').value = '';
@@ -781,7 +891,15 @@
         mettreAJourTicket();
         await chargerPlanSalle();
       } catch (err) {
-        alert("Erreur lors de l'envoi.");
+        // Si le fetch échoue (microcoupure), mise en file d'attente
+        const queue = getOfflineQueue();
+        queue.push(payload);
+        saveOfflineQueue(queue);
+        alert(`📡 RÉSEAU INSTABLE : Commande Table ${currentTable} sécurisée localement. Synchronisation automatique en cours...`);
+        cart = {};
+        document.getElementById('order-notes').value = '';
+        afficherPlats();
+        mettreAJourTicket();
       }
     }
 
@@ -837,7 +955,7 @@
         recalculerAddition();
         document.getElementById('btn-valider-encaissement').disabled = false;
       } catch (e) {
-        container.innerHTML = '<div style="color:red;">Erreur chargement addition</div>';
+        container.innerHTML = '<div style="color:red; text-align:center; padding:15px;">Connexion réseau requise pour générer l\'addition.</div>';
       }
     }
 
@@ -1009,6 +1127,8 @@
 
     // RÉCEPTION TEMPS RÉEL
     if (socket) {
+      socket.on('connect', () => updateNetworkBadge());
+      socket.on('disconnect', () => updateNetworkBadge());
       socket.on('table_status_change', () => chargerPlanSalle());
       socket.on('statut_mis_a_jour', () => chargerPlanSalle());
       socket.on('plan_update', () => chargerPlanSalle());
@@ -1018,7 +1138,12 @@
       });
     }
 
-    setInterval(chargerPlanSalle, 5000);
+    // Synchronisation automatique et vérification régulière
+    setInterval(() => {
+      synchroniserCommandesHorsLigne();
+      chargerPlanSalle();
+    }, 6000);
+
     init();
 
     // Anti-mise en veille automatique (Wake Lock)
