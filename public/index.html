@@ -33,7 +33,7 @@
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* Tables bar */
+    /* Barre des Tables */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
     .table-legend { font-size: 0.7rem; display: flex; gap: 8px; }
     .dot-legend { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; }
@@ -120,7 +120,7 @@
     .btn-print { flex: 1; background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
     .btn-encaisser { flex: 2; background: var(--success); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
 
-    /* MISE EN PAGE IMPRESSION THERMIQUE 80MM */
+    /* Impression Thermique 80 mm */
     @media print {
       body * { visibility: hidden; }
       #printable-receipt, #printable-receipt * { visibility: visible; }
@@ -210,15 +210,16 @@
       
       <div class="modal-body">
         
-        <!-- TICKET DE CAISSE THERMIQUE 80MM -->
+        <!-- TICKET DE CAISSE AVEC MENTIONS LÉGALES OFFICIELLES -->
         <div class="receipt-container" id="printable-receipt">
           <div class="receipt-header">
             <h2>HÔTEL DES PINS</h2>
-            <p>Restaurant & Brasserie</p>
-            <p>23 Rue des Chênes, 33970 Cap Ferret</p>
-            <p>Tél : 05 56 60 00 00</p>
-            <p>SIRET : 842 198 472 00019</p>
-            <p>TVA : FR 48 842198472</p>
+            <p><strong>SARL DES PINS</strong> — Restaurant & Hôtel</p>
+            <p>23 Rue des Fauvettes, 33970 Lège-Cap-Ferret</p>
+            <p>Tél : 05 56 60 60 11</p>
+            <p>SIRET : 412 655 326 00012 — RCS Bordeaux</p>
+            <p>TVA Intracommunautaire : FR 43 412655326</p>
+            <p>Code NAF : 5510Z</p>
           </div>
 
           <div class="receipt-info">
