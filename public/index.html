@@ -165,7 +165,10 @@
     .receipt-split-box { display: none; justify-content: space-between; border-top: 1px dashed #000; margin-top: 6px; padding-top: 4px; font-size: 0.85rem; font-weight: 700; }
     .receipt-footer { text-align: center; font-size: 0.75rem; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; }
 
-    /* MULTI-PAIEMENT & POURBOIRES */
+    /* SIGNATURE NOTE DE CHAMBRE SUR TICKET */
+    .receipt-chambre-sign { display: none; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; font-size: 0.78rem; }
+
+    /* MULTI-PAIEMENT, POURBOIRES & CHAMBRES */
     .caisse-controls-box { margin-top: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
     .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .control-row:last-child { margin-bottom: 0; }
@@ -193,9 +196,15 @@
     .btn-add-partial-pay { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 800; font-size: 0.82rem; cursor: pointer; }
     .btn-add-partial-pay:disabled { background: #94a3b8; cursor: not-allowed; }
 
-    .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
-    .btn-pay-method { padding: 8px 4px; border: 1.5px solid var(--border); background: #fff; border-radius: 6px; font-weight: 700; font-size: 0.78rem; cursor: pointer; text-align: center; }
+    .payment-methods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px; }
+    .btn-pay-method { padding: 8px 2px; border: 1.5px solid var(--border); background: #fff; border-radius: 6px; font-weight: 700; font-size: 0.74rem; cursor: pointer; text-align: center; }
     .btn-pay-method.active { border-color: var(--accent); background: #dbeafe; color: #1e40af; }
+    .btn-pay-method.chambre-btn { border-color: #6366f1; color: #4338ca; }
+    .btn-pay-method.chambre-btn.active { background: #e0e7ff; }
+
+    /* CHAMPS SPECIFIQUES CHAMBRE */
+    .chambre-fields-box { display: none; background: #fff; border: 1.5px solid #6366f1; border-radius: 6px; padding: 8px; margin-bottom: 8px; gap: 6px; }
+    .chambre-input { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; font-weight: 700; outline: none; }
 
     .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
     .btn-print { flex: 1; background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
@@ -405,7 +414,7 @@
     </div>
   </div>
 
-  <!-- MODAL ADDITION & ENCAISSEMENT MULTI-RÈGLEMENTS -->
+  <!-- MODAL ADDITION & ENCAISSEMENT MULTI-RÈGLEMENTS + NOTE DE CHAMBRE -->
   <div class="modal-overlay" id="addition-modal">
     <div class="modal-card">
       <div class="modal-head">
@@ -466,6 +475,16 @@
             <div id="receipt-payments-list-print" style="margin-top:6px; border-top:1px dashed #000; padding-top:4px; font-size:0.75rem;"></div>
           </div>
 
+          <div class="receipt-chambre-sign" id="receipt-chambre-sign-block">
+            <div style="display:flex; justify-content:space-between;">
+              <span>CHAMBRE : <strong id="receipt-chambre-num-print">104</strong></span>
+              <span>CLIENT : <strong id="receipt-chambre-nom-print">Dupont</strong></span>
+            </div>
+            <div style="margin-top:14px; border-bottom:1px solid #000; padding-bottom:2px; font-size:0.7rem; color:#555;">
+              Signature du client :
+            </div>
+          </div>
+
           <div class="receipt-footer">
             <p>Merci de votre visite et à très bientôt !</p>
             <p style="margin-top:2px;">Wi-Fi : HotelDesPins_Guest</p>
@@ -503,7 +522,7 @@
           </div>
         </div>
 
-        <!-- BLOC DE MULTI-RÈGLEMENTS / PAIEMENT PANACHÉ -->
+        <!-- BLOC DE MULTI-RÈGLEMENTS / PANACHAGE -->
         <div class="multi-pay-card no-print">
           <div class="reste-a-payer-box">
             <span>Reste à régler :</span>
@@ -516,6 +535,13 @@
             <button class="btn-pay-method active" onclick="choisirModeActif(this, 'CB')">💳 Carte</button>
             <button class="btn-pay-method" onclick="choisirModeActif(this, 'Espèces')">💵 Espèces</button>
             <button class="btn-pay-method" onclick="choisirModeActif(this, 'Titre Resto')">🎫 Titre Resto</button>
+            <button class="btn-pay-method chambre-btn" onclick="choisirModeActif(this, 'Chambre')">🏨 Chambre</button>
+          </div>
+
+          <!-- CHAMPS POUR LE NUMÉRO DE CHAMBRE ET LE NOM DU CLIENT -->
+          <div class="chambre-fields-box" id="chambre-inputs-zone">
+            <input type="text" id="input-chambre-num" class="chambre-input" placeholder="N° Chambre (ex: 104)">
+            <input type="text" id="input-chambre-nom" class="chambre-input" placeholder="Nom Client (ex: M. Dupont)">
           </div>
 
           <div class="pay-input-group">
@@ -553,7 +579,7 @@
     let splitParts = 1;
 
     let selectedMode = 'CB';
-    let versements = []; // [{ mode: 'CB', montant: 20 }]
+    let versements = []; // [{ mode: 'Chambre (104 - Dupont)', montant: 40, numero_chambre: '104', nom_client: 'Dupont' }]
 
     let currentPendingPlat = null;
     let selectedCuisson = 'Saignant';
@@ -1118,7 +1144,7 @@
       } catch (e) { alert("Erreur de connexion."); }
     }
 
-    // --- ADDITION & MULTI-PAIEMENT PANACHÉ ---
+    // --- ADDITION & MULTI-PAIEMENT + NOTE DE CHAMBRE ---
     async function ouvrirModalAddition() {
       document.getElementById('modal-table-num').innerText = currentTable;
       document.getElementById('receipt-table-num').innerText = currentTable;
@@ -1133,11 +1159,19 @@
       selectedMode = 'CB';
 
       document.getElementById('split-display').innerText = '1';
+      document.getElementById('input-chambre-num').value = '';
+      document.getElementById('input-chambre-nom').value = '';
+      document.getElementById('chambre-inputs-zone').style.display = 'none';
+
       document.querySelectorAll('.btn-disc').forEach((b, i) => {
         if (i === 0) b.classList.add('active');
         else b.classList.remove('active');
       });
       document.querySelectorAll('.btn-tip').forEach((b, i) => {
+        if (i === 0) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+      document.querySelectorAll('.btn-pay-method').forEach((b, i) => {
         if (i === 0) b.classList.add('active');
         else b.classList.remove('active');
       });
@@ -1206,7 +1240,6 @@
       document.getElementById('modal-total-ht').innerText = `${totalHT.toFixed(2)} €`;
       document.getElementById('modal-total-tva').innerText = `${totalTVA.toFixed(2)} €`;
 
-      // Affichage du pourboire sur le ticket
       const tipRow = document.getElementById('receipt-tip-line');
       if (tipAmount > 0) {
         tipRow.style.display = 'flex';
@@ -1215,17 +1248,14 @@
         tipRow.style.display = 'none';
       }
 
-      // Calcul du reste à payer
       const totalVerse = versements.reduce((sum, v) => sum + v.montant, 0);
       const reste = Math.max(0, totalGlobalAEncaisser - totalVerse);
 
       document.getElementById('multi-pay-reste-val').innerText = `${reste.toFixed(2)} €`;
       document.getElementById('partial-pay-amount').value = reste > 0 ? reste.toFixed(2) : '';
 
-      // Mise à jour de la liste des versements
       renderVersements(totalGlobalAEncaisser);
 
-      // Partage
       const splitBox = document.getElementById('receipt-split-box');
       if (splitParts > 1 && totalGlobalAEncaisser > 0) {
         splitBox.style.display = 'flex';
@@ -1240,27 +1270,46 @@
     function renderVersements(totalGlobal) {
       const container = document.getElementById('registered-payments-container');
       const printContainer = document.getElementById('receipt-payments-list-print');
+      const signBlock = document.getElementById('receipt-chambre-sign-block');
       
+      let hasChambre = false;
+      let chambreInfo = { num: '', nom: '' };
+
       if (versements.length === 0) {
         container.innerHTML = '<div style="font-size:0.75rem; color:#64748b; font-style:italic;">Aucun versement enregistré. Choisissez le mode et validez.</div>';
         printContainer.innerHTML = '';
+        signBlock.style.display = 'none';
       } else {
-        container.innerHTML = versements.map((v, i) => `
-          <div class="registered-pay-row">
-            <span>🔹 ${v.mode}</span>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <strong>${v.montant.toFixed(2)} €</strong>
-              <button style="background:none; border:none; color:#ef4444; font-weight:800; cursor:pointer;" onclick="supprimerVersement(${i})">✕</button>
+        container.innerHTML = versements.map((v, i) => {
+          if (v.numero_chambre) {
+            hasChambre = true;
+            chambreInfo = { num: v.numero_chambre, nom: v.nom_client || '' };
+          }
+          return `
+            <div class="registered-pay-row">
+              <span>🔹 ${v.mode}</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <strong>${v.montant.toFixed(2)} €</strong>
+                <button style="background:none; border:none; color:#ef4444; font-weight:800; cursor:pointer;" onclick="supprimerVersement(${i})">✕</button>
+              </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
 
         printContainer.innerHTML = versements.map(v => `
           <div style="display:flex; justify-content:space-between;">
-            <span>Règlement ${v.mode} :</span>
+            <span>${v.mode} :</span>
             <strong>${v.montant.toFixed(2)} €</strong>
           </div>
         `).join('');
+
+        if (hasChambre) {
+          signBlock.style.display = 'block';
+          document.getElementById('receipt-chambre-num-print').innerText = chambreInfo.num;
+          document.getElementById('receipt-chambre-nom-print').innerText = chambreInfo.nom || 'Client';
+        } else {
+          signBlock.style.display = 'none';
+        }
       }
 
       const totalVerse = versements.reduce((sum, v) => sum + v.montant, 0);
@@ -1274,6 +1323,13 @@
       document.querySelectorAll('.btn-pay-method').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedMode = mode;
+
+      const chambreZone = document.getElementById('chambre-inputs-zone');
+      if (mode === 'Chambre') {
+        chambreZone.style.display = 'flex';
+      } else {
+        chambreZone.style.display = 'none';
+      }
     }
 
     function ajouterVersement() {
@@ -1293,12 +1349,30 @@
       const reste = totalGlobalAEncaisser - totalVerse;
 
       if (montant > reste + 0.01) {
-        montant = reste; // Ajuste automatiquement au montant exact restant
+        montant = reste;
+      }
+
+      let libelleMode = selectedMode;
+      let numChambre = null;
+      let nomClient = null;
+
+      if (selectedMode === 'Chambre') {
+        numChambre = document.getElementById('input-chambre-num').value.trim();
+        nomClient = document.getElementById('input-chambre-nom').value.trim();
+
+        if (!numChambre) {
+          alert("Veuillez indiquer le numéro de chambre du client.");
+          return;
+        }
+
+        libelleMode = `Chambre ${numChambre}${nomClient ? ' (' + nomClient + ')' : ''}`;
       }
 
       versements.push({
-        mode: selectedMode,
-        montant: parseFloat(montant.toFixed(2))
+        mode: libelleMode,
+        montant: parseFloat(montant.toFixed(2)),
+        numero_chambre: numChambre,
+        nom_client: nomClient
       });
 
       recalculerAddition();
@@ -1313,7 +1387,7 @@
       discountPercent = pct;
       document.querySelectorAll('.btn-disc').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      versements = []; // Reset des versements pour recalculer le bon solde
+      versements = [];
       recalculerAddition();
     }
 
@@ -1341,9 +1415,11 @@
       const netTotalPlatsTTC = Math.max(0, rawTotalTTC - discountAmount);
 
       let resumeReglements = versements.map(v => `${v.mode}: ${v.montant.toFixed(2)}€`).join(', ');
+      const chPay = versements.find(v => v.numero_chambre);
 
       let msg = `Confirmer l'encaissement Table ${currentTable} par ${currentServeur || 'Salle'} ?\n- Règlements : ${resumeReglements}\n- CA Net : ${netTotalPlatsTTC.toFixed(2)} €`;
       if (tipAmount > 0) msg += `\n- Pourboire : +${tipAmount.toFixed(2)} €`;
+      if (chPay) msg += `\n- Note transférée sur Chambre ${chPay.numero_chambre}`;
 
       if (!confirm(msg)) return;
 
@@ -1357,6 +1433,8 @@
             remise_montant: discountAmount,
             pourboire: tipAmount,
             total_paye: netTotalPlatsTTC,
+            numero_chambre: chPay ? chPay.numero_chambre : null,
+            nom_client_chambre: chPay ? chPay.nom_client : null,
             serveur_nom: currentServeur || 'Salle'
           })
         });

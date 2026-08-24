@@ -42,6 +42,8 @@ db.exec(`
     remise_montant REAL DEFAULT 0,
     pourboire REAL DEFAULT 0,
     total_paye REAL,
+    numero_chambre TEXT,
+    nom_client_chambre TEXT,
     paiements_details TEXT,
     remarques TEXT,
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -70,6 +72,8 @@ db.exec(`
     mode_paiement TEXT NOT NULL,
     montant REAL NOT NULL,
     pourboire REAL DEFAULT 0,
+    numero_chambre TEXT,
+    nom_client_chambre TEXT,
     date_paiement DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
@@ -82,6 +86,10 @@ try { db.exec(`ALTER TABLE commandes ADD COLUMN total_paye REAL`); } catch (e) {
 try { db.exec(`ALTER TABLE commandes ADD COLUMN serveur_nom TEXT DEFAULT 'Salle'`); } catch (e) {}
 try { db.exec(`ALTER TABLE commandes ADD COLUMN pourboire REAL DEFAULT 0`); } catch (e) {}
 try { db.exec(`ALTER TABLE commandes ADD COLUMN paiements_details TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE commandes ADD COLUMN numero_chambre TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE commandes ADD COLUMN nom_client_chambre TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE paiements ADD COLUMN numero_chambre TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE paiements ADD COLUMN nom_client_chambre TEXT`); } catch (e) {}
 
 // Initialisation Serveurs par défaut
 const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
@@ -380,11 +388,11 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 👉 9. ENCAISSER TABLE (AVEC MULTI-RÈGLEMENTS & POURBOIRES)
+// 9. ENCAISSER TABLE (AVEC MULTI-RÈGLEMENTS, POURBOIRES & NOTES DE CHAMBRE)
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
-    const { paiements, mode_paiement, remise_montant, pourboire, total_paye, serveur_nom } = req.body;
+    const { paiements, mode_paiement, remise_montant, pourboire, total_paye, serveur_nom, numero_chambre, nom_client_chambre } = req.body;
     const nowIso = new Date().toISOString();
 
     const tipAmount = parseFloat(pourboire) || 0;
@@ -392,12 +400,25 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
     const netPaye = parseFloat(total_paye) || 0;
     const sNom = serveur_nom || 'Salle';
 
-    // Construire le détail et le résumé des modes de paiement
+    let numChambre = numero_chambre ? String(numero_chambre).trim() : null;
+    let nomClient = nom_client_chambre ? String(nom_client_chambre).trim() : null;
+
     let paiementsList = [];
     if (paiements && Array.isArray(paiements) && paiements.length > 0) {
       paiementsList = paiements;
+      // Récupérer le numéro de chambre s'il est spécifié dans l'un des versements
+      const chPay = paiementsList.find(p => p.mode.includes('Chambre') || p.numero_chambre);
+      if (chPay) {
+        if (!numChambre && chPay.numero_chambre) numChambre = String(chPay.numero_chambre).trim();
+        if (!nomClient && chPay.nom_client) nomClient = String(chPay.nom_client).trim();
+      }
     } else {
-      paiementsList = [{ mode: mode_paiement || 'CB', montant: netPaye }];
+      paiementsList = [{ 
+        mode: mode_paiement || 'CB', 
+        montant: netPaye,
+        numero_chambre: numChambre,
+        nom_client: nomClient
+      }];
     }
 
     const modeResume = paiementsList.length === 1 
@@ -408,27 +429,28 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
 
     // Enregistrer chaque transaction dans la table paiements
     const insertPaiement = db.prepare(`
-      INSERT INTO paiements (table_num, serveur_nom, mode_paiement, montant, pourboire, date_paiement) 
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO paiements (table_num, serveur_nom, mode_paiement, montant, pourboire, numero_chambre, nom_client_chambre, date_paiement) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     paiementsList.forEach((p, index) => {
-      // On associe le pourboire sur le premier versement
       const pTip = (index === 0) ? tipAmount : 0;
-      insertPaiement.run(table_num, sNom, p.mode, p.montant, pTip, nowIso);
+      const pChambre = p.numero_chambre || numChambre;
+      const pNom = p.nom_client || nomClient;
+      insertPaiement.run(table_num, sNom, p.mode, p.montant, pTip, pChambre, pNom, nowIso);
     });
 
     // Mettre à jour les commandes de la table
     const update = db.prepare(`
       UPDATE commandes 
-      SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, pourboire = ?, total_paye = ?, paiements_details = ?, serveur_nom = COALESCE(?, serveur_nom), date_fin = ? 
+      SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, pourboire = ?, total_paye = ?, numero_chambre = ?, nom_client_chambre = ?, paiements_details = ?, serveur_nom = COALESCE(?, serveur_nom), date_fin = ? 
       WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
     `);
-    update.run(modeResume, discountAmount, tipAmount, netPaye, paiementsJson, sNom, nowIso, table_num);
+    update.run(modeResume, discountAmount, tipAmount, netPaye, numChambre, nomClient, paiementsJson, sNom, nowIso, table_num);
 
     io.emit('table_status_change');
     io.emit('statut_mis_a_jour');
-    res.json({ success: true, modeResume, total_paye: netPaye, pourboire: tipAmount });
+    res.json({ success: true, modeResume, total_paye: netPaye, pourboire: tipAmount, numero_chambre: numChambre });
   } catch (err) {
     res.status(500).json({ error: 'Erreur lors de l\'encaissement.' });
   }
@@ -526,7 +548,7 @@ app.put('/api/commandes/:id/statut', (req, res) => {
   }
 });
 
-// 11. Admin historique & paiements
+// 11. Admin historique, paiements & Notes de Chambres
 app.get('/api/admin/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
@@ -542,6 +564,30 @@ app.get('/api/admin/paiements', (req, res) => {
     res.json(db.prepare(`SELECT * FROM paiements ORDER BY id DESC`).all());
   } catch (err) {
     res.status(500).json({ error: 'Erreur paiements' });
+  }
+});
+
+// 👉 11bis. NOUVEAU : API NOTES DE CHAMBRES POUR LA RÉCEPTION
+app.get('/api/admin/notes-chambres', (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT c.*, (
+        SELECT json_group_array(json_object('article_nom', ci.article_nom, 'quantite', ci.quantite, 'prix', ci.prix))
+        FROM commande_items ci WHERE ci.commande_id = c.id
+      ) as items_json
+      FROM commandes c 
+      WHERE c.statut = 'encaisse' AND (c.numero_chambre IS NOT NULL AND c.numero_chambre != '' OR c.mode_paiement LIKE '%Chambre%')
+      ORDER BY c.id DESC
+    `).all();
+
+    const formatted = rows.map(r => ({
+      ...r,
+      items: r.items_json ? JSON.parse(r.items_json) : []
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur notes de chambres' });
   }
 });
 
