@@ -35,7 +35,7 @@
     .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
     .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* PLAN DE SALLE DYNAMIQUE */
+    /* PLAN DE SALLE */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
     .table-legend { font-size: 0.7rem; display: flex; gap: 8px; }
     .dot-legend { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; }
@@ -66,7 +66,7 @@
     
     .dish-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
     .dish-card.active { border-color: var(--accent); background: var(--accent-light); }
-    .dish-card.epuise { opacity: 0.55; background: #f1f5f9; border-color: #cbd5e1; }
+    .dish-card.epuise { opacity: 0.5; background: #f1f5f9; border-color: #cbd5e1; }
     
     .dish-info { flex: 1; padding-right: 10px; }
     .dish-name { font-weight: 600; font-size: 0.88rem; line-height: 1.3; color: var(--text); }
@@ -112,7 +112,7 @@
     .btn-key:active { background: #475569; }
     .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
 
-    /* MODAL ADDITION & ENCAISSEMENT */
+    /* MODAL ADDITION */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
     .modal-overlay.open { display: flex; }
     .modal-card { background: #fff; width: 100%; max-width: 470px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: pop 0.2s ease; }
@@ -181,7 +181,7 @@
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE PIN -->
+  <!-- VERROUILLAGE PIN -->
   <div class="lock-overlay" id="pin-lock-overlay">
     <div class="pin-card">
       <div class="pin-title">Hôtel des Pins</div>
@@ -225,8 +225,6 @@
   <div class="app-layout">
     
     <main class="main-content">
-      
-      <!-- PLAN DE SALLE DYNAMIQUE GÉNÉRÉ PAR L'API -->
       <div class="section-label">
         <span>1. Plan de salle</span>
         <div class="table-legend">
@@ -236,9 +234,7 @@
         </div>
       </div>
 
-      <div class="floorplan-container" id="floorplan-dynamic-container">
-        <!-- Zones et tables injectées en direct -->
-      </div>
+      <div class="floorplan-container" id="floorplan-dynamic-container"></div>
 
       <div class="table-action-bar">
         <button class="btn-addition" onclick="ouvrirModalAddition()">
@@ -394,67 +390,68 @@
     let discountPercent = 0;
     let splitParts = 1;
 
+    // Plats avec leur slug partagé
     const menuData = [
-      { id: "m40_formule", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00 },
-      { id: "m40_e1", nom: "Entrée du jour (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
-      { id: "m40_e2", nom: "Saumon fumé maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
-      { id: "m40_e3", nom: "Foie gras de canard maison, chutney (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
-      { id: "m40_e4", nom: "Soupe de poissons du Bassin (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
-      { id: "m40_e5", nom: "Cornet de friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
-      { id: "m40_e6", nom: "Assiette de charcuterie (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
-      { id: "m40_e7", nom: "Asperges blanches & jambon (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_formule", slug: "formule_40", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00 },
+      { id: "m40_e1", slug: "entree_jour", nom: "Entrée du jour (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e2", slug: "saumon_fume", nom: "Saumon fumé maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e3", slug: "foie_gras", nom: "Foie gras de canard maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e4", slug: "soupe_poissons", nom: "Soupe de poissons du Bassin (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e5", slug: "calamars", nom: "Friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e6", slug: "charcuterie", nom: "Assiette de charcuterie (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e7", slug: "asperges", nom: "Asperges blanches & jambon (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
 
-      { id: "m40_p1", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
-      { id: "m40_p2", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
-      { id: "m40_p3", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
-      { id: "m40_p4", nom: "Blanquette de seiche safranée (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
-      { id: "m40_p5", nom: "Carpaccio de bœuf & Parmesan (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
-      { id: "m40_p6", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
-      { id: "m40_p7", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p1", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p2", slug: "cabillaud", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p3", slug: "bar", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p4", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p5", slug: "carpaccio", nom: "Carpaccio de bœuf & Parmesan (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p6", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p7", slug: "magret", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
 
-      { id: "m40_d1", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-      { id: "m40_d2", nom: "Assiette de fromages (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-      { id: "m40_d3", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-      { id: "m40_d4", nom: "Tiramisu au café (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-      { id: "m40_d5", nom: "Café gourmand (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-      { id: "m40_d6", nom: "Fromage blanc fermier & coulis (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-      { id: "m40_d7", nom: "Mousse au chocolat noir (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-      { id: "m40_d8", nom: "Cheesecake au citron (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
-      { id: "m40_d9", nom: "Coupe glacée 2 boules (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d1", slug: "dessert_jour", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d2", slug: "fromages", nom: "Assiette de fromages (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d3", slug: "creme_brulee", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d4", slug: "tiramisu", nom: "Tiramisu au café (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d5", slug: "cafe_gourmand", nom: "Café gourmand (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d6", slug: "fromage_blanc", nom: "Fromage blanc fermier & coulis (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d7", slug: "mousse_chocolat", nom: "Mousse au chocolat noir (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d8", slug: "cheesecake", nom: "Cheesecake au citron (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d9", slug: "glace", nom: "Coupe glacée 2 boules (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
 
-      { id: "c_e1", nom: "Terrine de foie de canard maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
-      { id: "c_e2", nom: "Soupe de poissons et accompagnement", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
-      { id: "c_e3", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
-      { id: "c_e4", nom: "Cornet de friture de calamars, tartare", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
-      { id: "c_e5", nom: "Assiette de charcuterie", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
-      { id: "c_e6", nom: "Asperges blanches, jambon & vierge", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e1", slug: "foie_gras", nom: "Terrine de foie de canard maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e2", slug: "soupe_poissons", nom: "Soupe de poissons et accompagnement", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e3", slug: "saumon_fume", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e4", slug: "calamars", nom: "Friture de calamars, tartare", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e5", slug: "charcuterie", nom: "Assiette de charcuterie", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e6", slug: "asperges", nom: "Asperges blanches, jambon & vierge", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
 
-      { id: "c_p1", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
-      { id: "c_p2", nom: "Dos de maigre, sauce vierge", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
-      { id: "c_p3", nom: "Pavé de cabillaud rôti, légumes iodés", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
-      { id: "c_p4", nom: "Blanquette de seiche safranée", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
+      { id: "c_p1", slug: "bar", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
+      { id: "c_p2", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
+      { id: "c_p3", slug: "cabillaud", nom: "Pavé de cabillaud rôti, légumes", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
+      { id: "c_p4", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
 
-      { id: "c_v1", nom: "Carpaccio de bœuf maison basilic & Parmesan", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
-      { id: "c_v2", nom: "Entrecôte de bœuf, échalotes confites", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
-      { id: "c_v3", nom: "Magret de canard, sauce au poivre", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
+      { id: "c_v1", slug: "carpaccio", nom: "Carpaccio de bœuf maison Parmesan", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
+      { id: "c_v2", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
+      { id: "c_v3", slug: "magret", nom: "Magret de canard, sauce au poivre", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
 
-      { id: "c_d1", nom: "Dessert du jour", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-      { id: "c_d2", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00 },
-      { id: "c_d3", nom: "Fromage blanc fermier & fruits", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-      { id: "c_d4", nom: "Mousse au chocolat", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-      { id: "c_d5", nom: "Assiette de fromages", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-      { id: "c_d6", nom: "Crème brûlée à la vanille", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-      { id: "c_d7", nom: "Cheesecake au citron", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-      { id: "c_d8", nom: "Tiramisu au café", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
-      { id: "c_d9", nom: "Coupe de glaces 2 boules", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d1", slug: "dessert_jour", nom: "Dessert du jour", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d2", slug: "cafe_gourmand", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00 },
+      { id: "c_d3", slug: "fromage_blanc", nom: "Fromage blanc fermier & fruits", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d4", slug: "mousse_chocolat", nom: "Mousse au chocolat", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d5", slug: "fromages", nom: "Assiette de fromages", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d6", slug: "creme_brulee", nom: "Crème brûlée à la vanille", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d7", slug: "cheesecake", nom: "Cheesecake au citron", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d8", slug: "tiramisu", nom: "Tiramisu au café", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d9", slug: "glace", nom: "Coupe de glaces 2 boules", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
 
-      { id: "enf_p1", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
-      { id: "enf_p2", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
-      { id: "enf_p3", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
-      { id: "enf_g1", nom: "Garniture : Salade du jardin", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
-      { id: "enf_g2", nom: "Garniture : Frites maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
-      { id: "enf_g3", nom: "Garniture : Purée maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
-      { id: "enf_g4", nom: "Garniture : Légumes sautés", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 }
+      { id: "enf_p1", slug: "tenders_enf", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
+      { id: "enf_p2", slug: "steak_enf", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
+      { id: "enf_p3", slug: "poisson_enf", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
+      { id: "enf_g1", slug: "garn_salade", nom: "Garniture : Salade du jardin", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
+      { id: "enf_g2", slug: "garn_frites", nom: "Garniture : Frites maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
+      { id: "enf_g3", slug: "garn_puree", nom: "Garniture : Purée maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
+      { id: "enf_g4", slug: "garn_legumes", nom: "Garniture : Légumes sautés", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 }
     ];
 
     // --- AUTHENTIFICATION CODE PIN ---
@@ -523,7 +520,7 @@
       checkAuth();
     }
 
-    // --- GESTION DYNAMIQUE DU PLAN DE SALLE ---
+    // --- PLAN DE SALLE & STATUTS ---
     async function chargerPlanSalle() {
       try {
         const [resPlan, resStatuts] = await Promise.all([
@@ -539,11 +536,10 @@
     function renderDynamicFloorPlan() {
       const container = document.getElementById('floorplan-dynamic-container');
       if (dynamicPlan.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-muted); padding:10px;">Aucune table configurée. Rendez-vous dans l\'Admin.</div>';
+        container.innerHTML = '<div style="color:var(--text-muted); padding:10px;">Aucune table configurée.</div>';
         return;
       }
 
-      // Vérifier si la table courante existe toujours
       let allTableNumbers = [];
       dynamicPlan.forEach(z => z.tables.forEach(t => allTableNumbers.push(t.numero)));
       if (allTableNumbers.length > 0 && !allTableNumbers.includes(currentTable)) {
@@ -575,9 +571,9 @@
     }
 
     function selectionnerTable(num) {
-      currentTable = num;
-      document.getElementById('current-table-title').innerText = num;
-      document.getElementById('btn-add-table-num').innerText = num;
+      currentTable = parseInt(num, 10);
+      document.getElementById('current-table-title').innerText = currentTable;
+      document.getElementById('btn-add-table-num').innerText = currentTable;
       renderDynamicFloorPlan();
     }
 
@@ -633,7 +629,7 @@
         const platsDeLaSection = platsFiltres.filter(d => d.section === secTitle);
         platsDeLaSection.forEach(plat => {
           const qte = cart[plat.id] || 0;
-          const isOut = indisponibles.includes(plat.id);
+          const isOut = indisponibles.includes(plat.slug); // Vérification par slug unique
 
           const card = document.createElement('div');
           card.className = `dish-card ${qte > 0 ? 'active' : ''} ${isOut ? 'epuise' : ''}`;
@@ -658,7 +654,8 @@
     }
 
     function modifierQuantite(id, delta) {
-      if (delta > 0 && indisponibles.includes(id)) {
+      const plat = menuData.find(d => d.id === id);
+      if (delta > 0 && plat && indisponibles.includes(plat.slug)) {
         alert("Ce plat est actuellement épuisé en cuisine !");
         return;
       }
@@ -737,7 +734,7 @@
       });
 
       const payload = {
-        table_num: currentTable,
+        table_num: parseInt(currentTable, 10),
         serveur_nom: currentServeur || 'Salle',
         items: items,
         remarques: document.getElementById('order-notes').value.trim()
@@ -749,12 +746,12 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        alert(`✅ Commande Table ${currentTable} envoyée en cuisine par ${currentServeur || 'Salle'} !`);
+        alert(`✅ Commande Table ${currentTable} envoyée en cuisine !`);
         cart = {};
         document.getElementById('order-notes').value = '';
         afficherPlats();
         mettreAJourTicket();
-        chargerPlanSalle();
+        await chargerPlanSalle();
       } catch (err) {
         alert("Erreur lors de l'envoi.");
       }
@@ -904,7 +901,7 @@
         if (res.ok) {
           alert(`✅ Table ${currentTable} encaissée avec succès (${selectedModePaiement} - ${netTotalTTC.toFixed(2)} €). Table libérée !`);
           fermerModalAddition();
-          chargerPlanSalle();
+          await chargerPlanSalle();
         }
       } catch (err) {
         alert("Erreur lors de l'encaissement.");

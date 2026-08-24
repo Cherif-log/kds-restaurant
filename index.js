@@ -138,31 +138,30 @@ app.delete('/api/admin/serveurs/:id', (req, res) => {
   }
 });
 
-// 3. GESTION DYNAMIQUE DU PLAN DE SALLE (ZONES & TABLES)
+// 3. Plan de salle dynamique
 app.get('/api/plan/zones-tables', (req, res) => {
   try {
     const zones = db.prepare(`SELECT * FROM zones ORDER BY id ASC`).all();
     const getTables = db.prepare(`SELECT * FROM tables_plan WHERE zone_id = ? ORDER BY numero ASC`);
-    
     const result = zones.map(z => ({
       ...z,
       tables: getTables.all(z.id)
     }));
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: 'Erreur plan de salle' });
+    res.status(500).json({ error: 'Erreur plan' });
   }
 });
 
 app.post('/api/admin/zones', (req, res) => {
   try {
     const { nom } = req.body;
-    if (!nom) return res.status(400).json({ error: 'Nom de zone requis' });
+    if (!nom) return res.status(400).json({ error: 'Nom requis' });
     const info = db.prepare(`INSERT INTO zones (nom) VALUES (?)`).run(nom.trim());
     io.emit('plan_update');
     res.status(201).json({ id: info.lastInsertRowid, nom: nom.trim(), tables: [] });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur création zone' });
+    res.status(500).json({ error: 'Erreur zone' });
   }
 });
 
@@ -174,7 +173,7 @@ app.delete('/api/admin/zones/:id', (req, res) => {
     io.emit('plan_update');
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur suppression zone' });
+    res.status(500).json({ error: 'Erreur zone' });
   }
 });
 
@@ -183,14 +182,14 @@ app.post('/api/admin/tables', (req, res) => {
     const { zone_id, numero } = req.body;
     const tableNum = parseInt(numero, 10);
     if (!zone_id || isNaN(tableNum) || tableNum <= 0) {
-      return res.status(400).json({ error: 'Zone et numéro de table valide requis' });
+      return res.status(400).json({ error: 'Numéro de table invalide' });
     }
     const info = db.prepare(`INSERT INTO tables_plan (zone_id, numero) VALUES (?, ?)`).run(zone_id, tableNum);
     io.emit('plan_update');
     io.emit('table_status_change');
     res.status(201).json({ id: info.lastInsertRowid, zone_id, numero: tableNum });
   } catch (err) {
-    res.status(400).json({ error: `La Table ${req.body.numero} existe déjà sur le plan.` });
+    res.status(400).json({ error: `La Table ${req.body.numero} existe déjà.` });
   }
 });
 
@@ -201,11 +200,11 @@ app.delete('/api/admin/tables/:id', (req, res) => {
     io.emit('table_status_change');
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur suppression table' });
+    res.status(500).json({ error: 'Erreur table' });
   }
 });
 
-// 4. Statut des tables en direct
+// 4. Statut des tables
 app.get('/api/tables/statuts', (req, res) => {
   try {
     const allTables = db.prepare(`SELECT numero FROM tables_plan`).all();
@@ -215,8 +214,9 @@ app.get('/api/tables/statuts', (req, res) => {
     allTables.forEach(t => { statuts[t.numero] = 'libre'; });
 
     activeOrders.forEach(ord => {
-      if (ord.statut === 'servi') statuts[ord.table_num] = 'servi';
-      else if (statuts[ord.table_num] !== 'servi') statuts[ord.table_num] = 'occupee';
+      const tNum = parseInt(ord.table_num, 10);
+      if (ord.statut === 'servi') statuts[tNum] = 'servi';
+      else if (statuts[tNum] !== 'servi') statuts[tNum] = 'occupee';
     });
 
     res.json(statuts);
@@ -270,7 +270,7 @@ app.get('/api/commandes', (req, res) => {
 // 7. Addition Table
 app.get('/api/tables/:table_num/addition', (req, res) => {
   try {
-    const { table_num } = req.params;
+    const table_num = parseInt(req.params.table_num, 10);
     const commandes = db.prepare(`SELECT id, serveur_nom FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(table_num);
 
     if (commandes.length === 0) {
@@ -305,9 +305,10 @@ app.get('/api/tables/:table_num/addition', (req, res) => {
 app.post('/api/commandes', (req, res) => {
   try {
     const { table_num, items, remarques, serveur_nom } = req.body;
+    const tNum = parseInt(table_num, 10) || 1;
 
     const insertCmd = db.prepare(`INSERT INTO commandes (table_num, statut, serveur_nom, remarques, date_creation) VALUES (?, 'en_attente', ?, ?, datetime('now', 'localtime'))`);
-    const info = insertCmd.run(table_num || 1, serveur_nom || 'Salle', remarques || '');
+    const info = insertCmd.run(tNum, serveur_nom || 'Salle', remarques || '');
     const commandeId = info.lastInsertRowid;
 
     const insertItem = db.prepare(`INSERT INTO commande_items (commande_id, article_nom, prix, quantite, remarques) VALUES (?, ?, ?, ?, ?)`);
@@ -319,7 +320,7 @@ app.post('/api/commandes', (req, res) => {
 
     const completeOrder = {
       id: commandeId,
-      table_num: table_num || 1,
+      table_num: tNum,
       statut: 'en_attente',
       serveur_nom: serveur_nom || 'Salle',
       remarques: remarques || '',
@@ -335,10 +336,10 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 9. Encaisser Table
+// 9. Encaisser Table (Libération stricte)
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
-    const { table_num } = req.params;
+    const table_num = parseInt(req.params.table_num, 10);
     const { mode_paiement, remise_montant, total_paye, serveur_nom } = req.body;
 
     const update = db.prepare(`
@@ -387,12 +388,13 @@ app.get('/api/admin/commandes', (req, res) => {
   }
 });
 
-// --- SOCKET.IO ---
-// Télécharger une copie de sauvegarde de la base SQLite
+// 12. Backup SQLite
 app.get('/api/admin/backup-db', (req, res) => {
   const dbPath = path.join(__dirname, 'restaurant.db');
   res.download(dbPath, `backup_restaurant_${new Date().toISOString().slice(0,10)}.db`);
 });
+
+// --- SOCKET.IO ---
 io.on('connection', (socket) => {
   socket.on('changer_statut', (data) => {
     io.emit('statut_mis_a_jour', data);

@@ -30,6 +30,7 @@
     .btn-stock { background: #475569; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     .btn-stock:hover { background: #334155; }
     .btn-test { background: #e11d48; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; cursor: pointer; }
+    .btn-stop-sound { background: #0284c7; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 800; cursor: pointer; }
     .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
 
     .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
@@ -64,7 +65,7 @@
     .btn-ready { background: var(--pret); color: #fff; }
     .btn-done { background: #475569; color: #fff; }
 
-    /* MODAL GESTION DU STOCK (86 LIST) */
+    /* MODAL GESTION DU STOCK */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
     .modal-overlay.open { display: flex; }
     .modal-card { background: #1e293b; color: #fff; width: 100%; max-width: 650px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border); }
@@ -86,16 +87,12 @@
 </head>
 <body>
 
-  <!-- LECTEUR AUDIO NATIF INTÉGRÉ -->
-  <audio id="audio-buzzer" loop preload="auto">
-    <source src="data:audio/wav;base64,UklGRmQfAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUAfAADQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHUwddCKMHUwddCK0IowdTB10IrQijB10IrQijB1MHXQitCKMHUwddCK0IowddCK0IowdTB10IrQijB1MHXQijB1MHXQitCKMHUwddCK0IowdTB10IowdTB10IrQijB1MHXQitCKMHXQitCKMHUwddCK0IowdTB10IoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwdTB10IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCK0IowdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKMHUwdTB10IrQijB1MHUwddCK0IowdTB10IrQitCKMHUwddCK0IowdTB1MHXQitCKMHUwddCK0IrQijB1MHXQitCKAAAAAAA=" type="audio/wav">
-  </audio>
-
   <header>
     <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
     <div class="header-controls">
       <button class="btn-stock" onclick="ouvrirModalStock()">📦 Ruptures (86-List)</button>
-      <button class="btn-test" onclick="declencherAlarme5s()">🔊 TESTER L'ALARME (5s)</button>
+      <button class="btn-test" onclick="declencherAlarme5s()">🔊 TEST (5s)</button>
+      <button class="btn-stop-sound" onclick="arreterAlarme()">⏹️ Couper le son</button>
       <span id="active-count" style="font-weight:700; font-size:0.9rem;">0 en cours</span>
       <span class="badge-status" id="socket-status">En direct</span>
     </div>
@@ -105,16 +102,14 @@
     <div class="empty-state">En attente de commandes...</div>
   </div>
 
-  <!-- MODAL GESTION DU STOCK -->
+  <!-- MODAL GESTION DU STOCK (86 LIST) -->
   <div class="modal-overlay" id="stock-modal">
     <div class="modal-card">
       <div class="modal-head">
-        <span>📦 Gestion des Ruptures (86-List)</span>
+        <span>📦 Gestion des Ruptures (Menu & Carte)</span>
         <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalStock()">✕</button>
       </div>
-      <div class="modal-body" id="stock-modal-body">
-        <!-- Rempli en JS -->
-      </div>
+      <div class="modal-body" id="stock-modal-body"></div>
     </div>
   </div>
 
@@ -123,59 +118,86 @@
     let commandes = [];
     let indisponibles = [];
 
-    const menuItems = [
-      { id: "m40_e1", nom: "Entrée du jour", cat: "Entrées" },
-      { id: "m40_e2", nom: "Saumon fumé maison", cat: "Entrées" },
-      { id: "m40_e3", nom: "Foie gras de canard maison", cat: "Entrées" },
-      { id: "m40_e4", nom: "Soupe de poissons du Bassin", cat: "Entrées" },
-      { id: "m40_e5", nom: "Cornet de friture de calamars", cat: "Entrées" },
-      { id: "m40_e6", nom: "Assiette de charcuterie", cat: "Entrées" },
-      { id: "m40_e7", nom: "Asperges blanches & jambon", cat: "Entrées" },
+    // Articles uniques avec leur slug partagé
+    const distinctDishes = [
+      { slug: "entree_jour", nom: "Entrée du jour", cat: "Entrées" },
+      { slug: "saumon_fume", nom: "Saumon fumé maison", cat: "Entrées" },
+      { slug: "foie_gras", nom: "Foie gras de canard maison", cat: "Entrées" },
+      { slug: "soupe_poissons", nom: "Soupe de poissons du Bassin", cat: "Entrées" },
+      { slug: "calamars", nom: "Friture de calamars", cat: "Entrées" },
+      { slug: "charcuterie", nom: "Assiette de charcuterie", cat: "Entrées" },
+      { slug: "asperges", nom: "Asperges blanches & jambon", cat: "Entrées" },
 
-      { id: "m40_p1", nom: "Dos de maigre, sauce vierge", cat: "Plats / Poissons" },
-      { id: "m40_p2", nom: "Pavé de cabillaud rôti", cat: "Plats / Poissons" },
-      { id: "m40_p3", nom: "Pavé de bar, risotto riz noir", cat: "Plats / Poissons" },
-      { id: "m40_p4", nom: "Blanquette de seiche safranée", cat: "Plats / Poissons" },
-      { id: "m40_p5", nom: "Carpaccio de bœuf & Parmesan", cat: "Plats / Viandes" },
-      { id: "m40_p6", nom: "Entrecôte de bœuf, échalotes", cat: "Plats / Viandes" },
-      { id: "m40_p7", nom: "Magret de canard, poivre", cat: "Plats / Viandes" },
+      { slug: "dos_maigre", nom: "Dos de maigre, sauce vierge", cat: "Plats / Poissons" },
+      { slug: "cabillaud", nom: "Pavé de cabillaud rôti", cat: "Plats / Poissons" },
+      { slug: "bar", nom: "Pavé de bar, risotto", cat: "Plats / Poissons" },
+      { slug: "blanquette_seiche", nom: "Blanquette de seiche safranée", cat: "Plats / Poissons" },
 
-      { id: "m40_d1", nom: "Dessert du jour", cat: "Desserts" },
-      { id: "m40_d2", nom: "Assiette de fromages", cat: "Desserts" },
-      { id: "m40_d3", nom: "Crème brûlée à la vanille", cat: "Desserts" },
-      { id: "m40_d4", nom: "Tiramisu au café", cat: "Desserts" },
-      { id: "m40_d5", nom: "Café gourmand", cat: "Desserts" },
-      { id: "m40_d6", nom: "Fromage blanc fermier", cat: "Desserts" },
-      { id: "m40_d7", nom: "Mousse au chocolat noir", cat: "Desserts" },
-      { id: "m40_d8", nom: "Cheesecake au citron", cat: "Desserts" },
-      { id: "m40_d9", nom: "Coupe glacée 2 boules", cat: "Desserts" },
+      { slug: "carpaccio", nom: "Carpaccio de bœuf & Parmesan", cat: "Plats / Viandes" },
+      { slug: "entrecote", nom: "Entrecôte de bœuf, échalotes", cat: "Plats / Viandes" },
+      { slug: "magret", nom: "Magret de canard, poivre", cat: "Plats / Viandes" },
 
-      { id: "enf_p1", nom: "Menu Enfant : Chicken tenders", cat: "Enfants" },
-      { id: "enf_p2", nom: "Menu Enfant : Steak haché", cat: "Enfants" },
-      { id: "enf_p3", nom: "Menu Enfant : Filet de poisson", cat: "Enfants" }
+      { slug: "dessert_jour", nom: "Dessert du jour", cat: "Desserts" },
+      { slug: "fromages", nom: "Assiette de fromages", cat: "Desserts" },
+      { slug: "creme_brulee", nom: "Crème brûlée à la vanille", cat: "Desserts" },
+      { slug: "tiramisu", nom: "Tiramisu au café", cat: "Desserts" },
+      { slug: "cafe_gourmand", nom: "Café gourmand", cat: "Desserts" },
+      { slug: "fromage_blanc", nom: "Fromage blanc fermier", cat: "Desserts" },
+      { slug: "mousse_chocolat", nom: "Mousse au chocolat noir", cat: "Desserts" },
+      { slug: "cheesecake", nom: "Cheesecake au citron", cat: "Desserts" },
+      { slug: "glace", nom: "Coupe glacée 2 boules", cat: "Desserts" },
+
+      { slug: "tenders_enf", nom: "Chicken tenders (Enfant)", cat: "Enfants" },
+      { slug: "steak_enf", nom: "Steak haché (Enfant)", cat: "Enfants" },
+      { slug: "poisson_enf", nom: "Filet de poisson (Enfant)", cat: "Enfants" }
     ];
 
-    // ALARME 5S
-    function declencherAlarme5s() {
-      document.body.classList.add('alarm-flash');
-      setTimeout(() => document.body.classList.remove('alarm-flash'), 5000);
+    // --- ALARME SYNTHÉTIQUE ULTRA-FIABLE (Arrêt garanti à 5s) ---
+    let audioCtx = null;
+    let alarmBeepInterval = null;
+    let alarmAutoStopTimer = null;
 
-      const audio = document.getElementById('audio-buzzer');
-      if (audio) {
-        audio.currentTime = 0;
-        audio.volume = 1.0;
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(e => console.warn("Audio bloqué :", e));
-        }
-        setTimeout(() => {
-          audio.pause();
-          audio.currentTime = 0;
-        }, 5000);
+    function declencherAlarme5s() {
+      arreterAlarme(); // Réinitialiser si déjà active
+      document.body.classList.add('alarm-flash');
+
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const playTone = () => {
+          if (!audioCtx) return;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(850, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.38);
+        };
+
+        playTone();
+        alarmBeepInterval = setInterval(playTone, 500);
+      } catch (e) {
+        console.warn("Audio non autorisé sans clic préalable :", e);
       }
+
+      // Arrêt automatique strict après 5000ms
+      alarmAutoStopTimer = setTimeout(() => {
+        arreterAlarme();
+      }, 5000);
     }
 
-    // GESTION DU STOCK (86-LIST)
+    function arreterAlarme() {
+      document.body.classList.remove('alarm-flash');
+      if (alarmBeepInterval) { clearInterval(alarmBeepInterval); alarmBeepInterval = null; }
+      if (alarmAutoStopTimer) { clearTimeout(alarmAutoStopTimer); alarmAutoStopTimer = null; }
+    }
+
+    // --- GESTION DU STOCK ---
     async function chargerStock() {
       try {
         const res = await fetch('/api/stock/indisponibles');
@@ -199,7 +221,7 @@
       const container = document.getElementById('stock-modal-body');
       container.innerHTML = '';
 
-      const categories = [...new Set(menuItems.map(m => m.cat))];
+      const categories = [...new Set(distinctDishes.map(m => m.cat))];
       categories.forEach(cat => {
         const secTitle = document.createElement('div');
         secTitle.className = 'stock-sec-title';
@@ -209,14 +231,14 @@
         const grid = document.createElement('div');
         grid.className = 'stock-grid';
 
-        const items = menuItems.filter(m => m.cat === cat);
+        const items = distinctDishes.filter(m => m.cat === cat);
         items.forEach(item => {
-          const isOut = indisponibles.includes(item.id);
+          const isOut = indisponibles.includes(item.slug);
           const div = document.createElement('div');
           div.className = `stock-item ${isOut ? 'is-out' : ''}`;
           div.innerHTML = `
             <span class="stock-item-name">${item.nom}</span>
-            <button class="btn-toggle-stock ${isOut ? 'out' : 'in'}" onclick="toggleStock('${item.id}', '${item.nom.replace(/'/g, "\\'")}')">
+            <button class="btn-toggle-stock ${isOut ? 'out' : 'in'}" onclick="toggleStock('${item.slug}', '${item.nom.replace(/'/g, "\\'")}')">
               ${isOut ? '🔴 ÉPUISÉ' : '🟢 DISPO'}
             </button>
           `;
@@ -227,12 +249,12 @@
       });
     }
 
-    async function toggleStock(article_id, article_nom) {
+    async function toggleStock(slug, article_nom) {
       try {
         const res = await fetch('/api/stock/toggle', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ article_id, article_nom })
+          body: JSON.stringify({ article_id: slug, article_nom })
         });
         if (res.ok) {
           const data = await res.json();
@@ -240,11 +262,11 @@
           renderStockModal();
         }
       } catch (e) {
-        alert("Erreur mise à jour du stock.");
+        alert("Erreur mise à jour stock.");
       }
     }
 
-    // COMMANDES
+    // --- COMMANDES ---
     async function chargerCommandes() {
       try {
         const res = await fetch('/api/commandes');
@@ -262,10 +284,7 @@
         chargerCommandes();
       });
 
-      socket.on('statut_mis_a_jour', () => {
-        chargerCommandes();
-      });
-
+      socket.on('statut_mis_a_jour', () => chargerCommandes());
       socket.on('stock_update', (data) => {
         indisponibles = data;
         renderStockModal();
