@@ -19,16 +19,15 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; }
-
-    /* Bannière de déverrouillage audio au chargement */
-    #audio-banner { display: none; background: #dc2626; color: #fff; text-align: center; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: 700; cursor: pointer; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0% { opacity: 0.85; } 50% { opacity: 1; } 100% { opacity: 0.85; } }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; transition: background 0.3s; }
+    body.alarm-active { background: #450a0a !important; }
 
     header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
     h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
-    .header-controls { display: flex; align-items: center; gap: 12px; }
+    .header-controls { display: flex; align-items: center; gap: 10px; }
+    .btn-sound-test { background: #2563eb; color: #fff; border: none; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-sound-test:hover { background: #1d4ed8; }
     .badge-audio { background: #16a34a; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
     .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
 
@@ -65,16 +64,13 @@
     .btn-done { background: #475569; color: #fff; }
   </style>
 </head>
-<body onclick="debloquerAudioAutomatique()">
-
-  <div id="audio-banner" onclick="debloquerAudioAutomatique()">
-    🔔 Alarme en attente : cliquez ici pour autoriser la sonnerie automatique du KDS
-  </div>
+<body onclick="debloquerAudio()">
 
   <header>
     <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
     <div class="header-controls">
-      <span class="badge-audio" id="badge-audio">🔊 Alarme prête</span>
+      <button class="btn-sound-test" onclick="testerAlarme(event)">🔊 Tester le son</button>
+      <span class="badge-audio" id="badge-audio">🔔 Alarme prête</span>
       <span id="active-count" style="font-weight:700; font-size:0.9rem;">0 en cours</span>
       <span class="badge-status" id="socket-status">En direct</span>
     </div>
@@ -89,67 +85,71 @@
     let commandes = [];
     let audioCtx = null;
 
-    // Initialisation du contexte audio
-    function initAudioContext() {
+    // Déverrouillage compatible Safari macOS/iOS
+    function getAudioContext() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioCtx = new AudioContextClass();
       }
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
+      return audioCtx;
     }
 
-    // Déverrouillage automatique dès le premier contact avec l'écran
-    function debloquerAudioAutomatique() {
-      initAudioContext();
-      if (audioCtx && audioCtx.state === 'running') {
-        document.getElementById('audio-banner').style.display = 'none';
+    function debloquerAudio() {
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'running') {
         document.getElementById('badge-audio').innerText = '🔊 Alarme active';
       }
     }
 
-    // ALARME FORTE, TRÈS AIGUË & STRIDENTE (5 SECONDES)
+    function testerAlarme(e) {
+      if (e) e.stopPropagation();
+      debloquerAudio();
+      jouerAlarme5s();
+    }
+
+    // ALARME FORTE ET AIGUË DE 5 SECONDES
     function jouerAlarme5s() {
       try {
-        initAudioContext();
-        if (!audioCtx || audioCtx.state !== 'running') {
-          document.getElementById('audio-banner').style.display = 'block';
-          return;
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        // Effet visuel clignotant
+        document.body.classList.add('alarm-active');
+        setTimeout(() => document.body.classList.remove('alarm-active'), 5000);
+
+        const startTime = ctx.currentTime;
+        const totalDuration = 5.0; // 5 secondes
+        const stepDuration = 0.20; // Rythme rapide des bips
+
+        for (let t = 0; t < totalDuration; t += stepDuration) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sawtooth'; // Son aigu et perçant
+
+          // Fréquence aiguë alternée (2000 Hz et 2500 Hz)
+          const freq = (Math.floor(t / stepDuration) % 2 === 0) ? 2400 : 1900;
+          osc.frequency.setValueAtTime(freq, startTime + t);
+
+          // Volume maximal avec coupure nette entre chaque bip
+          gain.gain.setValueAtTime(0.9, startTime + t);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + t + stepDuration * 0.8);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(startTime + t);
+          osc.stop(startTime + t + stepDuration * 0.85);
         }
-
-        const now = audioCtx.currentTime;
-        const duration = 5.0; // 5 secondes
-
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        // Onde "square" (carrée) : timbre strident perçant le bruit
-        osc.type = 'square';
-
-        // Alternance de fréquences aiguës (2 200 Hz et 1 600 Hz)
-        for (let t = 0; t < duration; t += 0.25) {
-          osc.frequency.setValueAtTime(2200, now + t);
-          osc.frequency.setValueAtTime(1600, now + t + 0.12);
-        }
-
-        // Bips rapides et puissants au volume maximum (gain = 1.0)
-        for (let t = 0; t < duration; t += 0.25) {
-          gain.gain.setValueAtTime(1.0, now + t);
-          gain.gain.setValueAtTime(0.01, now + t + 0.20);
-        }
-        gain.gain.setValueAtTime(0, now + duration);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + duration);
       } catch (err) {
-        console.warn('Erreur audio :', err);
+        console.error('Erreur alarme audio :', err);
       }
     }
 
-    // Chargement API
+    // CHARGEMENT API
     async function chargerCommandes() {
       try {
         const res = await fetch('/api/commandes');
@@ -163,7 +163,7 @@
       }
     }
 
-    // Réception Socket.io
+    // SOCKET.IO RÉCEPTION COMMANDE
     if (socket) {
       socket.on('nouvelle_commande', () => {
         jouerAlarme5s();
@@ -247,14 +247,6 @@
         chargerCommandes();
       } catch (e) {}
     }
-
-    // Vérification du statut audio au chargement
-    window.addEventListener('load', () => {
-      initAudioContext();
-      if (!audioCtx || audioCtx.state !== 'running') {
-        document.getElementById('audio-banner').style.display = 'block';
-      }
-    });
 
     setInterval(chargerCommandes, 5000);
     chargerCommandes();
