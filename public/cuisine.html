@@ -19,16 +19,15 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; transition: background 0.3s; }
-    body.alarm-active { background: #450a0a !important; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; transition: background 0.2s; }
+    body.alarm-flash { background: #b91c1c !important; }
 
     header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
     h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
     .header-controls { display: flex; align-items: center; gap: 10px; }
-    .btn-sound-test { background: #2563eb; color: #fff; border: none; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    .btn-sound-test:hover { background: #1d4ed8; }
-    .badge-audio { background: #16a34a; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+    .btn-test { background: #e11d48; color: #fff; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(225,29,72,0.4); }
+    .btn-test:hover { background: #be123c; }
     .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
 
     .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
@@ -64,13 +63,12 @@
     .btn-done { background: #475569; color: #fff; }
   </style>
 </head>
-<body onclick="debloquerAudio()">
+<body>
 
   <header>
     <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
     <div class="header-controls">
-      <button class="btn-sound-test" onclick="testerAlarme(event)">🔊 Tester le son</button>
-      <span class="badge-audio" id="badge-audio">🔔 Alarme prête</span>
+      <button class="btn-test" onclick="testerAlarme()">🔊 TESTER L'ALARME (5s)</button>
       <span id="active-count" style="font-weight:700; font-size:0.9rem;">0 en cours</span>
       <span class="badge-status" id="socket-status">En direct</span>
     </div>
@@ -83,73 +81,68 @@
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
     let commandes = [];
-    let audioCtx = null;
+    let audioContextPrincipal = null;
 
-    // Déverrouillage compatible Safari macOS/iOS
-    function getAudioContext() {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!audioCtx) {
-        audioCtx = new AudioContextClass();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      return audioCtx;
-    }
-
-    function debloquerAudio() {
-      const ctx = getAudioContext();
-      if (ctx && ctx.state === 'running') {
-        document.getElementById('badge-audio').innerText = '🔊 Alarme active';
-      }
-    }
-
-    function testerAlarme(e) {
-      if (e) e.stopPropagation();
-      debloquerAudio();
-      jouerAlarme5s();
-    }
-
-    // ALARME FORTE ET AIGUË DE 5 SECONDES
-    function jouerAlarme5s() {
+    // ALARME PUISSANTE 5 SECONDES (COMPATIBLE SAFARI & CHROME MAC/IOS)
+    function declencherAlarme5s() {
       try {
-        const ctx = getAudioContext();
-        if (!ctx) return;
+        // Flash visuel rouge pendant 5 secondes
+        document.body.classList.add('alarm-flash');
+        setTimeout(() => document.body.classList.remove('alarm-flash'), 5000);
 
-        // Effet visuel clignotant
-        document.body.classList.add('alarm-active');
-        setTimeout(() => document.body.classList.remove('alarm-active'), 5000);
-
-        const startTime = ctx.currentTime;
-        const totalDuration = 5.0; // 5 secondes
-        const stepDuration = 0.20; // Rythme rapide des bips
-
-        for (let t = 0; t < totalDuration; t += stepDuration) {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-
-          osc.type = 'sawtooth'; // Son aigu et perçant
-
-          // Fréquence aiguë alternée (2000 Hz et 2500 Hz)
-          const freq = (Math.floor(t / stepDuration) % 2 === 0) ? 2400 : 1900;
-          osc.frequency.setValueAtTime(freq, startTime + t);
-
-          // Volume maximal avec coupure nette entre chaque bip
-          gain.gain.setValueAtTime(0.9, startTime + t);
-          gain.gain.exponentialRampToValueAtTime(0.01, startTime + t + stepDuration * 0.8);
-
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-
-          osc.start(startTime + t);
-          osc.stop(startTime + t + stepDuration * 0.85);
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!audioContextPrincipal) {
+          audioContextPrincipal = new AudioContextClass();
         }
+        if (audioContextPrincipal.state === 'suspended') {
+          audioContextPrincipal.resume();
+        }
+
+        const ctx = audioContextPrincipal;
+        const duration = 5.0; // 5 secondes
+        const sampleRate = ctx.sampleRate;
+        const buffer = ctx.createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
+        const data = buffer.getChannelData(0);
+
+        // Synthèse directe d'une alarme stridente avec bips alternés 1800 Hz / 2400 Hz
+        for (let i = 0; i < data.length; i++) {
+          const t = i / sampleRate;
+          const cycle = t % 0.25; // cycle de 0.25s (0.18s de son, 0.07s de silence)
+          if (cycle < 0.18) {
+            const freq = (Math.floor(t / 0.25) % 2 === 0) ? 2200 : 1700;
+            // Onde carrée très perçante
+            data[i] = Math.sin(2 * Math.PI * freq * t) > 0 ? 0.9 : -0.9;
+          } else {
+            data[i] = 0;
+          }
+        }
+
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
       } catch (err) {
-        console.error('Erreur alarme audio :', err);
+        console.error('Erreur audio :', err);
       }
     }
 
-    // CHARGEMENT API
+    function testerAlarme() {
+      declencherAlarme5s();
+    }
+
+    // Réception Socket.io
+    if (socket) {
+      socket.on('nouvelle_commande', () => {
+        declencherAlarme5s();
+        chargerCommandes();
+      });
+
+      socket.on('statut_mis_a_jour', () => {
+        chargerCommandes();
+      });
+    }
+
+    // Chargement API
     async function chargerCommandes() {
       try {
         const res = await fetch('/api/commandes');
@@ -161,18 +154,6 @@
       } catch (e) {
         console.error(e);
       }
-    }
-
-    // SOCKET.IO RÉCEPTION COMMANDE
-    if (socket) {
-      socket.on('nouvelle_commande', () => {
-        jouerAlarme5s();
-        chargerCommandes();
-      });
-
-      socket.on('statut_mis_a_jour', () => {
-        chargerCommandes();
-      });
     }
 
     function afficherTickets() {
