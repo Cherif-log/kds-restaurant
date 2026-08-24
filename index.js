@@ -388,6 +388,11 @@ app.get('/api/admin/commandes', (req, res) => {
 });
 
 // --- SOCKET.IO ---
+// Télécharger une copie de sauvegarde de la base SQLite
+app.get('/api/admin/backup-db', (req, res) => {
+  const dbPath = path.join(__dirname, 'restaurant.db');
+  res.download(dbPath, `backup_restaurant_${new Date().toISOString().slice(0,10)}.db`);
+});
 io.on('connection', (socket) => {
   socket.on('changer_statut', (data) => {
     io.emit('statut_mis_a_jour', data);
