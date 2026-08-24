@@ -7,14 +7,14 @@
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
-      --primary: #1e293b;
+      --primary: #0f172a;
       --accent: #2563eb;
-      --accent-hover: #1d4ed8;
+      --accent-light: #eff6ff;
       --success: #16a34a;
-      --bg: #f1f5f9;
+      --bg: #f8fafc;
       --card-bg: #ffffff;
-      --border: #cbd5e1;
-      --text: #0f172a;
+      --border: #e2e8f0;
+      --text: #1e293b;
       --text-muted: #64748b;
     }
 
@@ -22,81 +22,61 @@
     body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
     /* Header */
-    header { background: var(--primary); color: #fff; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; }
-    .badge-status { background: var(--success); font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+    header { background: var(--primary); color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.15rem; font-weight: 700; }
+    .badge-status { background: var(--success); font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
 
     /* Layout */
-    .app-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 58px); }
-    .main-content { flex: 1; overflow-y: auto; padding: 20px 25px; }
-    .ticket-sidebar { width: 400px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
+    .app-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 54px); }
+    .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* Tables Bar */
+    /* Barre des Tables */
     .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; }
-    .tables-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 20px; scrollbar-width: none; }
+    .tables-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; scrollbar-width: none; }
     .tables-scroll::-webkit-scrollbar { display: none; }
-    .btn-table { flex: 0 0 65px; height: 44px; background: #fff; border: 1.5px solid var(--border); border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; color: var(--text); transition: all 0.15s; }
+    .btn-table { flex: 0 0 62px; height: 42px; background: #fff; border: 1.5px solid var(--border); border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; color: var(--text); }
     .btn-table.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 10px rgba(37,99,235,0.25); }
 
-    /* Navigation Modes */
-    .nav-modes { display: flex; gap: 10px; margin-bottom: 22px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
-    .btn-mode { flex: 1; padding: 12px 16px; border: none; background: #e2e8f0; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; color: #475569; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .btn-mode.active { background: var(--primary); color: #fff; }
+    /* Onglets Catégories */
+    .cat-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; scrollbar-width: none; }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .btn-cat-tab { white-space: nowrap; padding: 8px 16px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; color: #475569; }
+    .btn-cat-tab.active { background: var(--primary); color: #fff; }
 
-    /* Builder Formules */
-    .formula-builder { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-    .builder-step { margin-bottom: 22px; }
-    .builder-step-title { font-size: 0.95rem; font-weight: 700; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-    .step-badge { background: var(--accent); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; }
-    .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
-    .option-card { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: left; line-height: 1.3; }
-    .option-card:hover { border-color: #94a3b8; }
-    .option-card.selected { background: #eff6ff; border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    /* Grille des Plats */
+    .section-header { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin: 16px 0 10px 0; padding-bottom: 4px; border-bottom: 2px solid #e2e8f0; }
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    
+    .dish-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; transition: all 0.15s; }
+    .dish-card.active { border-color: var(--accent); background: var(--accent-light); }
+    .dish-info { flex: 1; padding-right: 10px; }
+    .dish-name { font-weight: 600; font-size: 0.88rem; line-height: 1.3; color: var(--text); }
+    .dish-price { font-weight: 700; font-size: 0.85rem; color: var(--accent); margin-top: 3px; }
 
-    /* Barre d'action Formule avec sélecteur de quantité */
-    .formula-action-bar { display: flex; gap: 12px; align-items: center; margin-top: 15px; }
-    .qty-picker-group { display: flex; align-items: center; background: #f1f5f9; border-radius: 8px; padding: 4px; border: 1px solid var(--border); }
-    .btn-qty-picker { width: 36px; height: 36px; border: none; background: #fff; border-radius: 6px; font-size: 1.2rem; font-weight: 700; cursor: pointer; color: var(--text); }
-    .qty-picker-val { font-size: 1.1rem; font-weight: 700; min-width: 35px; text-align: center; }
+    /* Contrôle Quantité direct */
+    .qty-controls { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
+    .dish-card.active .qty-controls { background: #fff; border-color: var(--accent); }
+    .btn-q { width: 30px; height: 30px; border: none; background: #fff; border-radius: 6px; font-weight: 800; font-size: 1.1rem; cursor: pointer; color: var(--text); display: flex; align-items: center; justify-content: center; }
+    .dish-card.active .btn-q.plus { background: var(--accent); color: #fff; }
+    .q-val { font-weight: 800; font-size: 0.95rem; min-width: 22px; text-align: center; color: var(--text); }
 
-    .btn-add-formula { flex: 1; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
-    .btn-add-formula:disabled { background: #94a3b8; cursor: not-allowed; }
-
-    /* Grille Carte Classique */
-    .carte-filters { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
-    .btn-filter { padding: 6px 14px; background: #e2e8f0; border: none; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #475569; }
-    .btn-filter.active { background: var(--primary); color: #fff; }
-    .carte-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
-    .carte-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-    .carte-card-info { flex: 1; padding-right: 10px; }
-    .carte-card-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; line-height: 1.3; }
-    .carte-card-price { font-weight: 700; color: var(--accent); font-size: 0.95rem; }
-    .btn-add-carte { background: #eff6ff; color: var(--accent); border: 1px solid #bfdbfe; width: 38px; height: 38px; border-radius: 8px; font-size: 1.3rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .btn-add-carte:hover { background: var(--accent); color: #fff; }
-
-    /* Panneau Ticket */
-    .ticket-header { padding: 16px 20px; background: var(--primary); color: #fff; font-size: 1.05rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
-    .ticket-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+    /* Sidebar Ticket */
+    .ticket-header { padding: 14px 18px; background: var(--primary); color: #fff; font-size: 1rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+    .ticket-body { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
     .ticket-empty { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: 40px; }
     
-    .ticket-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
-    .ticket-item-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    .ticket-item-name { font-weight: 700; font-size: 0.92rem; color: var(--text); flex: 1; line-height: 1.3; }
-    .ticket-item-sub { font-size: 0.82rem; color: #475569; line-height: 1.35; padding-left: 8px; border-left: 2px solid var(--accent); margin-top: 2px; }
-    
-    .ticket-item-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1; }
-    .ticket-item-price { font-weight: 700; font-size: 0.95rem; color: var(--accent); }
-    
-    .ticket-qty-controls { display: flex; align-items: center; gap: 6px; }
-    .btn-t-qty { width: 28px; height: 28px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
-    .t-qty-val { font-weight: 800; font-size: 0.95rem; min-width: 22px; text-align: center; }
-    .btn-t-delete { background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; margin-left: 4px; }
+    .ticket-row { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+    .ticket-row-info { flex: 1; padding-right: 8px; }
+    .ticket-row-title { font-weight: 700; font-size: 0.88rem; color: var(--text); }
+    .ticket-row-cat { font-size: 0.75rem; color: var(--text-muted); }
+    .ticket-row-price { font-weight: 700; font-size: 0.9rem; color: var(--accent); margin-right: 8px; }
 
-    .ticket-footer { padding: 16px 20px; border-top: 1px solid var(--border); background: #fff; }
-    .ticket-total-row { display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 800; margin-bottom: 12px; }
-    .ticket-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; margin-bottom: 12px; outline: none; }
-    .btn-send-order { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
-    .btn-send-order:disabled { background: #94a3b8; cursor: not-allowed; }
+    .ticket-footer { padding: 14px 18px; border-top: 1px solid var(--border); background: #fff; }
+    .ticket-total { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; }
+    .ticket-note { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; outline: none; }
+    .btn-send { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
 
     @media (max-width: 900px) {
       .app-layout { flex-direction: column; height: auto; }
@@ -113,98 +93,33 @@
 
   <div class="app-layout">
     
-    <!-- CONTENU PRINCIPAL -->
     <main class="main-content">
-      
-      <div class="section-label">1. Table active</div>
+      <div class="section-label">1. Sélectionner la table</div>
       <div class="tables-scroll" id="tables-container"></div>
 
-      <div class="section-label">2. Choisir le format</div>
-      <div class="nav-modes">
-        <button class="btn-mode active" onclick="switchMode('menu40')">⭐ Menu à 40 €</button>
-        <button class="btn-mode" onclick="switchMode('menuEnfant')">👶 Menu Enfant (15 €)</button>
-        <button class="btn-mode" onclick="switchMode('carte')">🍽️ La Carte</button>
-      </div>
+      <div class="section-label">2. Choisir la catégorie</div>
+      <div class="cat-tabs" id="cat-tabs-container"></div>
 
-      <!-- VUE 1 : FORMULE MENU 40 € -->
-      <section id="view-menu40" class="formula-builder">
-        <div class="builder-step">
-          <div class="builder-step-title"><span class="step-badge">1</span> Choix de l'Entrée :</div>
-          <div class="options-grid" id="grid-m40-entrees"></div>
-        </div>
-
-        <div class="builder-step">
-          <div class="builder-step-title"><span class="step-badge">2</span> Choix du Plat :</div>
-          <div class="options-grid" id="grid-m40-plats"></div>
-        </div>
-
-        <div class="builder-step">
-          <div class="builder-step-title"><span class="step-badge">3</span> Choix du Dessert :</div>
-          <div class="options-grid" id="grid-m40-desserts"></div>
-        </div>
-
-        <div class="formula-action-bar">
-          <div class="qty-picker-group">
-            <button class="btn-qty-picker" onclick="ajusterQteM40(-1)">-</button>
-            <span class="qty-picker-val" id="qty-m40-val">1</span>
-            <button class="btn-qty-picker" onclick="ajusterQteM40(1)">+</button>
-          </div>
-          <button id="btn-add-m40" class="btn-add-formula" disabled onclick="ajouterMenu40AuTicket()">
-            Ajouter au ticket
-          </button>
-        </div>
-      </section>
-
-      <!-- VUE 2 : MENU ENFANT 15 € -->
-      <section id="view-menuEnfant" class="formula-builder" style="display: none;">
-        <div class="builder-step">
-          <div class="builder-step-title"><span class="step-badge">1</span> Choix du Plat enfant :</div>
-          <div class="options-grid" id="grid-enfant-plats"></div>
-        </div>
-
-        <div class="builder-step">
-          <div class="builder-step-title"><span class="step-badge">2</span> Choix de la Garniture :</div>
-          <div class="options-grid" id="grid-enfant-garnitures"></div>
-        </div>
-
-        <div class="formula-action-bar">
-          <div class="qty-picker-group">
-            <button class="btn-qty-picker" onclick="ajusterQteEnfant(-1)">-</button>
-            <span class="qty-picker-val" id="qty-enfant-val">1</span>
-            <button class="btn-qty-picker" onclick="ajusterQteEnfant(1)">+</button>
-          </div>
-          <button id="btn-add-enfant" class="btn-add-formula" disabled onclick="ajouterMenuEnfantAuTicket()">
-            Ajouter au ticket
-          </button>
-        </div>
-      </section>
-
-      <!-- VUE 3 : LA CARTE -->
-      <section id="view-carte" style="display: none;">
-        <div class="carte-filters" id="carte-filters-container"></div>
-        <div class="carte-grid" id="carte-articles-container"></div>
-      </section>
-
+      <div id="dishes-content"></div>
     </main>
 
-    <!-- TICKET DE COMMANDE -->
     <aside class="ticket-sidebar">
       <div class="ticket-header">
-        <span>Ticket Table <span id="current-table-display">1</span></span>
-        <span id="ticket-count-badge" style="font-size:0.8rem; font-weight:normal;">0 article</span>
+        <span>Table <span id="current-table-title">1</span></span>
+        <span id="ticket-items-count" style="font-size:0.8rem; font-weight:500;">0 article</span>
       </div>
 
-      <div class="ticket-body" id="ticket-items-container">
+      <div class="ticket-body" id="ticket-container">
         <div class="ticket-empty">Aucun article sélectionné</div>
       </div>
 
       <div class="ticket-footer">
-        <div class="ticket-total-row">
+        <div class="ticket-total">
           <span>Total :</span>
-          <span id="ticket-total-display">0,00 €</span>
+          <span id="ticket-total-val">0,00 €</span>
         </div>
-        <input type="text" id="order-notes" class="ticket-input" placeholder="Remarque générale (ex: cuisson, allergies...)">
-        <button id="btn-submit-order" class="btn-send-order" disabled onclick="validerEtEnvoyerCommande()">
+        <input type="text" id="order-notes" class="ticket-note" placeholder="Remarque (ex: cuisson, allergies...)">
+        <button id="btn-submit" class="btn-send" disabled onclick="envoyerCommande()">
           Envoyer en cuisine
         </button>
       </div>
@@ -214,383 +129,296 @@
 
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
-    let selectedTable = 1;
-    let ticket = []; 
+    let currentTable = 1;
+    let currentTab = "Menu 40 €";
+    let cart = {}; // { dishId: quantity }
 
-    // Quantités temporaires pour l'ajout
-    let qteM40 = 1;
-    let qteEnfant = 1;
-    let selectionM40 = { entree: null, plat: null, dessert: null };
-    let selectionEnfant = { plat: null, garniture: null };
+    // --- CARTE COMPLÈTE AVEC IDs UNIQUES ---
+    const menuData = [
+      // MENU 40 € - FORMULE GLOBALE
+      { id: "m40_formule", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00 },
 
-    // DONNÉES DU MENU
-    const dataMenu40 = {
-      entrees: [
-        "Entrée du jour",
-        "Saumon fumé maison",
-        "Foie gras de canard maison, chutney, toast",
-        "Soupe de poissons du Bassin et ses croûtons",
-        "Cornet de friture de calamars sauce tartare",
-        "Assiette de charcuterie",
-        "Asperges blanches, jambon et vierge de tomate"
-      ],
-      plats: [
-        "Dos de maigre, sauce vierge",
-        "Pavé de cabillaud rôti, petits légumes iodés",
-        "Pavé de bar à l’huile, risotto de riz noir",
-        "Blanquette de seiche safranée",
-        "Carpaccio de bœuf maison basilic & Parmesan",
-        "Entrecôte de bœuf, échalotes confites",
-        "Magret de canard, sauce au poivre"
-      ],
-      desserts: [
-        "Dessert du jour",
-        "Assiette de fromages",
-        "Crème brûlée à la vanille de Madagascar",
-        "Tiramisu au café",
-        "Café gourmand",
-        "Fromage blanc fermier et son coulis",
-        "Mousse au chocolat noir",
-        "Cheesecake au citron",
-        "Coupe de glaces 2 boules au choix"
-      ]
-    };
+      // MENU 40 € - ENTRÉES
+      { id: "m40_e1", nom: "Entrée du jour (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e2", nom: "Saumon fumé maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e3", nom: "Foie gras de canard maison, chutney (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e4", nom: "Soupe de poissons du Bassin (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e5", nom: "Cornet de friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e6", nom: "Assiette de charcuterie (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
+      { id: "m40_e7", nom: "Asperges blanches & jambon (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00 },
 
-    const dataMenuEnfant = {
-      plats: ["Chicken tenders", "Steak haché", "Filet de poisson"],
-      garnitures: ["Salade du jardin", "Frites", "Purée", "Légumes sautés maison"]
-    };
+      // MENU 40 € - PLATS
+      { id: "m40_p1", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p2", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p3", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p4", nom: "Blanquette de seiche safranée (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p5", nom: "Carpaccio de bœuf & Parmesan (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p6", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
+      { id: "m40_p7", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00 },
 
-    const dataCarte = [
-      // Entrées (15 €)
-      { nom: "Terrine de foie de canard maison, chutney & toast", cat: "Entrées", prix: 15.00 },
-      { nom: "Soupe de poissons et son accompagnement", cat: "Entrées", prix: 15.00 },
-      { nom: "Saumon fumé maison", cat: "Entrées", prix: 15.00 },
-      { nom: "Cornet de friture de calamars, sauce tartare", cat: "Entrées", prix: 15.00 },
-      { nom: "Assiette de charcuterie", cat: "Entrées", prix: 15.00 },
-      { nom: "Asperges blanches, jambon et vierge de tomate", cat: "Entrées", prix: 15.00 },
+      // MENU 40 € - DESSERTS
+      { id: "m40_d1", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d2", nom: "Assiette de fromages (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d3", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d4", nom: "Tiramisu au café (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d5", nom: "Café gourmand (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d6", nom: "Fromage blanc fermier & coulis (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d7", nom: "Mousse au chocolat noir (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d8", nom: "Cheesecake au citron (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
+      { id: "m40_d9", nom: "Coupe glacée 2 boules (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00 },
 
-      // Poissons (25 €)
-      { nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons", prix: 25.00 },
-      { nom: "Dos de maigre, sauce vierge", cat: "Poissons", prix: 25.00 },
-      { nom: "Pavé de cabillaud rôti, petits légumes iodés", cat: "Poissons", prix: 25.00 },
-      { nom: "Blanquette de seiche safranée", cat: "Poissons", prix: 25.00 },
+      // LA CARTE : ENTRÉES (15 €)
+      { id: "c_e1", nom: "Terrine de foie de canard maison, chutney", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e2", nom: "Soupe de poissons et accompagnement", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e3", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e4", nom: "Cornet de friture de calamars, tartare", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e5", nom: "Assiette de charcuterie", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
+      { id: "c_e6", nom: "Asperges blanches, jambon & vierge", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00 },
 
-      // Viandes (25 €)
-      { nom: "Carpaccio de bœuf maison basilic et parmesan", cat: "Viandes", prix: 25.00 },
-      { nom: "Entrecôte de bœuf, échalotes confites", cat: "Viandes", prix: 25.00 },
-      { nom: "Magret de canard, sauce au poivre", cat: "Viandes", prix: 25.00 },
+      // LA CARTE : POISSONS (25 €)
+      { id: "c_p1", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
+      { id: "c_p2", nom: "Dos de maigre, sauce vierge", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
+      { id: "c_p3", nom: "Pavé de cabillaud rôti, légumes iodés", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
+      { id: "c_p4", nom: "Blanquette de seiche safranée", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00 },
 
-      // Desserts
-      { nom: "Dessert du jour", cat: "Desserts", prix: 8.00 },
-      { nom: "Café gourmand", cat: "Desserts", prix: 10.00 },
-      { nom: "Fromage blanc fermier et coulis fruits exotiques", cat: "Desserts", prix: 8.00 },
-      { nom: "Mousse au chocolat", cat: "Desserts", prix: 8.00 },
-      { nom: "Assiette de fromages", cat: "Desserts", prix: 8.00 },
-      { nom: "Crème brûlée à la vanille de Madagascar", cat: "Desserts", prix: 8.00 },
-      { nom: "Cheesecake au citron", cat: "Desserts", prix: 8.00 },
-      { nom: "Tiramisu au café", cat: "Desserts", prix: 8.00 },
-      { nom: "Coupe de glaces 2 boules au choix", cat: "Desserts", prix: 8.00 }
+      // LA CARTE : VIANDES (25 €)
+      { id: "c_v1", nom: "Carpaccio de bœuf maison basilic & Parmesan", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
+      { id: "c_v2", nom: "Entrecôte de bœuf, échalotes confites", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
+      { id: "c_v3", nom: "Magret de canard, sauce au poivre", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00 },
+
+      // LA CARTE : DESSERTS
+      { id: "c_d1", nom: "Dessert du jour", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d2", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00 },
+      { id: "c_d3", nom: "Fromage blanc fermier & fruits exotiques", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d4", nom: "Mousse au chocolat", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d5", nom: "Assiette de fromages", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d6", nom: "Crème brûlée à la vanille de Madagascar", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d7", nom: "Cheesecake au citron", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d8", nom: "Tiramisu au café", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+      { id: "c_d9", nom: "Coupe de glaces 2 boules au choix", cat: "Desserts", section: "Desserts à la carte", prix: 8.00 },
+
+      // MENU ENFANT (15 €)
+      { id: "enf_p1", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
+      { id: "enf_p2", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
+      { id: "enf_p3", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00 },
+      { id: "enf_g1", nom: "Garniture : Salade du jardin", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
+      { id: "enf_g2", nom: "Garniture : Frites maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
+      { id: "enf_g3", nom: "Garniture : Purée maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
+      { id: "enf_g4", nom: "Garniture : Légumes sautés maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00 },
+
+      // PARFUMS DE GLACES
+      { id: "gl_1", nom: "Parfum Glace : Vanille", cat: "Glaces", section: "Parfums", prix: 0.00 },
+      { id: "gl_2", nom: "Parfum Glace : Café", cat: "Glaces", section: "Parfums", prix: 0.00 },
+      { id: "gl_3", nom: "Parfum Glace : Chocolat", cat: "Glaces", section: "Parfums", prix: 0.00 },
+      { id: "gl_4", nom: "Parfum Glace : Fraise", cat: "Glaces", section: "Parfums", prix: 0.00 },
+      { id: "gl_5", nom: "Parfum Glace : Citron", cat: "Glaces", section: "Parfums", prix: 0.00 },
+      { id: "gl_6", nom: "Parfum Glace : Coco", cat: "Glaces", section: "Parfums", prix: 0.00 },
+      { id: "gl_7", nom: "Parfum Glace : Rhum raisin", cat: "Glaces", section: "Parfums", prix: 0.00 },
+      { id: "gl_8", nom: "Parfum Glace : Caramel beurre salé", cat: "Glaces", section: "Parfums", prix: 0.00 },
+      { id: "gl_9", nom: "Parfum Glace : Poire", cat: "Glaces", section: "Parfums", prix: 0.00 }
     ];
 
-    let currentCarteFilter = 'Tous';
-
-    // INITIALISATION
+    // Initialisation
     function init() {
-      // 1. Tables
+      // 1. Tables 1 à 15
       const tContainer = document.getElementById('tables-container');
+      tContainer.innerHTML = '';
       for (let i = 1; i <= 15; i++) {
         const btn = document.createElement('button');
-        btn.className = `btn-table ${i === 1 ? 'active' : ''}`;
+        btn.className = `btn-table ${i === currentTable ? 'active' : ''}`;
         btn.innerText = `T${i}`;
         btn.onclick = () => {
           document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          selectedTable = i;
-          document.getElementById('current-table-display').innerText = i;
+          currentTable = i;
+          document.getElementById('current-table-title').innerText = i;
         };
         tContainer.appendChild(btn);
       }
 
-      // 2. Options Formules
-      renderOptionsGrid('grid-m40-entrees', dataMenu40.entrees, 'entree', selectionM40, checkM40Validation);
-      renderOptionsGrid('grid-m40-plats', dataMenu40.plats, 'plat', selectionM40, checkM40Validation);
-      renderOptionsGrid('grid-m40-desserts', dataMenu40.desserts, 'dessert', selectionM40, checkM40Validation);
-
-      renderOptionsGrid('grid-enfant-plats', dataMenuEnfant.plats, 'plat', selectionEnfant, checkEnfantValidation);
-      renderOptionsGrid('grid-enfant-garnitures', dataMenuEnfant.garnitures, 'garniture', selectionEnfant, checkEnfantValidation);
-
-      // 3. Carte
-      initCarteFilters();
-      renderCarteGrid();
-    }
-
-    function switchMode(mode) {
-      document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
-      event.currentTarget.classList.add('active');
-
-      document.getElementById('view-menu40').style.display = (mode === 'menu40') ? 'block' : 'none';
-      document.getElementById('view-menuEnfant').style.display = (mode === 'menuEnfant') ? 'block' : 'none';
-      document.getElementById('view-carte').style.display = (mode === 'carte') ? 'block' : 'none';
-    }
-
-    // Gestion Quantités sur le builder
-    function ajusterQteM40(delta) {
-      qteM40 = Math.max(1, qteM40 + delta);
-      document.getElementById('qty-m40-val').innerText = qteM40;
-    }
-
-    function ajusterQteEnfant(delta) {
-      qteEnfant = Math.max(1, qteEnfant + delta);
-      document.getElementById('qty-enfant-val').innerText = qteEnfant;
-    }
-
-    function renderOptionsGrid(containerId, items, key, targetState, onSelectCallback) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = '';
-      items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'option-card';
-        div.innerText = item;
-        div.onclick = () => {
-          container.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-          div.classList.add('selected');
-          targetState[key] = item;
-          onSelectCallback();
+      // 2. Onglets Catégories
+      const categories = ["Menu 40 €", "Entrées (15 €)", "Poissons (25 €)", "Viandes (25 €)", "Desserts", "Menu Enfant (15 €)", "Glaces"];
+      const catContainer = document.getElementById('cat-tabs-container');
+      catContainer.innerHTML = '';
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `btn-cat-tab ${cat === currentTab ? 'active' : ''}`;
+        btn.innerText = cat;
+        btn.onclick = () => {
+          document.querySelectorAll('.btn-cat-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentTab = cat;
+          afficherPlats();
         };
-        container.appendChild(div);
+        catContainer.appendChild(btn);
+      });
+
+      afficherPlats();
+      mettreAJourTicket();
+    }
+
+    // Affichage des plats avec compteurs individuels
+    function afficherPlats() {
+      const container = document.getElementById('dishes-content');
+      container.innerHTML = '';
+
+      const platsFiltres = menuData.filter(d => d.cat === currentTab);
+      
+      // Regrouper par section
+      const sections = [...new Set(platsFiltres.map(d => d.section))];
+
+      sections.forEach(secTitle => {
+        const secHeader = document.createElement('div');
+        secHeader.className = 'section-header';
+        secHeader.innerText = secTitle;
+        container.appendChild(secHeader);
+
+        const grid = document.createElement('div');
+        grid.className = 'items-grid';
+
+        const platsDeLaSection = platsFiltres.filter(d => d.section === secTitle);
+        platsDeLaSection.forEach(plat => {
+          const qte = cart[plat.id] || 0;
+          const card = document.createElement('div');
+          card.className = `dish-card ${qte > 0 ? 'active' : ''}`;
+          card.id = `card-${plat.id}`;
+          card.innerHTML = `
+            <div class="dish-info">
+              <div class="dish-name">${plat.nom}</div>
+              <div class="dish-price">${plat.prix > 0 ? plat.prix.toFixed(2) + ' €' : 'Inclus'}</div>
+            </div>
+            <div class="qty-controls">
+              <button class="btn-q" onclick="modifierQuantite('${plat.id}', -1)">-</button>
+              <span class="q-val" id="qty-${plat.id}">${qte}</span>
+              <button class="btn-q plus" onclick="modifierQuantite('${plat.id}', 1)">+</button>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
       });
     }
 
-    function checkM40Validation() {
-      const valid = selectionM40.entree && selectionM40.plat && selectionM40.dessert;
-      document.getElementById('btn-add-m40').disabled = !valid;
-    }
+    // Modification Quantité
+    function modifierQuantite(id, delta) {
+      const current = cart[id] || 0;
+      const next = current + delta;
 
-    function checkEnfantValidation() {
-      const valid = selectionEnfant.plat && selectionEnfant.garniture;
-      document.getElementById('btn-add-enfant').disabled = !valid;
-    }
-
-    // AJOUTS AU TICKET AVEC REGROUPEMENT
-    function ajouterMenu40AuTicket() {
-      const details = [
-        `Entrée : ${selectionM40.entree}`,
-        `Plat : ${selectionM40.plat}`,
-        `Dessert : ${selectionM40.dessert}`
-      ];
-      
-      const key = 'Menu à 40 €|' + details.join('|');
-      const existing = ticket.find(it => it.key === key);
-
-      if (existing) {
-        existing.quantite += qteM40;
+      if (next <= 0) {
+        delete cart[id];
       } else {
-        ticket.push({
-          key: key,
-          type: 'formule',
-          nom: 'Menu à 40 €',
-          prix: 40.00,
-          quantite: qteM40,
-          details: details
-        });
+        cart[id] = next;
       }
 
-      // Reset
-      selectionM40 = { entree: null, plat: null, dessert: null };
-      qteM40 = 1;
-      document.getElementById('qty-m40-val').innerText = '1';
-      document.querySelectorAll('#view-menu40 .option-card').forEach(c => c.classList.remove('selected'));
-      checkM40Validation();
-      renderTicket();
-    }
-
-    function ajouterMenuEnfantAuTicket() {
-      const details = [
-        `Plat : ${selectionEnfant.plat}`,
-        `Garniture : ${selectionEnfant.garniture}`
-      ];
-
-      const key = 'Menu Enfant|' + details.join('|');
-      const existing = ticket.find(it => it.key === key);
-
-      if (existing) {
-        existing.quantite += qteEnfant;
-      } else {
-        ticket.push({
-          key: key,
-          type: 'formule',
-          nom: 'Menu Enfant',
-          prix: 15.00,
-          quantite: qteEnfant,
-          details: details
-        });
+      // Mise à jour visuelle immédiate
+      const el = document.getElementById(`qty-${id}`);
+      const card = document.getElementById(`card-${id}`);
+      if (el) el.innerText = cart[id] || 0;
+      if (card) {
+        if (cart[id] > 0) card.classList.add('active');
+        else card.classList.remove('active');
       }
 
-      selectionEnfant = { plat: null, garniture: null };
-      qteEnfant = 1;
-      document.getElementById('qty-enfant-val').innerText = '1';
-      document.querySelectorAll('#view-menuEnfant .option-card').forEach(c => c.classList.remove('selected'));
-      checkEnfantValidation();
-      renderTicket();
+      mettreAJourTicket();
     }
 
-    function ajouterCarteAuTicket(plat) {
-      const key = 'Carte|' + plat.nom;
-      const existing = ticket.find(it => it.key === key);
+    // Mise à jour du Ticket latéral
+    function mettreAJourTicket() {
+      const container = document.getElementById('ticket-container');
+      const countEl = document.getElementById('ticket-items-count');
+      const totalEl = document.getElementById('ticket-total-val');
+      const btnSend = document.getElementById('btn-submit');
 
-      if (existing) {
-        existing.quantite += 1;
-      } else {
-        ticket.push({
-          key: key,
-          type: 'carte',
-          nom: plat.nom,
-          prix: plat.prix,
-          quantite: 1,
-          details: []
-        });
-      }
-      renderTicket();
-    }
-
-    // CONTRÔLE DES QUANTITÉS DANS LE TICKET
-    function modifierQuantiteTicket(index, delta) {
-      ticket[index].quantite += delta;
-      if (ticket[index].quantite <= 0) {
-        ticket.splice(index, 1);
-      }
-      renderTicket();
-    }
-
-    function supprimerLigneTicket(index) {
-      ticket.splice(index, 1);
-      renderTicket();
-    }
-
-    // RENDU TICKET
-    function renderTicket() {
-      const container = document.getElementById('ticket-items-container');
-      const badgeCount = document.getElementById('ticket-count-badge');
-      const totalDisplay = document.getElementById('ticket-total-display');
-      const btnSubmit = document.getElementById('btn-submit-order');
-
-      if (ticket.length === 0) {
+      const itemIds = Object.keys(cart);
+      if (itemIds.length === 0) {
         container.innerHTML = '<div class="ticket-empty">Aucun article sélectionné</div>';
-        badgeCount.innerText = '0 article';
-        totalDisplay.innerText = '0,00 €';
-        btnSubmit.disabled = true;
+        countEl.innerText = '0 article';
+        totalEl.innerText = '0,00 €';
+        btnSend.disabled = true;
         return;
       }
 
       container.innerHTML = '';
       let total = 0;
-      let totalArticles = 0;
+      let totalQte = 0;
 
-      ticket.forEach((item, index) => {
-        const itemTotal = item.prix * item.quantite;
-        total += itemTotal;
-        totalArticles += item.quantite;
+      itemIds.forEach(id => {
+        const plat = menuData.find(d => d.id === id);
+        if (!plat) return;
 
-        const div = document.createElement('div');
-        div.className = 'ticket-item';
-        div.innerHTML = `
-          <div class="ticket-item-top">
-            <span class="ticket-item-name">${item.nom}</span>
-            <button class="btn-t-qty btn-t-delete" title="Supprimer" onclick="supprimerLigneTicket(${index})">✕</button>
+        const qte = cart[id];
+        const ligneTotal = plat.prix * qte;
+        total += ligneTotal;
+        totalQte += qte;
+
+        const row = document.createElement('div');
+        row.className = 'ticket-row';
+        row.innerHTML = `
+          <div class="ticket-row-info">
+            <div class="ticket-row-title">${plat.nom}</div>
+            <div class="ticket-row-cat">${plat.cat}</div>
           </div>
-          ${item.details.map(d => `<div class="ticket-item-sub">${d}</div>`).join('')}
-          <div class="ticket-item-bottom">
-            <span class="ticket-item-price">${itemTotal.toFixed(2)} €</span>
-            <div class="ticket-qty-controls">
-              <button class="btn-t-qty" onclick="modifierQuantiteTicket(${index}, -1)">-</button>
-              <span class="t-qty-val">${item.quantite}</span>
-              <button class="btn-t-qty" onclick="modifierQuantiteTicket(${index}, 1)">+</button>
-            </div>
+          <div class="ticket-row-price">${ligneTotal > 0 ? ligneTotal.toFixed(2) + ' €' : 'Inclus'}</div>
+          <div class="qty-controls">
+            <button class="btn-q" onclick="modifierQuantite('${plat.id}', -1)">-</button>
+            <span class="q-val">${qte}</span>
+            <button class="btn-q plus" onclick="modifierQuantite('${plat.id}', 1)">+</button>
           </div>
         `;
-        container.appendChild(div);
+        container.appendChild(row);
       });
 
-      badgeCount.innerText = `${totalArticles} article${totalArticles > 1 ? 's' : ''}`;
-      totalDisplay.innerText = `${total.toFixed(2)} €`;
-      btnSubmit.disabled = false;
+      countEl.innerText = `${totalQte} article${totalQte > 1 ? 's' : ''}`;
+      totalEl.innerText = `${total.toFixed(2)} €`;
+      btnSend.disabled = false;
     }
 
-    // CARTE CLASSIQUE
-    function initCarteFilters() {
-      const categories = ['Tous', 'Entrées', 'Poissons', 'Viandes', 'Desserts'];
-      const cContainer = document.getElementById('carte-filters-container');
-      cContainer.innerHTML = '';
+    // ENVOI SÉCURISÉ EN CUISINE
+    async function envoyerCommande() {
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.innerText = 'Envoi en cours...';
 
-      categories.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = `btn-filter ${cat === currentCarteFilter ? 'active' : ''}`;
-        btn.innerText = cat;
-        btn.onclick = () => {
-          document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          currentCarteFilter = cat;
-          renderCarteGrid();
+      const items = Object.keys(cart).map(id => {
+        const plat = menuData.find(d => d.id === id);
+        return {
+          article_nom: plat.nom,
+          prix: plat.prix,
+          quantite: cart[id],
+          remarques: ''
         };
-        cContainer.appendChild(btn);
       });
-    }
-
-    function renderCarteGrid() {
-      const grid = document.getElementById('carte-articles-container');
-      grid.innerHTML = '';
-
-      const plats = currentCarteFilter === 'Tous' 
-        ? dataCarte 
-        : dataCarte.filter(p => p.cat === currentCarteFilter);
-
-      plats.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'carte-card';
-        card.innerHTML = `
-          <div class="carte-card-info">
-            <div class="carte-card-name">${p.nom}</div>
-            <div class="carte-card-price">${p.prix.toFixed(2)} €</div>
-          </div>
-          <button class="btn-add-carte" onclick='ajouterCarteAuTicket(${JSON.stringify(p)})'>+</button>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    // ENVOI DE LA COMMANDE
-    async function validerEtEnvoyerCommande() {
-      const payloadItems = ticket.map(item => ({
-        article_nom: item.nom,
-        prix: item.prix,
-        quantite: item.quantite,
-        remarques: item.details.join(' | ')
-      }));
 
       const payload = {
-        table_num: selectedTable,
-        items: payloadItems,
+        table_num: currentTable,
+        items: items,
         remarques: document.getElementById('order-notes').value.trim()
       };
 
-      if (socket) {
-        socket.emit('nouvelle_commande', payload);
-      }
-
       try {
-        await fetch('/api/commandes', {
+        // 1. Envoi API REST
+        const res = await fetch('/api/commandes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-      } catch (e) {}
 
-      // Reset
-      ticket = [];
-      document.getElementById('order-notes').value = '';
-      renderTicket();
-      alert(`Commande pour la Table ${selectedTable} envoyée en cuisine !`);
+        // 2. Émission Socket.io en direct
+        if (socket) {
+          socket.emit('nouvelle_commande', payload);
+        }
+
+        alert(`✅ Commande de la Table ${currentTable} envoyée en cuisine !`);
+        cart = {};
+        document.getElementById('order-notes').value = '';
+        afficherPlats();
+        mettreAJourTicket();
+      } catch (err) {
+        alert("⚠️ Erreur lors de l'envoi de la commande.");
+        btn.disabled = false;
+        btn.innerText = 'Envoyer en cuisine';
+      }
     }
 
     init();

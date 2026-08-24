@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Écran Cuisine (KDS)</title>
+  <title>Hôtel des Pins — Écran Cuisine</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -19,32 +19,23 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 15px; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; }
 
-    /* Header */
-    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
     h1 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-    .header-info { display: flex; align-items: center; gap: 15px; }
+    .header-info { display: flex; align-items: center; gap: 14px; }
     .badge-status { background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
 
-    /* Grille des Tickets */
     .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
-    
     .empty-state { grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 1.1rem; padding: 80px 20px; }
 
-    /* Carte Ticket */
-    .ticket-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 20px rgba(0,0,0,0.3); animation: slideIn 0.3s ease; }
-    
-    @keyframes slideIn {
-      from { transform: translateY(-10px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
+    .ticket-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 20px rgba(0,0,0,0.3); animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
     .ticket-top { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
     .ticket-table { font-size: 1.25rem; }
     .ticket-time { font-size: 0.85rem; color: var(--text-muted); }
 
-    /* Statuts */
     .status-en_attente .ticket-top { background: rgba(234, 179, 8, 0.15); border-bottom: 2px solid var(--attente); }
     .status-en_attente .badge-stat { background: var(--attente); color: #000; }
 
@@ -56,19 +47,13 @@
 
     .badge-stat { padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
 
-    .ticket-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-
-    .ticket-item { border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
-    .ticket-item:last-child { border-bottom: none; }
-    .item-main { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.05rem; }
-    .item-qty { color: var(--accent); margin-right: 6px; }
-    .item-details { font-size: 0.85rem; color: #cbd5e1; margin-top: 4px; padding-left: 8px; border-left: 2px solid var(--accent); line-height: 1.35; white-space: pre-line; }
-
+    .ticket-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .ticket-item { display: flex; justify-content: space-between; font-weight: 700; font-size: 1rem; border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
+    .item-qty { color: var(--accent); margin-right: 6px; font-weight: 800; }
     .ticket-remarque { background: #334155; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; color: #fde047; font-weight: 600; margin-top: 6px; }
 
     .ticket-actions { padding: 12px 16px; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border); display: flex; gap: 8px; }
-    .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: opacity 0.2s; }
-    .btn-action:hover { opacity: 0.9; }
+    .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
     .btn-start { background: var(--prepa); color: #fff; }
     .btn-ready { background: var(--pret); color: #fff; }
     .btn-done { background: #475569; color: #fff; }
@@ -92,46 +77,29 @@
     const socket = typeof io !== 'undefined' ? io() : null;
     let commandes = [];
 
-    // 1. CHARGEMENT INITIAL DEPUIS L'API
     async function chargerCommandes() {
       try {
         const res = await fetch('/api/commandes');
         if (res.ok) {
           const data = await res.json();
-          // Ne garder que les commandes non terminées
           commandes = data.filter(c => c.statut !== 'servi' && c.statut !== 'annule');
           afficherTickets();
         }
       } catch (e) {
-        console.error("Erreur chargement API:", e);
+        console.error(e);
       }
     }
 
-    // 2. ÉCOUTE TEMPS RÉEL SOCKET.IO
     if (socket) {
-      socket.on('connect', () => {
-        document.getElementById('socket-status').innerText = 'En direct';
-        document.getElementById('socket-status').style.background = '#22c55e';
-      });
-
-      socket.on('disconnect', () => {
-        document.getElementById('socket-status').innerText = 'Déconnecté';
-        document.getElementById('socket-status').style.background = '#ef4444';
-      });
-
-      // Écoute de l'envoi de commande
-      socket.on('nouvelle_commande', (data) => {
+      socket.on('nouvelle_commande', () => {
         jouerBip();
-        // Recharge la liste pour avoir l'ID généré et les détails exacts
         chargerCommandes();
       });
-
       socket.on('statut_mis_a_jour', () => {
         chargerCommandes();
       });
     }
 
-    // 3. AFFICHAGE DES TICKETS
     function afficherTickets() {
       const container = document.getElementById('tickets-container');
       const countEl = document.getElementById('active-count');
@@ -147,29 +115,19 @@
 
       commandes.forEach(cmd => {
         const div = document.createElement('div');
-        const statutClass = `status-${cmd.statut || 'en_attente'}`;
-        div.className = `ticket-card ${statutClass}`;
+        div.className = `ticket-card status-${cmd.statut || 'en_attente'}`;
 
         const heure = cmd.date_creation ? new Date(cmd.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
-        // Formatage des articles
         let itemsHtml = '';
         if (cmd.items && Array.isArray(cmd.items)) {
-          itemsHtml = cmd.items.map(it => {
-            const nom = it.article_nom || it.nom || 'Article';
-            const details = (it.remarques || '').split(' | ').join('<br>• ');
-            return `
-              <div class="ticket-item">
-                <div class="item-main">
-                  <span><span class="item-qty">${it.quantite || 1}x</span> ${nom}</span>
-                </div>
-                ${details ? `<div class="item-details">• ${details}</div>` : ''}
-              </div>
-            `;
-          }).join('');
+          itemsHtml = cmd.items.map(it => `
+            <div class="ticket-item">
+              <span><span class="item-qty">${it.quantite || 1}x</span> ${it.article_nom || it.nom}</span>
+            </div>
+          `).join('');
         }
 
-        // Boutons selon l'état
         let actionsHtml = '';
         if (cmd.statut === 'en_attente' || !cmd.statut) {
           actionsHtml = `<button class="btn-action btn-start" onclick="changerStatut(${cmd.id}, 'en_cours')">▶ Lancer Prépa</button>`;
@@ -203,7 +161,6 @@
       return 'En Attente';
     }
 
-    // 4. CHANGEMENT DE STATUT
     async function changerStatut(id, statut) {
       try {
         await fetch(`/api/commandes/${id}/statut`, {
@@ -213,12 +170,9 @@
         });
         if (socket) socket.emit('changer_statut', { id, statut });
         chargerCommandes();
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) {}
     }
 
-    // Signal sonore
     function jouerBip() {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -226,7 +180,7 @@
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.frequency.value = 587.33; // Ré
+        osc.frequency.value = 587.33;
         gain.gain.value = 0.1;
         osc.start();
         setTimeout(() => { osc.frequency.value = 880; }, 100);
@@ -234,10 +188,7 @@
       } catch (e) {}
     }
 
-    // Actualisation de secours toutes les 10s
-    setInterval(chargerCommandes, 10000);
-
-    // Initialisation
+    setInterval(chargerCommandes, 5000);
     chargerCommandes();
   </script>
 </body>
