@@ -7,46 +7,52 @@
   <script src="/socket.io/socket.io.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: #f4f6f9; color: #333; padding-bottom: 90px; }
+    body { background: #f8fafc; color: #1e293b; padding-bottom: 100px; }
     
-    header { background: #1a252f; color: #fff; padding: 14px 20px; font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
-    .status-badge { font-size: 0.8rem; background: #27ae60; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+    header { background: #0f172a; color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.5px; }
+    .status-badge { font-size: 0.75rem; background: #22c55e; color: #fff; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
 
-    .container { max-width: 900px; margin: 0 auto; padding: 15px; }
+    .container { max-width: 950px; margin: 0 auto; padding: 15px; }
 
+    .section-title { font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px; }
+    
     /* Sélection des Tables */
-    .section-title { font-size: 0.85rem; text-transform: uppercase; color: #7f8c8d; font-weight: 700; margin-bottom: 8px; }
     .tables-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; scrollbar-width: none; }
-    .btn-table { flex: 0 0 65px; height: 42px; background: #fff; border: 1px solid #dcdde1; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; }
-    .btn-table.active { background: #2980b9; color: #fff; border-color: #2980b9; box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3); }
+    .tables-bar::-webkit-scrollbar { display: none; }
+    .btn-table { flex: 0 0 60px; height: 42px; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; color: #334155; transition: all 0.15s; }
+    .btn-table.active { background: #2563eb; color: #fff; border-color: #2563eb; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); }
 
     /* Filtres Catégories */
     .categories-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; scrollbar-width: none; }
-    .btn-cat { white-space: nowrap; padding: 8px 16px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; color: #475569; }
-    .btn-cat.active { background: #1e293b; color: #fff; }
+    .categories-bar::-webkit-scrollbar { display: none; }
+    .btn-cat { white-space: nowrap; padding: 8px 16px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; color: #475569; transition: all 0.15s; }
+    .btn-cat.active { background: #0f172a; color: #fff; }
 
     /* Grille des Articles */
-    .articles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-    .card { background: #fff; border-radius: 10px; padding: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border: 1px solid #eef0f2; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
-    .card-title { font-weight: 600; font-size: 0.95rem; line-height: 1.3; color: #1e293b; }
-    .card-price { font-size: 0.9rem; font-weight: 700; color: #2980b9; }
+    .articles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .card { background: #fff; border-radius: 10px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
+    .card-title { font-weight: 600; font-size: 0.92rem; line-height: 1.35; color: #0f172a; }
+    .card-price { font-size: 0.9rem; font-weight: 700; color: #2563eb; margin-top: 4px; }
     
     .card-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-    .btn-qty { width: 32px; height: 32px; border-radius: 6px; border: none; background: #f1f5f9; font-size: 1.1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #334155; }
+    .btn-qty { width: 34px; height: 34px; border-radius: 8px; border: none; background: #f1f5f9; font-size: 1.2rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #334155; }
     .btn-qty.plus { background: #2563eb; color: #fff; }
-    .qty-display { font-weight: 700; font-size: 0.95rem; min-width: 20px; text-align: center; }
+    .btn-qty:active { transform: scale(0.95); }
+    .qty-display { font-weight: 700; font-size: 1rem; min-width: 22px; text-align: center; }
 
     /* Barre d'envoi fixe */
-    .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 12px 20px; display: flex; gap: 10px; align-items: center; box-shadow: 0 -4px 12px rgba(0,0,0,0.05); }
-    .remarque-input { flex: 1; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; outline: none; }
-    .btn-send { background: #16a34a; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
+    .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 12px 20px; display: flex; gap: 10px; align-items: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.06); z-index: 100; }
+    .remarque-input { flex: 1; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; outline: none; }
+    .remarque-input:focus { border-color: #2563eb; }
+    .btn-send { background: #16a34a; color: #fff; border: none; padding: 11px 22px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
     .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
   <header>
-    <span>Hôtel des Pins</span>
+    <h1>Hôtel des Pins</h1>
     <span class="status-badge" id="net-status">Connecté</span>
   </header>
 
@@ -66,13 +72,94 @@
   </div>
 
   <script>
-    const socket = io();
+    const socket = typeof io !== 'undefined' ? io() : null;
     let currentTable = 1;
     let currentCategory = 'Tous';
-    let allArticles = [];
-    let panier = {}; // { articleId: { ...article, qte: 1 } }
+    let panier = {};
 
-    // Initialisation des 15 tables
+    // --- CARTE COMPLÈTE OFFICIELLE HÔTEL DES PINS ---
+    const allArticles = [
+      // ==================== MENU À 40 € ====================
+      { id: 1, nom: "Formule : Menu Hôtel des Pins (E+P+D)", categorie: "Menu 40 €", prix: 40.00 },
+      { id: 2, nom: "[Menu 40€] Entrée du Jour", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 3, nom: "[Menu 40€] Saumon fumé maison", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 4, nom: "[Menu 40€] Foie gras de canard maison, chutney & toasts", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 5, nom: "[Menu 40€] Soupe de poissons du Bassin et ses croûtons", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 6, nom: "[Menu 40€] Cornet de friture de calamars sauce tartare", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 7, nom: "[Menu 40€] Assiette de charcuterie", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 8, nom: "[Menu 40€] Asperges blanches, jambon et vierge de tomate", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 9, nom: "[Menu 40€] Plat du Jour", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 10, nom: "[Menu 40€] Dos de maigre, sauce vierge", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 11, nom: "[Menu 40€] Pavé de cabillaud rôti, petits légumes iodés", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 12, nom: "[Menu 40€] Pavé de bar à l’huile, risotto de riz noir", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 13, nom: "[Menu 40€] Blanquette de seiche safranée", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 14, nom: "[Menu 40€] Carpaccio de bœuf maison, basilic & parmesan", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 15, nom: "[Menu 40€] Entrecôte de bœuf, échalotes confites", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 16, nom: "[Menu 40€] Magret de canard, sauce au poivre", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 17, nom: "[Menu 40€] Dessert du jour", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 18, nom: "[Menu 40€] Assiette de fromages", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 19, nom: "[Menu 40€] Crème brûlée à la vanille de Madagascar", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 20, nom: "[Menu 40€] Tiramisu au café", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 21, nom: "[Menu 40€] Café gourmand", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 22, nom: "[Menu 40€] Fromage blanc fermier et son coulis", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 23, nom: "[Menu 40€] Mousse au chocolat noir", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 24, nom: "[Menu 40€] Cheesecake au citron", categorie: "Menu 40 €", prix: 0.00 },
+      { id: 25, nom: "[Menu 40€] Coupe glacée 2 boules au choix", categorie: "Menu 40 €", prix: 0.00 },
+
+      // ==================== LA CARTE : ENTRÉES (15 €) ====================
+      { id: 26, nom: "Terrine de foie de canard maison, chutney & toast", categorie: "Entrées", prix: 15.00 },
+      { id: 27, nom: "Soupe de poissons et son accompagnement", categorie: "Entrées", prix: 15.00 },
+      { id: 28, nom: "Saumon fumé maison", categorie: "Entrées", prix: 15.00 },
+      { id: 29, nom: "Cornet de friture de calamars, sauce tartare", categorie: "Entrées", prix: 15.00 },
+      { id: 30, nom: "Assiette de charcuterie", categorie: "Entrées", prix: 15.00 },
+      { id: 31, nom: "Asperges blanches, jambon et vierge de tomate", categorie: "Entrées", prix: 15.00 },
+
+      // ==================== LA CARTE : POISSONS (25 €) ====================
+      { id: 32, nom: "Pavé de bar, huile d’olive de Nice", categorie: "Poissons", prix: 25.00 },
+      { id: 33, nom: "Dos de maigre, sauce vierge", categorie: "Poissons", prix: 25.00 },
+      { id: 34, nom: "Pavé de cabillaud rôti, petits légumes iodés", categorie: "Poissons", prix: 25.00 },
+      { id: 35, nom: "Blanquette de seiche safranée", categorie: "Poissons", prix: 25.00 },
+
+      // ==================== LA CARTE : VIANDES (25 €) ====================
+      { id: 36, nom: "Carpaccio de bœuf maison au basilic et parmesan", categorie: "Viandes", prix: 25.00 },
+      { id: 37, nom: "Entrecôte de bœuf, échalotes confites", categorie: "Viandes", prix: 25.00 },
+      { id: 38, nom: "Magret de canard, sauce au poivre", categorie: "Viandes", prix: 25.00 },
+
+      // ==================== LA CARTE : DESSERTS ====================
+      { id: 39, nom: "Dessert du jour", categorie: "Desserts", prix: 8.00 },
+      { id: 40, nom: "Café gourmand", categorie: "Desserts", prix: 10.00 },
+      { id: 41, nom: "Fromage blanc fermier et coulis fruits exotiques", categorie: "Desserts", prix: 8.00 },
+      { id: 42, nom: "Mousse au chocolat", categorie: "Desserts", prix: 8.00 },
+      { id: 43, nom: "Assiette de fromages", categorie: "Desserts", prix: 8.00 },
+      { id: 44, nom: "Crème brûlée à la vanille de Madagascar", categorie: "Desserts", prix: 8.00 },
+      { id: 45, nom: "Cheesecake au citron", categorie: "Desserts", prix: 8.00 },
+      { id: 46, nom: "Tiramisu au café", categorie: "Desserts", prix: 8.00 },
+      { id: 47, nom: "Coupe de glaces 2 boules au choix", categorie: "Desserts", prix: 8.00 },
+
+      // ==================== MENU ENFANT (15 €) ====================
+      { id: 48, nom: "Menu Enfant : Chicken tenders", categorie: "Menu Enfant", prix: 15.00 },
+      { id: 49, nom: "Menu Enfant : Steak haché", categorie: "Menu Enfant", prix: 15.00 },
+      { id: 50, nom: "Menu Enfant : Filet de poisson", categorie: "Menu Enfant", prix: 15.00 },
+
+      // ==================== GARNITURES ====================
+      { id: 51, nom: "Garniture : Salade du jardin", categorie: "Garnitures", prix: 0.00 },
+      { id: 52, nom: "Garniture : Frites maison", categorie: "Garnitures", prix: 0.00 },
+      { id: 53, nom: "Garniture : Purée maison", categorie: "Garnitures", prix: 0.00 },
+      { id: 54, nom: "Garniture : Légumes sautés maison", categorie: "Garnitures", prix: 0.00 },
+
+      // ==================== PARFUMS DE GLACE ====================
+      { id: 55, nom: "Parfum : Vanille", categorie: "Glaces", prix: 0.00 },
+      { id: 56, nom: "Parfum : Café", categorie: "Glaces", prix: 0.00 },
+      { id: 57, nom: "Parfum : Chocolat", categorie: "Glaces", prix: 0.00 },
+      { id: 58, nom: "Parfum : Fraise", categorie: "Glaces", prix: 0.00 },
+      { id: 59, nom: "Parfum : Citron", categorie: "Glaces", prix: 0.00 },
+      { id: 60, nom: "Parfum : Coco", categorie: "Glaces", prix: 0.00 },
+      { id: 61, nom: "Parfum : Rhum raisin", categorie: "Glaces", prix: 0.00 },
+      { id: 62, nom: "Parfum : Caramel beurre salé", categorie: "Glaces", prix: 0.00 },
+      { id: 63, nom: "Parfum : Poire", categorie: "Glaces", prix: 0.00 }
+    ];
+
+    // Création des 15 tables
     const tablesContainer = document.getElementById('tables-container');
     for (let i = 1; i <= 15; i++) {
       const btn = document.createElement('button');
@@ -82,25 +169,14 @@
         document.querySelectorAll('.btn-table').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentTable = i;
+        mettreAJourBoutonEnvoi();
       };
       tablesContainer.appendChild(btn);
     }
 
-    // Chargement des articles depuis la base de données
-    async function chargerArticles() {
-      try {
-        const res = await fetch('/api/articles');
-        allArticles = await res.json();
-        genererCategories();
-        afficherArticles();
-      } catch (err) {
-        console.error('Erreur chargement articles:', err);
-      }
-    }
-
-    // Génération automatique des catégories
-    function genererCategories() {
-      const categories = ['Tous', ...new Set(allArticles.map(a => a.categorie))];
+    // Génération des boutons de catégories
+    function initCategories() {
+      const categories = ['Tous', 'Menu 40 €', 'Entrées', 'Poissons', 'Viandes', 'Desserts', 'Menu Enfant', 'Garnitures', 'Glaces'];
       const catContainer = document.getElementById('categories-container');
       catContainer.innerHTML = '';
 
@@ -118,7 +194,7 @@
       });
     }
 
-    // Affichage des articles filtrés
+    // Affichage des articles
     function afficherArticles() {
       const grid = document.getElementById('articles-container');
       grid.innerHTML = '';
@@ -157,7 +233,6 @@
         if (panier[id].qte <= 0) delete panier[id];
       }
 
-      // Mise à jour affichage quantité
       const el = document.getElementById(`qty-${id}`);
       if (el) el.innerText = panier[id] ? panier[id].qte : 0;
 
@@ -171,7 +246,7 @@
 
       if (totalArticles > 0) {
         btn.disabled = false;
-        btn.innerText = `Envoyer T${currentTable} (${totalArticles} art. - ${totalPrix.toFixed(2)} €)`;
+        btn.innerText = `Envoyer T${currentTable} (${totalArticles} art. — ${totalPrix.toFixed(2)} €)`;
       } else {
         btn.disabled = true;
         btn.innerText = 'Envoyer (0)';
@@ -180,8 +255,7 @@
 
     async function envoyerCommande() {
       const items = Object.values(panier).map(it => ({
-        article_id: it.id,
-        nom: it.nom,
+        article_nom: it.nom,
         prix: it.prix,
         quantite: it.qte
       }));
@@ -192,26 +266,31 @@
         remarques: document.getElementById('remarque').value.trim()
       };
 
+      // 1. Envoi en direct via Socket.io
+      if (socket) {
+        socket.emit('nouvelle_commande', payload);
+      }
+
+      // 2. Enregistrement en base de données
       try {
-        const res = await fetch('/api/commandes', {
+        await fetch('/api/commandes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+      } catch (e) {}
 
-        if (res.ok) {
-          panier = {};
-          document.getElementById('remarque').value = '';
-          afficherArticles();
-          mettreAJourBoutonEnvoi();
-          alert('Commande envoyée en cuisine !');
-        }
-      } catch (err) {
-        alert('Erreur lors de l’envoi de la commande.');
-      }
+      // Réinitialisation de la commande
+      panier = {};
+      document.getElementById('remarque').value = '';
+      afficherArticles();
+      mettreAJourBoutonEnvoi();
+      alert(`Commande pour la Table ${currentTable} envoyée en cuisine !`);
     }
 
-    chargerArticles();
+    // Démarrage immédiat
+    initCategories();
+    afficherArticles();
   </script>
 </body>
 </html>
