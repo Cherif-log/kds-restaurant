@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Administration & Ventes</title>
+  <title>Hôtel des Pins — Administration & Z de Caisse</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -15,66 +15,142 @@
       --primary: #1e293b;
       --accent: #2563eb;
       --success: #16a34a;
+      --warning: #f59e0b;
+      --purple: #8b5cf6;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 30px; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
     .container { max-width: 1200px; margin: 0 auto; }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
     h1 { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
 
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
-    .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
-    .kpi-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 8px; }
-    .kpi-value { font-size: 2rem; font-weight: 800; color: var(--primary); }
+    .header-actions { display: flex; gap: 10px; }
+    .btn-export { background: #047857; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(4,120,87,0.2); }
+    .btn-export:hover { background: #065f46; }
+    .btn-print-z { background: var(--primary); color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-print-z:hover { background: #334155; }
+
+    /* Grille des KPI Principaux */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+    .kpi-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; }
+    .kpi-value { font-size: 1.9rem; font-weight: 800; color: var(--primary); }
     .kpi-value.green { color: var(--success); }
     .kpi-value.blue { color: var(--accent); }
+    .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
-    .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 16px; color: var(--primary); }
+    /* Section Intermédiaire : Modes de Paiement + Top Ventes */
+    .dashboard-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+    @media (max-width: 800px) { .dashboard-split { grid-template-columns: 1fr; } }
+
+    .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .panel-title { font-size: 1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; }
+
+    .pay-breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.92rem; }
+    .pay-breakdown-row:last-child { border-bottom: none; }
+    .pay-tag { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    .top-item-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; }
+    .top-item-row:last-child { border-bottom: none; }
+
+    /* Tableau Historique */
+    .section-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); }
     .table-container { background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
     
     table { width: 100%; border-collapse: collapse; text-align: left; }
-    th { background: #f1f5f9; padding: 14px 18px; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
-    td { padding: 14px 18px; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    th { background: #f1f5f9; padding: 12px 16px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    td { padding: 12px 16px; font-size: 0.88rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
     tr:hover { background: #f8fafc; }
 
-    .badge-stat { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+    .badge-stat { padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
     .stat-en_attente { background: #fef9c3; color: #854d0e; }
     .stat-en_cours, .stat-en_preparation { background: #ffedd5; color: #9a3412; }
     .stat-pret { background: #dcfce7; color: #166534; }
     .stat-servi { background: #e0f2fe; color: #0369a1; }
     .stat-encaisse { background: #e2e8f0; color: #334155; }
+
+    /* MODAL D'IMPRESSION DU Z DE CAISSE */
+    #z-caisse-print { display: none; }
+    @media print {
+      body * { visibility: hidden; }
+      #z-caisse-print, #z-caisse-print * { visibility: visible; }
+      #z-caisse-print { position: absolute; left: 0; top: 0; width: 80mm; font-family: monospace; font-size: 12px; padding: 4mm; }
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
     <header>
-      <h1>Hôtel des Pins — Administration & Ventes</h1>
+      <div>
+        <h1>Hôtel des Pins — Administration & Ventes</h1>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Rapport de service et journal de caisse en temps réel</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter Excel (CSV)</button>
+        <button class="btn-print-z" onclick="imprimerZCaisse()">🖨️ Imprimer le Z de Caisse</button>
+      </div>
     </header>
 
+    <!-- KPI PRINCIPAUX -->
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-title">Chiffre d'Affaires Encaissé</div>
         <div class="kpi-value green" id="kpi-ca">0,00 €</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-title">Commandes Actives</div>
-        <div class="kpi-value" id="kpi-actives">0</div>
+        <div class="kpi-sub">Dont TVA (10%) : <span id="kpi-tva">0,00 €</span></div>
       </div>
       <div class="kpi-card">
         <div class="kpi-title">Tables Encaissées</div>
         <div class="kpi-value blue" id="kpi-encaissees">0</div>
+        <div class="kpi-sub">Panier moyen : <span id="kpi-panier-moyen">0,00 €</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Commandes en cours</div>
+        <div class="kpi-value" id="kpi-actives" style="color:var(--warning);">0</div>
+        <div class="kpi-sub">En cuisine ou en salle</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-title">Temps Moyen Service</div>
         <div class="kpi-value" id="kpi-temps-moyen">0 min</div>
+        <div class="kpi-sub">De la commande au service</div>
       </div>
     </div>
 
-    <h2 class="section-title">Historique des commandes & Encaissements</h2>
+    <!-- REPARTITION REGLEMENTS & TOP VENTES -->
+    <div class="dashboard-split">
+      <div class="panel-card">
+        <div class="panel-title">
+          <span>💳 Répartition des Règlements</span>
+        </div>
+        <div class="pay-breakdown-row">
+          <span class="pay-tag">💳 Carte Bancaire (CB)</span>
+          <strong id="pay-total-cb">0,00 €</strong>
+        </div>
+        <div class="pay-breakdown-row">
+          <span class="pay-tag">💵 Espèces</span>
+          <strong id="pay-total-esp">0,00 €</strong>
+        </div>
+        <div class="pay-breakdown-row">
+          <span class="pay-tag">🎫 Titres Restaurant</span>
+          <strong id="pay-total-tr">0,00 €</strong>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">
+          <span>🏆 Top des Ventes du Service</span>
+        </div>
+        <div id="top-items-container">
+          <div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIQUE COMPLET -->
+    <h2 class="section-title">Journal détaillé des commandes</h2>
     <div class="table-container">
       <table>
         <thead>
@@ -83,44 +159,98 @@
             <th>Heure</th>
             <th>Statut</th>
             <th>Paiement</th>
-            <th>Montant</th>
+            <th>Total TTC</th>
             <th>Détail du ticket</th>
           </tr>
         </thead>
         <tbody id="orders-table-body">
-          <tr><td colspan="6" style="text-align: center; padding: 30px;">Chargement...</td></tr>
+          <tr><td colspan="6" style="text-align: center; padding: 30px;">Chargement des données...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
+  <!-- ZONE D'IMPRESSION TICKET THERMIQUE Z DE CAISSE -->
+  <div id="z-caisse-print">
+    <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+      <h2 style="font-size:14px; font-weight:800;">HÔTEL DES PINS</h2>
+      <p style="font-size:10px;">RAPPORT Z DE FIN DE SERVICE</p>
+      <p style="font-size:10px;" id="print-z-date"></p>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between;"><span>Total CA TTC :</span><strong id="print-z-ca"></strong></div>
+      <div style="display:flex; justify-content:space-between;"><span>Total HT :</span><span id="print-z-ht"></span></div>
+      <div style="display:flex; justify-content:space-between;"><span>TVA (10%) :</span><span id="print-z-tva"></span></div>
+      <div style="display:flex; justify-content:space-between;"><span>Nbre Couverts/Tables :</span><span id="print-z-tables"></span></div>
+    </div>
+    <div style="border-top:1px dashed #000; padding-top:6px; margin-bottom:8px;">
+      <div style="font-weight:700; margin-bottom:4px;">MODES DE PAIEMENT :</div>
+      <div style="display:flex; justify-content:space-between;"><span>- Cartes Bancaires :</span><span id="print-z-cb"></span></div>
+      <div style="display:flex; justify-content:space-between;"><span>- Espèces :</span><span id="print-z-esp"></span></div>
+      <div style="display:flex; justify-content:space-between;"><span>- Titres Resto :</span><span id="print-z-tr"></span></div>
+    </div>
+    <div style="text-align:center; border-top:1px dashed #000; padding-top:6px; font-size:9px;">
+      Fin du rapport journalier
+    </div>
+  </div>
+
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
+    let allOrders = [];
 
     async function chargerDonneesAdmin() {
       try {
         const res = await fetch('/api/admin/commandes');
         if (res.ok) {
-          const commandes = await res.json();
-          calculerKPIsEtAfficher(commandes);
+          allOrders = await res.json();
+          calculerKPIsEtAfficher(allOrders);
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Erreur chargement admin :', err);
+      }
     }
 
     function calculerKPIsEtAfficher(commandes) {
       const actives = commandes.filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
       const encaissees = commandes.filter(c => c.statut === 'encaisse');
-      
+
       let totalCA = 0;
+      let totalCB = 0;
+      let totalEsp = 0;
+      let totalTR = 0;
+      const itemCounts = {};
+
       encaissees.forEach(c => {
+        let ticketTotal = 0;
         if (c.items && Array.isArray(c.items)) {
-          c.items.forEach(it => totalCA += (it.prix || 0) * (it.quantite || 1));
+          c.items.forEach(it => {
+            const montantLigne = (it.prix || 0) * (it.quantite || 1);
+            ticketTotal += montantLigne;
+            itemCounts[it.article_nom] = (itemCounts[it.article_nom] || 0) + (it.quantite || 1);
+          });
         }
+        totalCA += ticketTotal;
+
+        if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += ticketTotal;
+        else if (c.mode_paiement === 'Espèces') totalEsp += ticketTotal;
+        else if (c.mode_paiement === 'Titre Resto') totalTR += ticketTotal;
       });
 
+      const totalHT = totalCA / 1.10;
+      const totalTVA = totalCA - totalHT;
+      const panierMoyen = encaissees.length > 0 ? (totalCA / encaissees.length) : 0;
+
+      // Affichage KPI
       document.getElementById('kpi-ca').innerText = `${totalCA.toFixed(2)} €`;
-      document.getElementById('kpi-actives').innerText = actives.length;
+      document.getElementById('kpi-tva').innerText = `${totalTVA.toFixed(2)} €`;
       document.getElementById('kpi-encaissees').innerText = encaissees.length;
+      document.getElementById('kpi-panier-moyen').innerText = `${panierMoyen.toFixed(2)} €`;
+      document.getElementById('kpi-actives').innerText = actives.length;
+
+      // Règlements
+      document.getElementById('pay-total-cb').innerText = `${totalCB.toFixed(2)} €`;
+      document.getElementById('pay-total-esp').innerText = `${totalEsp.toFixed(2)} €`;
+      document.getElementById('pay-total-tr').innerText = `${totalTR.toFixed(2)} €`;
 
       // Temps moyen
       let durees = 0;
@@ -133,10 +263,24 @@
       });
       document.getElementById('kpi-temps-moyen').innerText = countValides > 0 ? `${Math.round(durees / countValides)} min` : '0 min';
 
-      // Rendu tableau
+      // Top Ventes
+      const sortedItems = Object.entries(itemCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+      const topContainer = document.getElementById('top-items-container');
+      if (sortedItems.length === 0) {
+        topContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Aucune vente enregistrée</div>';
+      } else {
+        topContainer.innerHTML = sortedItems.map(([nom, qte], idx) => `
+          <div class="top-item-row">
+            <span><strong>#${idx+1}</strong> ${nom}</span>
+            <strong style="color:var(--accent);">${qte}x</strong>
+          </div>
+        `).join('');
+      }
+
+      // Remplissage Tableau
       const tbody = document.getElementById('orders-table-body');
       if (commandes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">Aucune commande</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
         return;
       }
 
@@ -144,7 +288,7 @@
       commandes.forEach(c => {
         const tr = document.createElement('tr');
         const heure = c.date_creation ? new Date(c.date_creation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-';
-        
+
         let montant = 0;
         let detailsHtml = '';
         if (c.items && Array.isArray(c.items)) {
@@ -172,6 +316,71 @@
       if (st === 'servi') return 'Servi';
       if (st === 'encaisse') return 'Encaissé';
       return 'En Attente';
+    }
+
+    // EXPORT CSV / EXCEL
+    function exporterExcelCSV() {
+      if (allOrders.length === 0) {
+        alert("Aucune donnée à exporter.");
+        return;
+      }
+
+      let csv = "\uFEFF"; // UTF-8 BOM pour accents sous Excel
+      csv += "ID;Table;Date_Creation;Date_Cloture;Statut;Mode_Paiement;Articles;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
+
+      allOrders.forEach(c => {
+        let totalTTC = 0;
+        const articlesList = [];
+        if (c.items && Array.isArray(c.items)) {
+          c.items.forEach(it => {
+            totalTTC += (it.prix || 0) * (it.quantite || 1);
+            articlesList.push(`${it.quantite || 1}x ${it.article_nom}`);
+          });
+        }
+        const totalHT = (totalTTC / 1.10).toFixed(2);
+        const tva = (totalTTC - (totalTTC / 1.10)).toFixed(2);
+        const articlesStr = `"${articlesList.join(', ')}"`;
+
+        csv += `${c.id};Table ${c.table_num};${c.date_creation || ''};${c.date_fin || ''};${c.statut};${c.mode_paiement || ''};${articlesStr};${totalTTC.toFixed(2)};${totalHT};${tva}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Z_Caisse_HotelDesPins_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // IMPRESSION DU Z DE CAISSE
+    function imprimerZCaisse() {
+      const encaissees = allOrders.filter(c => c.statut === 'encaisse');
+      let totalCA = 0;
+      let totalCB = 0;
+      let totalEsp = 0;
+      let totalTR = 0;
+
+      encaissees.forEach(c => {
+        let t = 0;
+        if (c.items) c.items.forEach(it => t += (it.prix || 0) * (it.quantite || 1));
+        totalCA += t;
+        if (c.mode_paiement === 'CB' || !c.mode_paiement) totalCB += t;
+        else if (c.mode_paiement === 'Espèces') totalEsp += t;
+        else if (c.mode_paiement === 'Titre Resto') totalTR += t;
+      });
+
+      document.getElementById('print-z-date').innerText = new Date().toLocaleString('fr-FR');
+      document.getElementById('print-z-ca').innerText = `${totalCA.toFixed(2)} €`;
+      document.getElementById('print-z-ht').innerText = `${(totalCA / 1.10).toFixed(2)} €`;
+      document.getElementById('print-z-tva').innerText = `${(totalCA - (totalCA / 1.10)).toFixed(2)} €`;
+      document.getElementById('print-z-tables').innerText = `${encaissees.length}`;
+      document.getElementById('print-z-cb').innerText = `${totalCB.toFixed(2)} €`;
+      document.getElementById('print-z-esp').innerText = `${totalEsp.toFixed(2)} €`;
+      document.getElementById('print-z-tr').innerText = `${totalTR.toFixed(2)} €`;
+
+      window.print();
     }
 
     if (socket) {
