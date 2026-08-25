@@ -41,10 +41,12 @@
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
     h1 { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
 
-    .header-actions { display: flex; gap: 10px; align-items: center; }
-    .btn-export { background: #047857; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    .btn-print-z { background: var(--primary); color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
-    .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+    .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .btn-nav-link { background: #334155; border: 1px solid #475569; color: #fff; text-decoration: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
+    .btn-nav-link:hover { background: #475569; }
+    .btn-export { background: #047857; color: #fff; border: none; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-print-z { background: var(--primary); color: #fff; border: 1px solid #475569; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+    .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
@@ -58,7 +60,6 @@
     .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
     .panel-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
 
-    /* STATISTIQUES & RUSH */
     .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 24px; }
     
     .top-item-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
@@ -138,7 +139,7 @@
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE DIRECTION -->
+  <!-- ÉCRAN DE VERROUILLAGE DIRECTION AVEC BOUTON DE SORTIE DE SECOURS -->
   <div class="lock-overlay" id="admin-lock-overlay">
     <div class="pin-card">
       <div class="pin-title">Accès Direction</div>
@@ -165,7 +166,14 @@
         <button class="btn-key" onclick="pressAdminPin('0')">0</button>
         <button class="btn-key action" onclick="deleteAdminPin()">⌫</button>
       </div>
-      <div style="font-size:0.75rem; color:#64748b; margin-top:8px;">Code Direction par défaut : 9999</div>
+
+      <!-- BOUTON RETOUR DIRECT SALLE & CAISSE -->
+      <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+        <button style="background:#334155; color:#38bdf8; border:1px solid #475569; padding:10px; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer;" onclick="window.location.href='/index.html'">
+          ⬅️ Retour à la Salle & Caisse
+        </button>
+        <div style="font-size:0.75rem; color:#64748b;">Code Direction par défaut : 9999</div>
+      </div>
     </div>
   </div>
 
@@ -176,6 +184,9 @@
         <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Surveillance de l'activité du personnel et pilotage financier</p>
       </div>
       <div class="header-actions">
+        <!-- NAVIGATION RAPIDE VERS SALLE & CUISINE -->
+        <a href="/index.html" class="btn-nav-link">📱 Salle & Caisse</a>
+        <a href="/cuisine.html" class="btn-nav-link">👨‍🍳 Cuisine</a>
         <a href="/api/admin/backup-db" class="btn-export" style="background:#4338ca; text-decoration:none;">💾 Sauvegarder</a>
         <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter CSV</button>
         <button class="btn-print-z" onclick="imprimerZCaisse()">🖨️ Imprimer Z</button>
@@ -207,10 +218,9 @@
       </div>
     </div>
 
-    <!-- 📊 NOUVELLE SECTION : ANALYTICS, PALMARÈS & HEURES DE RUSH -->
+    <!-- ANALYTICS, PALMARÈS & HEURES DE RUSH -->
     <div class="analytics-grid">
       
-      <!-- PALMARÈS DES VENTES -->
       <div class="panel-card" style="margin-bottom:0;">
         <div class="panel-title">
           <span>🏆 Top des Ventes (Plats Stars)</span>
@@ -221,7 +231,6 @@
         </div>
       </div>
 
-      <!-- FRÉQUENTATION & RUSH HORAIRE -->
       <div class="panel-card" style="margin-bottom:0;">
         <div class="panel-title">
           <span>🕒 Analyse des Heures de Rush</span>
@@ -234,7 +243,7 @@
 
     </div>
 
-    <!-- 🏨 MODULE : NOTES DE CHAMBRES POUR LA RÉCEPTION HÔTEL -->
+    <!-- NOTES DE CHAMBRES POUR LA RÉCEPTION HÔTEL -->
     <div class="panel-card" style="border:1.5px solid #c7d2fe;">
       <div class="panel-title" style="color:#4338ca;">
         <span>🏨 Notes de Chambres Transférées (Réception Hôtel)</span>
@@ -287,7 +296,6 @@
     <!-- CONFIGURATION & MODES DE PAIEMENT -->
     <div class="dashboard-split">
       
-      <!-- CONFIG PLAN DE SALLE -->
       <div class="panel-card" style="grid-column: 1 / -1;">
         <div class="panel-title">
           <span>📐 Configuration du Plan de Salle (Zones & Tables)</span>
@@ -299,7 +307,6 @@
         </div>
       </div>
 
-      <!-- GESTION DE L'ÉQUIPE -->
       <div class="panel-card">
         <div class="panel-title">
           <span>👥 Équipe & Codes PIN</span>
@@ -313,7 +320,6 @@
         </div>
       </div>
 
-      <!-- MODES DE PAIEMENT & ENCAISSEMENTS RÉELS -->
       <div class="panel-card">
         <div class="panel-title">💳 Encaissements réels par mode</div>
         <div class="breakdown-row">
@@ -494,7 +500,6 @@
       checkAdminAuth();
     }
 
-    // --- CHARGEMENT GLOBAL ---
     async function chargerDonneesAdmin() {
       try {
         const [resCmds, resServs, resPaiements, resChambres] = await Promise.all([
@@ -518,7 +523,6 @@
       }
     }
 
-    // --- 📊 CALCUL DES STATISTIQUES (TOP PLATS & HEURES DE RUSH) ---
     function calculerStatistiquesAnalytics(commandes) {
       const topContainer = document.getElementById('top-dishes-container');
       const rushContainer = document.getElementById('rush-bars-container');
@@ -531,7 +535,6 @@
       };
 
       (commandes || []).forEach(cmd => {
-        // 1. Agrégation des plats
         (cmd.items || []).forEach(it => {
           const nom = it.article_nom || 'Article';
           const qte = it.quantite || 1;
@@ -543,7 +546,6 @@
           dishesMap[nom].ca += prix;
         });
 
-        // 2. Agrégation par heure de création
         const d = parseSqliteDate(cmd.date_creation);
         if (d) {
           const h = d.getHours();
@@ -559,7 +561,6 @@
         }
       });
 
-      // Rendu Top Plats
       const sortedDishes = Object.values(dishesMap).sort((a, b) => b.qte - a.qte).slice(0, 5);
       const maxQte = sortedDishes.length > 0 ? sortedDishes[0].qte : 1;
 
@@ -586,7 +587,6 @@
         }).join('');
       }
 
-      // Rendu Rush Horaires
       const maxRush = Math.max(1, ...Object.values(hoursMap));
       rushContainer.innerHTML = Object.entries(hoursMap).map(([slot, count]) => {
         const pct = Math.round((count / maxRush) * 100);
@@ -835,7 +835,6 @@
       }).join('');
     }
 
-    // --- PLAN DE SALLE ---
     async function chargerPlanAdmin() {
       try {
         const res = await fetch('/api/plan/zones-tables');
@@ -921,7 +920,6 @@
       } catch (e) {}
     }
 
-    // --- SERVEURS ---
     async function chargerServeurs() {
       try {
         const res = await fetch('/api/admin/serveurs');
@@ -993,7 +991,6 @@
       } catch (e) {}
     }
 
-    // --- EXPORT CSV & IMPRESSION Z ---
     function exporterExcelCSV() {
       if (!allOrders || allOrders.length === 0) return alert("Aucune donnée.");
       let csv = "\uFEFFID;Table;Serveur;Chambre;Nom_Client;Date_Creation;Date_Cloture;Statut;Paiement;Pourboire_EUR;Remise_EUR;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
