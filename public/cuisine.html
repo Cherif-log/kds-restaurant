@@ -3,133 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — KDS Cuisine</title>
+  <title>Écran Cuisine — KDS</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
       --bg: #0f172a;
       --card-bg: #1e293b;
-      --card-border: #334155;
+      --border: #334155;
       --text: #f8fafc;
       --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --success: #22c55e;
+      --primary: #0f172a;
+      --accent: #2563eb;
+      --success: #16a34a;
       --warning: #f59e0b;
       --danger: #ef4444;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 18px; display: flex; flex-direction: column; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-    h1 { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    header { background: #1e293b; border-bottom: 2px solid var(--border); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    h1 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
-    .header-actions { display: flex; gap: 10px; align-items: center; }
-    .btn-86 { background: #b91c1c; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    .btn-86:hover { background: #dc2626; }
+    .header-btns { display: flex; gap: 10px; align-items: center; }
+    .btn-header { background: #334155; color: #fff; border: 1px solid #475569; padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-header:hover { background: #475569; }
+    .btn-stock { background: #b91c1c; border-color: #ef4444; }
+    .btn-stock:hover { background: #991b1b; }
 
-    .btn-nav-link { background: #334155; border: 1px solid #475569; color: #fff; text-decoration: none; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
-    .btn-nav-link:hover { background: #475569; }
+    .kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; padding: 20px; flex: 1; overflow-y: auto; }
 
-    .kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; flex: 1; align-items: start; }
-    
-    .ticket-card { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease; position: relative; }
-    
-    .ticket-card.timer-green { border-color: var(--success); }
-    .ticket-card.timer-orange { border-color: var(--warning); }
-    .ticket-card.timer-red { border-color: var(--danger); animation: pulseDanger 1.2s infinite; }
-    @keyframes pulseDanger { 0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); } 50% { box-shadow: 0 0 22px rgba(239, 68, 68, 0.9); } }
+    .kds-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .kds-card.en_preparation { border-color: var(--warning); }
+    .kds-card.pret { border-color: var(--success); }
+    .kds-card.urgent { border-color: var(--danger); animation: pulse-card 1.5s infinite; }
+    @keyframes pulse-card { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
 
-    .ticket-top { padding: 12px 16px; background: #0f172a; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
-    .ticket-table { font-size: 1.25rem; font-weight: 900; color: #fff; }
-    .ticket-server { font-size: 0.78rem; font-weight: 700; color: #38bdf8; }
-    
-    .ticket-timer-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 6px; font-size: 0.82rem; font-weight: 900; }
-    .timer-badge-green { background: rgba(34, 197, 94, 0.18); color: #4ade80; border: 1px solid #22c55e; }
-    .timer-badge-orange { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid #f59e0b; }
-    .timer-badge-red { background: #b91c1c; color: #fff; border: 1px solid #ef4444; }
+    .kds-card-head { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+    .kds-table-title { font-size: 1.2rem; font-weight: 800; }
+    .kds-timer { font-size: 0.85rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; }
+    .timer-green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .timer-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .timer-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
-    .suite-alert-banner { background: #c2410c; color: #fff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 0.88rem; animation: pulseAlert 1.2s infinite; border-bottom: 2px solid #ea580c; }
-    @keyframes pulseAlert { 0%, 100% { background: #c2410c; } 50% { background: #ea580c; } }
-    .btn-ack-suite { background: #fff; color: #c2410c; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; }
-    .btn-ack-suite:hover { background: #fed7aa; }
+    .kds-card-subhead { padding: 6px 16px; font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border); }
 
-    .ticket-items { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-    .ticket-item-row { border-bottom: 1px dashed #334155; padding-bottom: 8px; }
-    .ticket-item-row:last-child { border-bottom: none; padding-bottom: 0; }
-    
-    .ticket-item-main { display: flex; align-items: flex-start; gap: 8px; font-size: 1.05rem; font-weight: 700; color: #fff; }
-    .item-qty { background: #334155; color: #38bdf8; padding: 2px 7px; border-radius: 6px; font-weight: 900; font-size: 0.95rem; }
-    
-    .item-modifiers-badge { display: inline-block; background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid #ef4444; padding: 3px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 800; margin-top: 4px; margin-left: 28px; }
+    .kds-items-list { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .kds-item-row { display: flex; flex-direction: column; font-size: 0.95rem; }
+    .kds-item-main { display: flex; justify-content: space-between; font-weight: 700; }
+    .kds-item-remark { font-size: 0.8rem; font-weight: 800; color: #f87171; margin-top: 2px; }
 
-    .ticket-notes { background: #334155; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; color: #fbbf24; margin: 0 16px 12px 16px; }
+    .kds-order-remark { background: #3b2020; border: 1px dashed #ef4444; color: #fca5a5; padding: 8px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; margin: 10px 16px; }
 
-    .ticket-footer { padding: 10px 16px; background: #0f172a; border-top: 1px solid var(--card-border); display: flex; gap: 8px; }
-    .btn-stat { flex: 1; padding: 12px 6px; border: none; border-radius: 8px; font-weight: 800; font-size: 0.9rem; cursor: pointer; text-transform: uppercase; }
-    .btn-stat.preparer { background: var(--accent); color: #0f172a; }
-    .btn-stat.pret { background: var(--success); color: #fff; }
-    .btn-stat.servir { background: #64748b; color: #fff; }
+    .kds-card-actions { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+    .btn-action-kds { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 800; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-prep { background: var(--warning); color: #000; }
+    .btn-pret { background: var(--success); color: #fff; }
+    .btn-servi { background: #334155; color: #fff; }
 
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
-    .modal-overlay.open { display: flex; }
-    .modal-card { background: #1e293b; color: #fff; width: 100%; max-width: 520px; border-radius: 12px; border: 1px solid #334155; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+    /* MODAL RUPTURE DE STOCK */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
+    .modal-card { background: #1e293b; width: 100%; max-width: 500px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
     .modal-head { background: #0f172a; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
     .modal-body { padding: 18px; max-height: 75vh; overflow-y: auto; }
     
-    .stock-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #334155; font-size: 0.92rem; }
-    .stock-row:last-child { border-bottom: none; }
-    .btn-toggle-stock { padding: 6px 12px; border-radius: 6px; border: none; font-weight: 800; font-size: 0.78rem; cursor: pointer; }
-    .btn-toggle-stock.dispo { background: #22c55e; color: #0f172a; }
-    .btn-toggle-stock.indispo { background: #ef4444; color: #fff; }
+    .stock-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .stock-item-row { display: flex; justify-content: space-between; align-items: center; background: #0f172a; border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; }
+    .stock-item-row.epuise { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+    .btn-toggle-stock { padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 0.78rem; cursor: pointer; border: none; }
+    .btn-toggle-stock.dispo { background: var(--success); color: #fff; }
+    .btn-toggle-stock.out { background: var(--danger); color: #fff; }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>👨‍🍳 KDS Cuisine — Hôtel des Pins</h1>
-    <div class="header-actions">
-      <button class="btn-86" onclick="ouvrirModal86()">🔴 Ruptures (86)</button>
-      <!-- BOUTONS DE NAVIGATION INTÉGRÉS -->
-      <a href="/index.html" class="btn-nav-link">📱 Salle & Caisse</a>
-      <a href="/admin.html" class="btn-nav-link">📊 Admin</a>
+    <h1 id="kds-title">👨‍🍳 Écran Cuisine & Bar</h1>
+    <div class="header-btns">
+      <button class="btn-header btn-stock" onclick="ouvrirModalStock()">🚫 Ruptures (86-List)</button>
+      <a href="/index.html" class="btn-header">📱 Salle & Caisse</a>
+      <a href="/admin.html" class="btn-header">📊 Admin</a>
     </div>
   </header>
 
-  <div class="kds-grid" id="kds-container">
-    <div style="color:var(--text-muted); font-size:1.1rem; padding:20px;">En attente de commandes...</div>
-  </div>
+  <main class="kds-grid" id="kds-container">
+    <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 50px; font-size: 1.1rem;">
+      Aucun bon de commande en attente. Tout est calme en cuisine ! 🌴
+    </div>
+  </main>
 
-  <!-- MODAL RUPTURES DE STOCK -->
-  <div class="modal-overlay" id="modal-86">
+  <!-- MODAL GESTION DU STOCK EN CUISINE -->
+  <div class="modal-overlay" id="stock-modal">
     <div class="modal-card">
       <div class="modal-head">
-        <span>🔴 Gestion des Ruptures de Stock (86-List)</span>
-        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModal86()">✕</button>
+        <span>🚫 Déclarer une rupture de stock en direct</span>
+        <button style="background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer;" onclick="fermerModalStock()">✕</button>
       </div>
-      <div class="modal-body" id="stock-list-container"></div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">
+          Un article marqué épuisé sera grisé en temps réel sur tous les smartphones des serveurs :
+        </p>
+        <div class="stock-grid" id="stock-items-container">
+          <div style="text-align:center; padding:15px; color:var(--text-muted);">Chargement de la carte...</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
-    let commandes = [];
+    let orders = [];
+    let menuItems = [];
     let indisponibles = [];
-    let suitesActives = {};
-
-    const platsStockList = [
-      { slug: "saumon_fume", nom: "Saumon fumé maison" },
-      { slug: "foie_gras", nom: "Foie gras de canard maison" },
-      { slug: "soupe_poissons", nom: "Soupe de poissons du Bassin" },
-      { slug: "calamars", nom: "Friture de calamars" },
-      { slug: "bar", nom: "Pavé de bar" },
-      { slug: "dos_maigre", nom: "Dos de maigre" },
-      { slug: "cabillaud", nom: "Pavé de cabillaud rôti" },
-      { slug: "blanquette_seiche", nom: "Blanquette de seiche" },
-      { slug: "entrecote", nom: "Entrecôte de bœuf" },
-      { slug: "magret", nom: "Magret de canard" },
-      { slug: "carpaccio", nom: "Carpaccio de bœuf" }
-    ];
 
     function parseSqliteDate(dateStr) {
       if (!dateStr) return new Date();
@@ -137,237 +122,200 @@
       return new Date(dateStr.replace(' ', 'T') + 'Z');
     }
 
-    async function chargerCommandesCuisine() {
+    async function chargerThemeKds() {
+      try {
+        const res = await fetch('/api/config/client');
+        if (res.ok) {
+          const cfg = await res.json();
+          document.title = `${cfg.etablissement} — Écran Cuisine`;
+          const titleEl = document.getElementById('kds-title');
+          if (titleEl) titleEl.innerText = `👨‍🍳 ${cfg.etablissement} — Écran Cuisine`;
+        }
+      } catch (e) {}
+    }
+
+    async function chargerCommandes() {
       try {
         const res = await fetch('/api/commandes');
         if (res.ok) {
-          commandes = await res.json();
-          commandes.sort((a, b) => {
-            const dA = parseSqliteDate(a.date_creation);
-            const dB = parseSqliteDate(b.date_creation);
-            return dA - dB;
-          });
-          renderKDS();
+          orders = await res.json();
+          renderKds();
+        }
+      } catch (e) {}
+    }
+
+    function renderKds() {
+      const container = document.getElementById('kds-container');
+      if (!container) return;
+
+      const activeOrders = orders.filter(o => o.statut !== 'servi' && o.statut !== 'encaisse' && o.statut !== 'annule');
+
+      if (activeOrders.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 50px; font-size: 1.1rem;">
+            Aucun bon de commande en attente. Tout est calme en cuisine ! 🌴
+          </div>
+        `;
+        return;
+      }
+
+      const now = new Date();
+      container.innerHTML = activeOrders.map(o => {
+        const d = parseSqliteDate(o.date_creation);
+        const minutes = Math.max(0, Math.floor((now - d) / 60000));
+        
+        let timerClass = 'timer-green';
+        let isUrgent = false;
+        if (minutes >= 20) {
+          timerClass = 'timer-red';
+          isUrgent = true;
+        } else if (minutes >= 10) {
+          timerClass = 'timer-yellow';
+        }
+
+        const heure = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+        let actionBtn = '';
+        if (o.statut === 'en_attente') {
+          actionBtn = `<button class="btn-action-kds btn-prep" onclick="changerStatutCommande(${o.id}, 'en_preparation')">▶ En préparation</button>`;
+        } else if (o.statut === 'en_preparation' || o.statut === 'en_cours') {
+          actionBtn = `<button class="btn-action-kds btn-pret" onclick="changerStatutCommande(${o.id}, 'pret')">✔ Prêt à servir</button>`;
+        } else if (o.statut === 'pret') {
+          actionBtn = `<button class="btn-action-kds btn-servi" onclick="changerStatutCommande(${o.id}, 'servi')">🚀 Envoyé en salle</button>`;
+        }
+
+        const itemsHtml = (o.items || []).map(it => `
+          <div class="kds-item-row">
+            <div class="kds-item-main">
+              <span><strong>${it.quantite}x</strong> ${it.article_nom}</span>
+            </div>
+            ${it.remarques ? `<div class="kds-item-remark">👉 ${it.remarques}</div>` : ''}
+          </div>
+        `).join('');
+
+        return `
+          <div class="kds-card ${o.statut} ${isUrgent ? 'urgent' : ''}">
+            <div class="kds-card-head">
+              <span class="kds-table-title">Table ${o.table_num}</span>
+              <span class="kds-timer ${timerClass}">⏱️ ${minutes} min</span>
+            </div>
+            <div class="kds-card-subhead">
+              <span>Reçu à ${heure}</span>
+              <span>👤 ${o.serveur_nom || 'Salle'}</span>
+            </div>
+            <div class="kds-items-list">
+              ${itemsHtml}
+            </div>
+            ${o.remarques ? `<div class="kds-order-remark">⚠️ Note : ${o.remarques}</div>` : ''}
+            <div class="kds-card-actions">
+              ${actionBtn}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function changerStatutCommande(id, statut) {
+      try {
+        const res = await fetch(`/api/commandes/${id}/statut`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ statut })
+        });
+        if (res.ok) {
+          chargerCommandes();
         }
       } catch (e) {}
     }
 
     async function chargerStock() {
       try {
-        const res = await fetch('/api/stock/indisponibles');
-        if (res.ok) {
-          indisponibles = await res.json();
-          renderStockModal();
-        }
+        const [resMenu, resStock] = await Promise.all([
+          fetch('/api/menu'),
+          fetch('/api/stock/indisponibles')
+        ]);
+        if (resMenu.ok) menuItems = await resMenu.json();
+        if (resStock.ok) indisponibles = await resStock.json();
+        renderStockModal();
       } catch (e) {}
-    }
-
-    function renderKDS() {
-      const container = document.getElementById('kds-container');
-      if (!commandes || commandes.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-muted); font-size:1.1rem; padding:20px;">Aucun bon de commande en cours. Cuisine prête ! 👍</div>';
-        return;
-      }
-
-      container.innerHTML = commandes.map(cmd => {
-        let actionBtn = '';
-        if (cmd.statut === 'en_attente') {
-          actionBtn = `<button class="btn-stat preparer" onclick="changerStatutCommande(${cmd.id}, 'en_preparation')">▶ Commencer</button>`;
-        } else if (cmd.statut === 'en_preparation') {
-          actionBtn = `<button class="btn-stat pret" onclick="changerStatutCommande(${cmd.id}, 'pret')">✔ Prêt à servir</button>`;
-        } else if (cmd.statut === 'pret') {
-          actionBtn = `<button class="btn-stat servir" onclick="changerStatutCommande(${cmd.id}, 'servi')">🚀 Envoyé en Salle</button>`;
-        }
-
-        const itemsHtml = (cmd.items || []).map(it => `
-          <div class="ticket-item-row">
-            <div class="ticket-item-main">
-              <span class="item-qty">${it.quantite || 1}x</span>
-              <span>${it.article_nom}</span>
-            </div>
-            ${it.remarques ? `<div class="item-modifiers-badge">👉 ${it.remarques}</div>` : ''}
-          </div>
-        `).join('');
-
-        const suiteAlert = suitesActives[cmd.table_num];
-        const suiteBannerHtml = suiteAlert ? `
-          <div class="suite-alert-banner">
-            <span>🔔 <strong>SUITE : ${suiteAlert.course}</strong> (${suiteAlert.serveur_nom})</span>
-            <button class="btn-ack-suite" onclick="acquitterSuite(${cmd.table_num})">✓ Vu</button>
-          </div>
-        ` : '';
-
-        return `
-          <div class="ticket-card" id="ticket-card-${cmd.id}" data-date="${cmd.date_creation || ''}">
-            ${suiteBannerHtml}
-            <div class="ticket-top">
-              <div>
-                <div class="ticket-table">Table ${cmd.table_num}</div>
-                <div class="ticket-server">👤 ${cmd.serveur_nom || 'Salle'}</div>
-              </div>
-              <div class="ticket-timer-badge" id="timer-badge-${cmd.id}">
-                ⏱️ <span id="timer-val-${cmd.id}">00:00</span>
-              </div>
-            </div>
-            <div class="ticket-items">${itemsHtml}</div>
-            ${cmd.remarques ? `<div class="ticket-notes">⚠️ ${cmd.remarques}</div>` : ''}
-            <div class="ticket-footer">${actionBtn}</div>
-          </div>
-        `;
-      }).join('');
-
-      updateAllTimers();
-    }
-
-    function updateAllTimers() {
-      const now = new Date();
-      (commandes || []).forEach(cmd => {
-        const card = document.getElementById(`ticket-card-${cmd.id}`);
-        const badge = document.getElementById(`timer-badge-${cmd.id}`);
-        const spanVal = document.getElementById(`timer-val-${cmd.id}`);
-        if (!card || !badge || !spanVal) return;
-
-        const dateCreation = parseSqliteDate(cmd.date_creation);
-        const diffSeconds = Math.max(0, Math.floor((now - dateCreation) / 1000));
-        const minutes = Math.floor(diffSeconds / 60);
-        const seconds = diffSeconds % 60;
-        const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-        spanVal.innerText = timeStr;
-
-        card.classList.remove('timer-green', 'timer-orange', 'timer-red');
-        badge.classList.remove('timer-badge-green', 'timer-badge-orange', 'timer-badge-red');
-
-        if (minutes < 10) {
-          card.classList.add('timer-green');
-          badge.classList.add('timer-badge-green');
-        } else if (minutes < 20) {
-          card.classList.add('timer-orange');
-          badge.classList.add('timer-badge-orange');
-        } else {
-          card.classList.add('timer-red');
-          badge.classList.add('timer-badge-red');
-        }
-      });
-    }
-
-    async function changerStatutCommande(id, statut) {
-      try {
-        await fetch(`/api/commandes/${id}/statut`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ statut })
-        });
-        chargerCommandesCuisine();
-      } catch (e) {}
-    }
-
-    function acquitterSuite(tableNum) {
-      delete suitesActives[tableNum];
-      renderKDS();
-    }
-
-    function ouvrirModal86() {
-      renderStockModal();
-      document.getElementById('modal-86').classList.add('open');
-    }
-
-    function fermerModal86() {
-      document.getElementById('modal-86').classList.remove('open');
     }
 
     function renderStockModal() {
-      const container = document.getElementById('stock-list-container');
-      container.innerHTML = platsStockList.map(p => {
-        const isOut = indisponibles.includes(p.slug);
+      const container = document.getElementById('stock-items-container');
+      if (!container || menuItems.length === 0) return;
+
+      container.innerHTML = menuItems.map(item => {
+        const isOut = indisponibles.includes(item.slug);
         return `
-          <div class="stock-row">
-            <span><strong>${p.nom}</strong></span>
-            <button class="btn-toggle-stock ${isOut ? 'indispo' : 'dispo'}" onclick="toggleStockPlat('${p.slug}', '${p.nom.replace(/'/g, "\\'")}')">
-              ${isOut ? '🔴 ÉPUISÉ (86)' : '🟢 DISPONIBLE'}
+          <div class="stock-item-row ${isOut ? 'epuise' : ''}">
+            <span>${item.nom}</span>
+            <button class="btn-toggle-stock ${isOut ? 'out' : 'dispo'}" onclick="toggleRupture('${item.slug}', '${item.nom.replace(/'/g, "\\'")}')">
+              ${isOut ? '🔴 Épuisé' : '🟢 Disponible'}
             </button>
           </div>
         `;
       }).join('');
     }
 
-    async function toggleStockPlat(slug, nom) {
+    async function toggleRupture(slug, nom) {
       try {
         const res = await fetch('/api/stock/toggle', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ article_id: slug, article_nom: nom })
         });
-        const data = await res.json();
-        if (data.success) {
+        if (res.ok) {
+          const data = await res.json();
           indisponibles = data.indisponibles;
           renderStockModal();
         }
       } catch (e) {}
     }
 
-    function playBeepNouvelleCommande() {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let count = 0;
-        const interval = setInterval(() => {
-          if (count >= 5) { clearInterval(interval); return; }
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start();
-          osc.stop(audioCtx.currentTime + 0.35);
-          count++;
-        }, 1000);
-      } catch (e) {}
+    function ouvrirModalStock() {
+      chargerStock();
+      document.getElementById('stock-modal').style.display = 'flex';
     }
 
-    function playChimeSuite() {
+    function fermerModalStock() {
+      document.getElementById('stock-modal').style.display = 'none';
+    }
+
+    function playBeep() {
       try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const tones = [523.25, 659.25, 783.99];
-        tones.forEach((freq, idx) => {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.18);
-          gain.gain.setValueAtTime(0.3, audioCtx.currentTime + idx * 0.18);
-          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.18 + 0.5);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(audioCtx.currentTime + idx * 0.18);
-          osc.stop(audioCtx.currentTime + idx * 0.18 + 0.5);
-        });
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
       } catch (e) {}
     }
 
     if (socket) {
       socket.on('nouvelle_commande', () => {
-        playBeepNouvelleCommande();
-        chargerCommandesCuisine();
+        playBeep();
+        chargerCommandes();
       });
-      socket.on('statut_mis_a_jour', () => chargerCommandesCuisine());
-      socket.on('table_status_change', () => chargerCommandesCuisine());
+      socket.on('statut_mis_a_jour', () => chargerCommandes());
+      socket.on('table_status_change', () => chargerCommandes());
+      socket.on('reclamer_suite', (data) => {
+        playBeep();
+        alert(`🔔 SUITE RÉCLAMÉE : Table ${data.table_num} demande la suite (${data.course}) !`);
+      });
       socket.on('stock_update', (data) => {
         indisponibles = data;
         renderStockModal();
       });
-      socket.on('reclamer_suite', (data) => {
-        suitesActives[data.table_num] = data;
-        playChimeSuite();
-        renderKDS();
-      });
     }
 
-    setInterval(chargerCommandesCuisine, 5000);
-    setInterval(updateAllTimers, 1000);
-
-    chargerCommandesCuisine();
-    chargerStock();
+    chargerThemeKds();
+    chargerCommandes();
+    setInterval(renderKds, 30000);
   </script>
 </body>
 </html>

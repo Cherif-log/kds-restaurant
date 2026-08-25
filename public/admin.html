@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hôtel des Pins — Espace Direction & Audit</title>
+  <title>Espace Direction & Audit</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
@@ -144,7 +144,6 @@
     .stat-servi { background: #e0f2fe; color: #0369a1; }
     .stat-encaisse { background: #e2e8f0; color: #334155; }
 
-    /* ARDOISE DU JOUR */
     .ardoise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 14px; }
     .ardoise-card { background: #fff; border: 1.5px solid #fed7aa; border-radius: 8px; padding: 12px; }
     .ardoise-title { font-size: 0.82rem; font-weight: 800; text-transform: uppercase; color: #c2410c; margin-bottom: 6px; }
@@ -168,7 +167,6 @@
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE -->
   <div class="lock-overlay" id="admin-lock-overlay">
     <div class="pin-card">
       <div class="pin-title">Accès Direction</div>
@@ -207,7 +205,6 @@
     </div>
   </div>
 
-  <!-- MODAL S.O.S CONTACT -->
   <div class="modal-sos-overlay" id="modal-sos">
     <div class="modal-sos-card">
       <div class="sos-head">
@@ -231,7 +228,7 @@
         <span style="font-size:0.85rem; color:#86efac;">Message direct</span>
       </a>
 
-      <a id="sos-link-email" href="mailto:support@pos-hoteldespins.fr?subject=Urgence%20POS%20Hotel%20des%20Pins" class="sos-channel-btn" style="border-left:4px solid #38bdf8;">
+      <a id="sos-link-email" href="mailto:support@pos-hoteldespins.fr?subject=Urgence%20POS" class="sos-channel-btn" style="border-left:4px solid #38bdf8;">
         <span>✉️ <strong>Envoyer un E-mail</strong></span>
         <span id="sos-display-email" style="font-size:0.8rem; color:#7dd3fc;">support@...</span>
       </a>
@@ -244,21 +241,19 @@
 
   <div class="container" id="admin-main-container" style="display:none;">
     
-    <!-- BANDEAU SESSION -->
     <div class="session-role-indicator" id="session-role-badge">
       <span id="session-role-text">👤 Session : Direction du Restaurant (Mode Client)</span>
       <span id="session-role-tag" style="font-size:0.75rem; text-transform:uppercase;">LECTURE SEULE</span>
     </div>
 
-    <!-- BANNIÈRE STATUT ABONNEMENT -->
     <div class="saas-license-banner" id="saas-banner">
       <div>
         <div class="saas-title">
           <span>💼 Abonnement Logiciel & Maintenance</span>
-          <span class="saas-badge-valid" id="saas-status-badge">🟢 Abonnement à jour (49,99 € / mois)</span>
+          <span class="saas-badge-valid" id="saas-status-badge">🟢 Abonnement à jour</span>
         </div>
         <div class="saas-info" style="margin-top:4px;">
-          Établissement : <strong id="saas-client-name">Hôtel des Pins</strong> — Prochaine échéance : <strong id="saas-exp-date">--/--/----</strong> (<span id="saas-days-left">--</span> jours restants)
+          Établissement : <strong id="saas-client-name">Restaurant</strong> — Prochaine échéance : <strong id="saas-exp-date">--/--/----</strong> (<span id="saas-days-left">--</span> jours restants)
         </div>
       </div>
       <div style="display:flex; align-items:center; font-size:0.82rem; color:#6d28d9; font-weight:700;">
@@ -266,7 +261,6 @@
       </div>
     </div>
 
-    <!-- 👑 CONSOLE MASTER ÉDITEUR -->
     <div class="master-admin-box" id="master-admin-panel">
       <div class="master-head">
         <h2>🛠️ Console Master Éditeur (Plein Pouvoir Support)</h2>
@@ -274,12 +268,11 @@
       </div>
 
       <div class="master-grid">
-        
         <div class="master-card">
           <div class="master-card-title">📝 Paramètres Contrat & Échéance</div>
           <div class="master-field-row">
             <span class="master-label">Nom de l'établissement :</span>
-            <input type="text" id="master-input-etab" class="master-input" value="Hôtel des Pins">
+            <input type="text" id="master-input-etab" class="master-input" value="Restaurant">
           </div>
           <div class="master-field-row">
             <span class="master-label">Tarif mensuel (€) :</span>
@@ -334,11 +327,10 @@
             </div>
           </div>
         </div>
-
       </div>
     </div>
 
-    <!-- 🍲 MODULE 1 : ARDOISE DU JOUR (GESTION CLIENT TOTALEMENT SÉPARÉE) -->
+    <!-- ARDOISE DU JOUR DÉDIÉE -->
     <div class="panel-card" style="border:1.5px solid #fed7aa; background:#fffaf5;">
       <div class="panel-title" style="color:#ea580c;">
         <span>🍲 Ardoise du Jour & Suggestions du Chef (Catégorie Indépendante)</span>
@@ -346,12 +338,10 @@
       </div>
       
       <div class="ardoise-grid">
-        
-        <!-- FORMULE DU JOUR -->
         <div class="ardoise-card" style="grid-column: 1 / -1; background:#fff7ed;">
           <div class="ardoise-title">⭐ Formule du Jour (Complète ou E+P / P+D) :</div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <input type="text" id="input-ardoise-formule" class="form-input" style="flex:3;" placeholder="Intitulé formule (ex: Formule du Jour : Entrée + Plat ou Plat + Dessert)">
+            <input type="text" id="input-ardoise-formule" class="form-input" style="flex:3;" placeholder="Intitulé formule">
             <div style="display:flex; align-items:center; gap:4px;">
               <input type="number" step="0.5" id="input-ardoise-formule-prix" class="form-input-short" value="22.00">
               <strong>€</strong>
@@ -359,7 +349,6 @@
           </div>
         </div>
 
-        <!-- ENTRÉE DU JOUR -->
         <div class="ardoise-card">
           <div class="ardoise-title">🥗 Entrée du Jour :</div>
           <input type="text" id="input-ardoise-entree" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Gaspacho de tomates & burrata">
@@ -370,7 +359,6 @@
           </div>
         </div>
 
-        <!-- PLAT DU JOUR -->
         <div class="ardoise-card">
           <div class="ardoise-title">🍽️ Plat du Jour :</div>
           <input type="text" id="input-ardoise-plat" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Dos de cabillaud rôti aux agrumes">
@@ -381,7 +369,6 @@
           </div>
         </div>
 
-        <!-- DESSERT DU JOUR -->
         <div class="ardoise-card">
           <div class="ardoise-title">🍰 Dessert du Jour :</div>
           <input type="text" id="input-ardoise-dessert" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Tartelette fraises du pays">
@@ -391,10 +378,8 @@
             <strong>€</strong>
           </div>
         </div>
-
       </div>
 
-      <!-- OPTION : PROPOSER AUSSI DANS LE MENU 40€ -->
       <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #fed7aa; padding-top:12px; flex-wrap:wrap; gap:10px;">
         <label style="font-size:0.82rem; font-weight:700; color:#c2410c; display:flex; align-items:center; gap:6px; cursor:pointer;">
           <input type="checkbox" id="check-inclure-menu40">
@@ -406,7 +391,6 @@
       </div>
     </div>
 
-    <!-- 📋 MODULE 2 : GESTION DE LA CARTE & DES TARIFS -->
     <div class="panel-card">
       <div class="panel-title">
         <span>📖 Édition des Tarifs & Gestion de la Carte</span>
@@ -447,7 +431,7 @@
 
     <header>
       <div>
-        <h1 id="page-restaurant-title">Hôtel des Pins — Espace Direction & Audit</h1>
+        <h1 id="page-restaurant-title">Espace Direction & Audit</h1>
         <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Surveillance de l'activité du personnel et pilotage financier</p>
       </div>
       <div class="header-actions">
@@ -462,7 +446,6 @@
       </div>
     </header>
 
-    <!-- KPI PRINCIPAUX -->
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-title">Chiffre d'Affaires Net</div>
@@ -486,7 +469,6 @@
       </div>
     </div>
 
-    <!-- NOTES DE CHAMBRES POUR LA RÉCEPTION HÔTEL -->
     <div class="panel-card" style="border:1.5px solid #c7d2fe;">
       <div class="panel-title" style="color:#4338ca;">
         <span>🏨 Notes de Chambres Transférées (Réception Hôtel)</span>
@@ -511,7 +493,6 @@
       </table>
     </div>
 
-    <!-- TABLEAU D'AUDIT SERVEURS & POURBOIRES -->
     <div class="panel-card">
       <div class="panel-title">
         <span>🕵️ Tableau d'Audit & Surveillance des Serveurs</span>
@@ -536,16 +517,14 @@
       </table>
     </div>
 
-    <!-- CONFIGURATION PLAN DE SALLE & MODES DE PAIEMENT -->
     <div class="dashboard-split">
-      
       <div class="panel-card" style="grid-column: 1 / -1;">
         <div class="panel-title">
           <span>📐 Configuration du Plan de Salle (Zones & Tables)</span>
         </div>
         <div id="plan-zones-management" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; margin-bottom:14px;"></div>
         <div class="inline-form" style="border-top:1px solid var(--border); padding-top:14px;">
-          <input type="text" id="new-zone-name" class="form-input" placeholder="Nouvelle zone (ex: Mezzanine, Bar Piscine...)">
+          <input type="text" id="new-zone-name" class="form-input" placeholder="Nouvelle zone">
           <button class="btn-action-primary" onclick="ajouterNouvelleZone()">➕ Créer la zone</button>
         </div>
       </div>
@@ -586,10 +565,8 @@
           <strong id="pay-total-tips" style="color:#059669;">0,00 €</strong>
         </div>
       </div>
-
     </div>
 
-    <!-- JOURNAL DES COMMANDES -->
     <div class="panel-card">
       <div class="panel-title">📋 Journal détaillé des commandes & encaissements</div>
       <table class="audit-table">
@@ -614,10 +591,9 @@
     </div>
   </div>
 
-  <!-- TICKET THERMIQUE Z DE CAISSE -->
   <div id="z-caisse-print">
     <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
-      <h2 style="font-size:15px; font-weight:800;">HÔTEL DES PINS</h2>
+      <h2 style="font-size:15px; font-weight:800;" id="print-z-etablissement">RESTAURANT</h2>
       <p style="font-size:11px;">RAPPORT Z DE FIN DE SERVICE</p>
       <p style="font-size:11px;" id="print-z-date"></p>
     </div>
@@ -640,17 +616,16 @@
     </div>
   </div>
 
-  <!-- TICKET THERMIQUE JUSTIFICATIF RÉCEPTION -->
   <div id="chambre-ticket-print">
     <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
-      <h2 style="font-size:15px; font-weight:800;">HÔTEL DES PINS</h2>
+      <h2 style="font-size:15px; font-weight:800;" id="print-ch-etablissement">RESTAURANT</h2>
       <p style="font-size:11px;">JUSTIFICATIF RESTAURANT — RÉCEPTION</p>
       <p style="font-size:11px;" id="print-ch-date"></p>
     </div>
     <div style="margin-bottom:8px; line-height:1.5;">
       <div style="display:flex; justify-content:space-between;"><span>CHAMBRE :</span><strong id="print-ch-num" style="font-size:14px;">104</strong></div>
       <div style="display:flex; justify-content:space-between;"><span>CLIENT :</span><strong id="print-ch-nom">M. Dupont</strong></div>
-      <div style="display:flex; justify-content:space-between;"><span>TABLE / SERVEUR :</span><span id="print-ch-table">T1 (Thomas)</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>TABLE / SERVEUR :</span><span id="print-ch-table">T1</span></div>
     </div>
     <div style="border-top:1px dashed #000; border-bottom:1px dashed #000; padding:6px 0; margin-bottom:8px;" id="print-ch-items"></div>
     <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:800; margin-bottom:10px;">
@@ -672,7 +647,7 @@
     let allMenuItems = [];
     let planData = [];
     let enteredAdminPin = '';
-    let supportInfo = { tel: '06 00 00 00 00', email: 'support@pos-hoteldespins.fr' };
+    let supportInfo = { tel: '06 00 00 00 00', email: 'support@mon-entreprise.fr' };
 
     function parseSqliteDate(dateStr) {
       if (!dateStr) return null;
@@ -699,7 +674,7 @@
 
     function updateSOSContactLinks(tel, email) {
       supportInfo.tel = tel || '06 00 00 00 00';
-      supportInfo.email = email || 'support@pos-hoteldespins.fr';
+      supportInfo.email = email || 'support@mon-entreprise.fr';
 
       const rawTel = supportInfo.tel.replace(/[^0-9]/g, '');
       const intlTel = rawTel.startsWith('0') ? '33' + rawTel.slice(1) : rawTel;
@@ -710,7 +685,7 @@
 
       if (pLink) pLink.href = `tel:${supportInfo.tel.replace(/\s+/g, '')}`;
       if (wLink) wLink.href = `https://wa.me/${intlTel}?text=Bonjour%20Support%2C%20nous%20avons%20besoin%20d'aide%20sur%20le%20logiciel%20de%20caisse.`;
-      if (eLink) eLink.href = `mailto:${supportInfo.email}?subject=Urgence%20POS%20H%C3%B4tel%20des%20Pins`;
+      if (eLink) eLink.href = `mailto:${supportInfo.email}?subject=Urgence%20POS`;
 
       safeSetText('sos-display-tel', supportInfo.tel);
       safeSetText('sos-display-email', supportInfo.email);
@@ -848,7 +823,6 @@
       checkAdminAuth();
     }
 
-    // --- GESTION DU MENU & DE L'ARDOISE ---
     async function chargerMenuAdmin() {
       try {
         const res = await fetch('/api/admin/menu/all');
@@ -945,7 +919,7 @@
         });
         const data = await res.json();
         if (res.ok) {
-          alert("✨ L'Ardoise du Jour et ses tarifs ont été mis à jour en direct dans l'onglet « 🍲 Ardoise du Jour » !");
+          alert("✨ L'Ardoise du Jour et ses tarifs ont été mis à jour en direct !");
           chargerMenuAdmin();
         }
       } catch (e) { alert("Erreur de connexion."); }
@@ -999,15 +973,16 @@
       } catch (e) {}
     }
 
-    // --- ACTIONS MASTER CONSOLE ---
     async function chargerLicenceStatus() {
       try {
         const res = await fetch('/api/licence/status');
         if (res.ok) {
           const lic = await res.json();
-          safeSetText('saas-client-name', lic.etablissement || 'Hôtel des Pins');
-          safeSetText('page-restaurant-title', `${lic.etablissement || 'Hôtel des Pins'} — Espace Direction & Audit`);
-          
+          safeSetText('saas-client-name', lic.etablissement || 'Restaurant');
+          safeSetText('page-restaurant-title', `${lic.etablissement || 'Restaurant'} — Espace Direction & Audit`);
+          safeSetText('print-z-etablissement', (lic.etablissement || 'Restaurant').toUpperCase());
+          safeSetText('print-ch-etablissement', (lic.etablissement || 'Restaurant').toUpperCase());
+
           const dExp = new Date(lic.date_expiration);
           safeSetText('saas-exp-date', isNaN(dExp.getTime()) ? '--/--/----' : dExp.toLocaleDateString('fr-FR'));
           safeSetText('saas-days-left', lic.jours_restants !== undefined ? lic.jours_restants : '--');
@@ -1027,11 +1002,11 @@
           const inTel = document.getElementById('master-input-tel');
           const inEmail = document.getElementById('master-input-email');
 
-          if (inEtab) inEtab.value = lic.etablissement || 'Hôtel des Pins';
+          if (inEtab) inEtab.value = lic.etablissement || 'Restaurant';
           if (inTarif) inTarif.value = lic.tarif_mensuel || 49.99;
           if (inDate && !isNaN(dExp.getTime())) inDate.value = dExp.toISOString().slice(0, 10);
           if (inTel) inTel.value = lic.support_tel || '06 00 00 00 00';
-          if (inEmail) inEmail.value = lic.support_email || 'support@pos-hoteldespins.fr';
+          if (inEmail) inEmail.value = lic.support_email || 'support@mon-entreprise.fr';
         }
       } catch (e) {}
     }
@@ -1126,7 +1101,7 @@
     }
 
     async function forcerDeblocageToutesTables() {
-      if (!confirm("🚨 Attention : Vous allez forcer la libération de TOUTES les tables occupées en salle et en cuisine. Continuer ?")) return;
+      if (!confirm("🚨 Débloquer toutes les tables bloquées ?")) return;
       try {
         const res = await fetch('/api/admin/master/reset-all-tables', {
           method: 'POST',
@@ -1144,7 +1119,7 @@
     }
 
     async function purgerToutesDonneesTest() {
-      const confirmStr = prompt("⚠️ PURGE COMPLÈTE : Tapez « EFFACER » en majuscules pour confirmer la suppression de tout l'historique et des commandes :");
+      const confirmStr = prompt("⚠️ PURGE COMPLÈTE : Tapez « EFFACER » en majuscules :");
       if (confirmStr !== 'EFFACER') return alert("Action annulée.");
 
       try {
@@ -1155,7 +1130,7 @@
         });
         const data = await res.json();
         if (res.ok) {
-          alert("✅ Historique et commandes complètement purgés. Le système est remis à neuf !");
+          alert("✅ Données complètement purgées !");
           chargerDonneesAdmin();
         }
       } catch (e) {
@@ -1164,19 +1139,15 @@
     }
 
     async function forcerSuppressionCommande(commandeId) {
-      if (!confirm(`Supprimer définitivement la commande #${commandeId} de la base de données ?`)) return;
+      if (!confirm(`Supprimer définitivement la commande #${commandeId} ?`)) return;
       try {
         const res = await fetch(`/api/admin/commandes/${commandeId}`, { method: 'DELETE' });
         if (res.ok) {
-          alert(`✅ Commande #${commandeId} supprimée.`);
           chargerDonneesAdmin();
         }
-      } catch (e) {
-        alert("Erreur de suppression.");
-      }
+      } catch (e) {}
     }
 
-    // --- CHARGEMENT GLOBAL ---
     async function chargerDonneesAdmin() {
       try {
         const [resCmds, resServs, resPaiements, resChambres] = await Promise.all([
@@ -1191,9 +1162,9 @@
         if (resPaiements.ok) allPaiements = await resPaiements.json();
         if (resChambres.ok) allChambres = await resChambres.json();
 
-        try { calculerKPIsEtAfficher(allOrders, allPaiements, allChambres); } catch(e) { console.error(e); }
-        try { calculerAuditServeurs(allOrders, allServeurs); } catch(e) { console.error(e); }
-        try { renderNotesChambres(allChambres); } catch(e) { console.error(e); }
+        try { calculerKPIsEtAfficher(allOrders, allPaiements, allChambres); } catch(e) {}
+        try { calculerAuditServeurs(allOrders, allServeurs); } catch(e) {}
+        try { renderNotesChambres(allChambres); } catch(e) {}
       } catch (err) {
         console.error("Erreur chargement:", err);
       }
@@ -1304,7 +1275,6 @@
       safeSetText('kpi-pourboires', `+${totalPourboires.toFixed(2)} €`);
       safeSetText('kpi-encaissees', encaissees.length);
       safeSetText('kpi-panier-moyen', `${panierMoyen.toFixed(2)} €`);
-      safeSetText('kpi-actives', actives.length);
 
       safeSetText('pay-total-cb', `${totalCB.toFixed(2)} €`);
       safeSetText('pay-total-esp', `${totalEsp.toFixed(2)} €`);

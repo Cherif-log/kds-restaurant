@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const Database = require('better-sqlite3');
-const config = require('./config'); // Import du profil client
+const config = require('./config');
 
 const app = express();
 const server = http.createServer(app);
@@ -29,7 +29,7 @@ db.exec(`
 try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_tel TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_email TEXT`); } catch (e) {}
 
-// Initialisation Licence basée sur config.js
+// Initialisation Licence
 const licenceExists = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
 if (!licenceExists) {
   const dExp = new Date();
@@ -39,14 +39,14 @@ if (!licenceExists) {
   );
 }
 
-// Initialisation automatique de l'équipe
+// Initialisation Équipe
 const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
 if (countServeurs.count === 0 && config.serveursInitiaux) {
   const insertServ = db.prepare(`INSERT INTO serveurs (nom, pin) VALUES (?, ?)`);
   config.serveursInitiaux.forEach(s => insertServ.run(s.nom, s.pin));
 }
 
-// Initialisation automatique du Plan de Salle
+// Initialisation Plan de Salle
 const countZones = db.prepare(`SELECT count(*) as count FROM zones`).get();
 if (countZones.count === 0 && config.planInitial) {
   const insertZone = db.prepare(`INSERT INTO zones (nom) VALUES (?)`);
@@ -57,7 +57,7 @@ if (countZones.count === 0 && config.planInitial) {
   });
 }
 
-// Initialisation automatique de la Carte
+// Initialisation Carte
 const countMenu = db.prepare(`SELECT count(*) as count FROM menu_articles`).get();
 if (countMenu.count === 0 && config.carteInitiale) {
   const insertMenu = db.prepare(`INSERT INTO menu_articles (id, slug, nom, cat, section, prix, has_options, has_cuisson, actif) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`);
@@ -81,14 +81,21 @@ function isSuperPinValid(pin) {
   return (p === config.superPin || p === '7777');
 }
 
-// Endpoint de configuration globale pour le front-end
+// 🎨 ENDPOINT THÈME & IDENTITÉ POUR LE FRONT-END
 app.get('/api/config/client', (req, res) => {
+  const lic = db.prepare(`SELECT etablissement FROM licence_config WHERE id = 1`).get();
   res.json({
-    etablissement: config.etablissement,
+    etablissement: (lic && lic.etablissement) ? lic.etablissement : config.etablissement,
     adresse: config.adresse,
     siret: config.siret,
     telephone: config.telephone,
     wifi: config.wifi,
+    theme: config.theme || {
+      logoUrl: "",
+      couleurPrimary: "#0f172a",
+      couleurAccent: "#2563eb",
+      couleurHeaderTexte: "#ffffff"
+    },
     options: config.options
   });
 });
@@ -109,10 +116,10 @@ app.get('/api/admin/menu/all', (req, res) => {
 app.put('/api/admin/menu/plat-du-jour', (req, res) => {
   try {
     const { formule_nom, formule_prix, entree_jour, entree_prix, plat_jour, plat_prix, dessert_jour, dessert_prix } = req.body;
-    if (formule_nom) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_formule'`).run(formule_nom.trim(), parseFloat(formule_prix) || 24.0);
-    if (entree_jour) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_entree'`).run(`Entrée du jour : ${entree_jour.trim()}`, parseFloat(entree_prix) || 10.0);
-    if (plat_jour) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_plat'`).run(`Plat du jour : ${plat_jour.trim()}`, parseFloat(plat_prix) || 19.0);
-    if (dessert_jour) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_dessert'`).run(`Dessert du jour : ${dessert_jour.trim()}`, parseFloat(dessert_prix) || 8.0);
+    if (formule_nom) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_formule'`).run(formule_nom.trim(), parseFloat(formule_prix) || 22.0);
+    if (entree_jour) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_entree'`).run(`Entrée du jour : ${entree_jour.trim()}`, parseFloat(entree_prix) || 8.5);
+    if (plat_jour) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_plat'`).run(`Plat du jour : ${plat_jour.trim()}`, parseFloat(plat_prix) || 17.5);
+    if (dessert_jour) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_dessert'`).run(`Dessert du jour : ${dessert_jour.trim()}`, parseFloat(dessert_prix) || 7.5);
     io.emit('menu_update');
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: 'Erreur ardoise' }); }

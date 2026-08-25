@@ -1,51 +1,83 @@
-// config.js — Profil du restaurant (Exemple : L'Auberge du Bassin)
+// config.js — Configuration personnalisée de l'établissement
 module.exports = {
-  // Identité de l'établissement
-  etablissement: "L'Auberge du Bassin",
-  adresse: "Quartier des Pêcheurs, 33970 Lège-Cap-Ferret",
-  siret: "812 345 678 00019",
-  telephone: "05 56 60 00 00",
-  wifi: "AubergeBassin_Guest",
+  // Identité officielle du restaurant
+  etablissement: "Hôtel des Pins",
+  adresse: "23 Rue des Fauvettes, 33970 Lège-Cap-Ferret",
+  siret: "412 655 326 00012",
+  telephone: "05 56 60 60 11",
+  wifi: "HotelDesPins_Guest",
 
-  // Modèle économique SaaS
-  superPin: process.env.SUPER_PIN || "7777", // Ton code d'accès éditeur
-  pinDirection: "9999",                     // Code client par défaut
+  // 🎨 THÈME & CHARTE GRAPHIQUE (Personnalisable à 100% pour chaque client)
+  theme: {
+    logoUrl: "",                   // Ex: "/logo.png" si tu déposes une image dans le dossier public/
+    couleurPrimary: "#0f172a",     // Couleur dominante / En-têtes (Bleu nuit, vert forêt, bordeaux...)
+    couleurAccent: "#2563eb",      // Couleur des boutons d'action & sélections
+    couleurHeaderTexte: "#ffffff"  // Couleur du texte de l'en-tête
+  },
+
+  // Modèle économique SaaS & codes d'accès
+  superPin: process.env.SUPER_PIN || "7777", // Ton code maître Support / Éditeur
+  pinDirection: "9999",                     // Code Direction du client
   tarifMensuel: 49.99,
 
-  // Modules activés
+  // Modules et options
   options: {
-    moduleHotel: true,      // true si hôtel/chambres, false si restaurant seul
+    moduleHotel: true,      // true = active les transferts sur chambre / false = restaurant seul
     tauxTVA: 0.10,          // 10% restauration
     devise: "€"
   },
 
   // Plan de salle initial
   planInitial: [
-    { zone: "🌊 Terrasse Bassin", tables: [1, 2, 3, 4, 5, 6, 7, 8] },
-    { zone: "🍽️ Salle Principale", tables: [10, 11, 12, 13, 14, 15] },
-    { zone: "🌿 Bar & Comptoir", tables: [20, 21, 22] }
+    { zone: "🌲 Terrasse & Pinède", tables: [1, 2, 3, 4, 5, 6] },
+    { zone: "🍽️ Salle Intérieure", tables: [7, 8, 9, 10, 11, 12] },
+    { zone: "🌿 Patio & Véranda", tables: [13, 14, 15] }
   ],
 
   // Équipe initiale
   serveursInitiaux: [
-    { nom: "Alexandre", pin: "1111" },
-    { nom: "Julie", pin: "2222" },
+    { nom: "Thomas", pin: "1234" },
+    { nom: "Sarah", pin: "5678" },
+    { nom: "Maxime", pin: "0000" },
     { nom: "Direction", pin: "9999" }
   ],
 
   // Carte initiale du restaurant
   carteInitiale: [
-    // Ardoise du jour
-    { id: "ard_formule", slug: "formule_jour", nom: "Formule du Marché (E+P ou P+D)", cat: "🍲 Ardoise du Jour", section: "1. Formules", prix: 24.00, has_options: 0, has_cuisson: 0 },
-    { id: "ard_entree", slug: "entree_jour", nom: "Entrée du jour : Huîtres N°3 du Bassin (x6)", cat: "🍲 Ardoise du Jour", section: "2. Suggestions", prix: 11.00, has_options: 0, has_cuisson: 0 },
-    { id: "ard_plat", slug: "plat_jour", nom: "Plat du jour : Lotte à l'Armoricaine", cat: "🍲 Ardoise du Jour", section: "2. Suggestions", prix: 21.00, has_options: 0, has_cuisson: 0 },
-    { id: "ard_dessert", slug: "dessert_jour", nom: "Dessert du jour : Cannelés tièdes & glace vanille", cat: "🍲 Ardoise du Jour", section: "2. Suggestions", prix: 8.00, has_options: 0, has_cuisson: 0 },
+    // 🍲 Ardoise du jour
+    { id: "ard_formule", slug: "formule_jour", nom: "Formule du Jour (E+P ou P+D)", cat: "🍲 Ardoise du Jour", section: "1. Formules du Jour", prix: 22.00, has_options: 0, has_cuisson: 0 },
+    { id: "ard_entree", slug: "entree_jour", nom: "Entrée du jour : Gaspacho de tomates & burrata", cat: "🍲 Ardoise du Jour", section: "2. Suggestions du Marché", prix: 8.50, has_options: 0, has_cuisson: 0 },
+    { id: "ard_plat", slug: "plat_jour", nom: "Plat du jour : Dos de cabillaud rôti aux agrumes", cat: "🍲 Ardoise du Jour", section: "2. Suggestions du Marché", prix: 17.50, has_options: 0, has_cuisson: 0 },
+    { id: "ard_dessert", slug: "dessert_jour", nom: "Dessert du jour : Tartelette fraises & crème d'amande", cat: "🍲 Ardoise du Jour", section: "2. Suggestions du Marché", prix: 7.50, has_options: 0, has_cuisson: 0 },
 
-    // Carte permanente
-    { id: "ent_1", slug: "huitres_bassin", nom: "6 Huîtres du Cap Ferret N°3", cat: "Entrées", section: "Entrées", prix: 13.00, has_options: 0, has_cuisson: 0 },
-    { id: "ent_2", slug: "soupe_poisson", nom: "Soupe de poissons artisanale", cat: "Entrées", section: "Entrées", prix: 12.50, has_options: 0, has_cuisson: 0 },
-    { id: "plt_1", slug: "bar_grille", nom: "Bar entier grillé au fenouil", cat: "Plats", section: "Poissons & Viandes", prix: 26.00, has_options: 0, has_cuisson: 0 },
-    { id: "plt_2", slug: "entrecote_bassin", nom: "Entrecôte grillée sauce échalotes", cat: "Plats", section: "Poissons & Viandes", prix: 25.00, has_options: 1, has_cuisson: 1 },
-    { id: "des_1", slug: "dune_blanche", nom: "Assiette de Dunes Blanches locales", cat: "Desserts", section: "Desserts", prix: 7.50, has_options: 0, has_cuisson: 0 }
+    // 🍽️ Menu 40 €
+    { id: "m40_formule", slug: "formule_40", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e1", slug: "saumon_fume", nom: "Saumon fumé maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e2", slug: "foie_gras", nom: "Foie gras de canard maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e3", slug: "soupe_poissons", nom: "Soupe de poissons du Bassin (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e4", slug: "calamars", nom: "Friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p1", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p2", slug: "cabillaud", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p3", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 1, has_cuisson: 1 },
+    { id: "m40_p4", slug: "magret", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 1, has_cuisson: 1 },
+    { id: "m40_d1", slug: "creme_brulee", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d2", slug: "tiramisu", nom: "Tiramisu au café (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d3", slug: "cafe_gourmand", nom: "Café gourmand (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+
+    // 🥩 Entrées à la carte
+    { id: "c_e1", slug: "foie_gras_carte", nom: "Terrine de foie de canard maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_e2", slug: "saumon_fume_carte", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
+
+    // 🐟 Poissons & Viandes à la carte
+    { id: "c_p1", slug: "bar_carte", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_v1", slug: "entrecote_carte", nom: "Entrecôte de bœuf, échalotes", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 1, has_cuisson: 1 },
+
+    // 🍨 Desserts à la carte
+    { id: "c_d1", slug: "cafe_gourmand_carte", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_d2", slug: "creme_brulee_carte", nom: "Crème brûlée à la vanille", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
+
+    // 🧒 Menu Enfant
+    { id: "enf_p1", slug: "tenders_enf", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "enf_p2", slug: "steak_enf", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 1, has_cuisson: 1 }
   ]
 };
