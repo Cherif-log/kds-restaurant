@@ -30,17 +30,25 @@
 
     .kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; flex: 1; align-items: start; }
     
-    .ticket-card { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: border-color 0.2s; position: relative; }
-    .ticket-card.stat-en_attente { border-color: var(--warning); }
-    .ticket-card.stat-en_preparation { border-color: var(--accent); }
-    .ticket-card.stat-pret { border-color: var(--success); }
+    .ticket-card { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease; position: relative; }
+    
+    /* SEUILS DE TEMPS KDS (COULEURS DE BORDURE) */
+    .ticket-card.timer-green { border-color: var(--success); }
+    .ticket-card.timer-orange { border-color: var(--warning); }
+    .ticket-card.timer-red { border-color: var(--danger); animation: pulseDanger 1.2s infinite; }
+    @keyframes pulseDanger { 0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); } 50% { box-shadow: 0 0 22px rgba(239, 68, 68, 0.9); } }
 
     .ticket-top { padding: 12px 16px; background: #0f172a; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
     .ticket-table { font-size: 1.25rem; font-weight: 900; color: #fff; }
     .ticket-server { font-size: 0.78rem; font-weight: 700; color: #38bdf8; }
-    .ticket-time { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
+    
+    /* BADGE CHRONOMÈTRE EN DIRECT */
+    .ticket-timer-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 6px; font-size: 0.82rem; font-weight: 900; }
+    .timer-badge-green { background: rgba(34, 197, 94, 0.18); color: #4ade80; border: 1px solid #22c55e; }
+    .timer-badge-orange { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid #f59e0b; }
+    .timer-badge-red { background: #b91c1c; color: #fff; border: 1px solid #ef4444; }
 
-    /* BANNIÈRE SUITE RÉCLAMÉE EN CUISINE (PULSANTE) */
+    /* BANNIÈRE SUITE RÉCLAMÉE EN CUISINE */
     .suite-alert-banner { background: #c2410c; color: #fff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 0.88rem; animation: pulseAlert 1.2s infinite; border-bottom: 2px solid #ea580c; }
     @keyframes pulseAlert { 0%, 100% { background: #c2410c; } 50% { background: #ea580c; } }
     .btn-ack-suite { background: #fff; color: #c2410c; border: none; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; }
@@ -123,11 +131,23 @@
       { slug: "carpaccio", nom: "Carpaccio de bœuf" }
     ];
 
+    function parseSqliteDate(dateStr) {
+      if (!dateStr) return new Date();
+      if (dateStr.includes('T')) return new Date(dateStr);
+      return new Date(dateStr.replace(' ', 'T') + 'Z');
+    }
+
     async function chargerCommandesCuisine() {
       try {
         const res = await fetch('/api/commandes');
         if (res.ok) {
           commandes = await res.json();
+          // Tri chronologique : Les commandes les plus anciennes en premier (priorité au rush)
+          commandes.sort((a, b) => {
+            const dA = parseSqliteDate(a.date_creation);
+            const dB = parseSqliteDate(b.date_creation);
+            return dA - dB;
+          });
           renderKDS();
         }
       } catch (e) {}
@@ -145,7 +165,7 @@
 
     function renderKDS() {
       const container = document.getElementById('kds-container');
-      if (commandes.length === 0) {
+      if (!commandes || commandes.length === 0) {
         container.innerHTML = '<div style="color:var(--text-muted); font-size:1.1rem; padding:20px;">Aucun bon de commande en cours. Cuisine prête ! 👍</div>';
         return;
       }
@@ -170,8 +190,6 @@
           </div>
         `).join('');
 
-        const heureStr = cmd.date_creation ? new Date(cmd.date_creation).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
-
         const suiteAlert = suitesActives[cmd.table_num];
         const suiteBannerHtml = suiteAlert ? `
           <div class="suite-alert-banner">
@@ -181,14 +199,16 @@
         ` : '';
 
         return `
-          <div class="ticket-card stat-${cmd.statut}">
+          <div class="ticket-card" id="ticket-card-${cmd.id}" data-date="${cmd.date_creation || ''}">
             ${suiteBannerHtml}
             <div class="ticket-top">
               <div>
                 <div class="ticket-table">Table ${cmd.table_num}</div>
                 <div class="ticket-server">👤 ${cmd.serveur_nom || 'Salle'}</div>
               </div>
-              <div class="ticket-time">🕒 ${heureStr}</div>
+              <div class="ticket-timer-badge" id="timer-badge-${cmd.id}">
+                ⏱️ <span id="timer-val-${cmd.id}">00:00</span>
+              </div>
             </div>
             <div class="ticket-items">${itemsHtml}</div>
             ${cmd.remarques ? `<div class="ticket-notes">⚠️ ${cmd.remarques}</div>` : ''}
@@ -196,6 +216,43 @@
           </div>
         `;
       }).join('');
+
+      updateAllTimers();
+    }
+
+    // --- MISE À JOUR DU CHRONOMÈTRE À LA SECONDE ---
+    function updateAllTimers() {
+      const now = new Date();
+      (commandes || []).forEach(cmd => {
+        const card = document.getElementById(`ticket-card-${cmd.id}`);
+        const badge = document.getElementById(`timer-badge-${cmd.id}`);
+        const spanVal = document.getElementById(`timer-val-${cmd.id}`);
+        if (!card || !badge || !spanVal) return;
+
+        const dateCreation = parseSqliteDate(cmd.date_creation);
+        const diffSeconds = Math.max(0, Math.floor((now - dateCreation) / 1000));
+        const minutes = Math.floor(diffSeconds / 60);
+        const seconds = diffSeconds % 60;
+        const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+        spanVal.innerText = timeStr;
+
+        // Réinitialisation des classes de couleur
+        card.classList.remove('timer-green', 'timer-orange', 'timer-red');
+        badge.classList.remove('timer-badge-green', 'timer-badge-orange', 'timer-badge-red');
+
+        // Application des seuils opérationnels
+        if (minutes < 10) {
+          card.classList.add('timer-green');
+          badge.classList.add('timer-badge-green');
+        } else if (minutes < 20) {
+          card.classList.add('timer-orange');
+          badge.classList.add('timer-badge-orange');
+        } else {
+          card.classList.add('timer-red');
+          badge.classList.add('timer-badge-red');
+        }
+      });
     }
 
     async function changerStatutCommande(id, statut) {
@@ -278,7 +335,7 @@
     function playChimeSuite() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const tones = [523.25, 659.25, 783.99]; // Do - Mi - Sol (Carillon agréable et percutant)
+        const tones = [523.25, 659.25, 783.99];
         tones.forEach((freq, idx) => {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
@@ -295,7 +352,7 @@
     }
 
     if (socket) {
-      socket.on('nouvelle_commande', (cmd) => {
+      socket.on('nouvelle_commande', () => {
         playBeepNouvelleCommande();
         chargerCommandesCuisine();
       });
@@ -305,7 +362,6 @@
         indisponibles = data;
         renderStockModal();
       });
-      // RÉCEPTION RÉCLAMER LA SUITE
       socket.on('reclamer_suite', (data) => {
         suitesActives[data.table_num] = data;
         playChimeSuite();
@@ -313,7 +369,10 @@
       });
     }
 
+    // Rafraîchissement des données toutes les 5s et mise à jour du chronomètre chaque seconde
     setInterval(chargerCommandesCuisine, 5000);
+    setInterval(updateAllTimers, 1000);
+
     chargerCommandesCuisine();
     chargerStock();
   </script>
