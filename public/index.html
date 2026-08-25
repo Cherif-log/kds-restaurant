@@ -302,7 +302,7 @@
 
   </div>
 
-  <!-- MODAL SUITE AVEC RECAPITULATIF EN DIRECT -->
+  <!-- MODAL SUITE AVEC AFFICHAGE DE LA COMMANDE ACTIVE -->
   <div class="modal-overlay" id="suite-modal">
     <div class="modal-card" style="max-width: 420px;">
       <div class="modal-head" style="background:#ea580c;">
@@ -1105,7 +1105,7 @@
         const data = await res.json();
 
         if (!data.items || data.items.length === 0) {
-          alert(`⚠️ La Table ${currentTable} est vide : aucune commande en cours à réclamer.`);
+          alert(`⚠️ La Table ${currentTable} est vide : aucune commande active en cuisine à réclamer.`);
           return;
         }
 
@@ -1532,7 +1532,6 @@
 
     init();
 
-    // Maintien écran allumé
     let wakeLock = null;
     async function requestWakeLock() {
       try {

@@ -22,23 +22,32 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
 
-    /* BANDEAU OBLIGATOIRE DE DÉBLOCAGE SONORE */
-    #audio-unlock-banner {
-      background: #dc2626;
-      color: #fff;
-      text-align: center;
-      padding: 14px 20px;
-      font-weight: 800;
-      font-size: 1rem;
-      cursor: pointer;
+    /* BANDEAU CLIGNOTANT POUR DÉBLOQUER L'AUDIO SUR TOUS LES APPAREILS */
+    #audio-unlock-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.95);
+      z-index: 999999;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      gap: 10px;
-      animation: pulse-banner 1.2s infinite;
-      box-shadow: 0 4px 15px rgba(220, 38, 38, 0.5);
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
     }
-    @keyframes pulse-banner { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
+    .btn-unlock-big {
+      background: #16a34a;
+      color: #fff;
+      border: 3px solid #4ade80;
+      padding: 24px 36px;
+      font-size: 1.4rem;
+      font-weight: 900;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 10px 40px rgba(22, 163, 74, 0.6);
+      animation: pulse-unlock 1.2s infinite;
+    }
+    @keyframes pulse-unlock { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
     header { background: #1e293b; border-bottom: 2px solid var(--border); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     h1 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
@@ -78,13 +87,13 @@
     .btn-pret { background: var(--success); color: #fff; }
     .btn-servi { background: #334155; color: #fff; }
 
-    /* POPUP ALERTE SUITE RÉCLAMÉE */
-    .suite-alert-overlay { display: none; position: fixed; inset: 0; background: rgba(185, 28, 28, 0.92); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
+    /* 🚨 POPUP VISUELLE FLASHING SUITE RÉCLAMÉE */
+    .suite-alert-overlay { display: none; position: fixed; inset: 0; background: rgba(185, 28, 28, 0.95); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
     .suite-alert-card { background: #1e293b; border: 3px solid #f87171; border-radius: 16px; padding: 30px; text-align: center; max-width: 500px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
     .suite-alert-title { font-size: 1.8rem; font-weight: 900; color: #f87171; margin-bottom: 10px; text-transform: uppercase; }
-    .suite-alert-table { font-size: 2.4rem; font-weight: 900; color: #fff; margin-bottom: 12px; }
-    .suite-alert-desc { font-size: 1.15rem; color: #f1f5f9; margin-bottom: 24px; font-weight: 700; }
-    .btn-suite-ack { background: #16a34a; color: #fff; border: none; padding: 16px 24px; border-radius: 10px; font-size: 1.2rem; font-weight: 900; cursor: pointer; width: 100%; }
+    .suite-alert-table { font-size: 2.6rem; font-weight: 900; color: #fff; margin-bottom: 12px; }
+    .suite-alert-desc { font-size: 1.2rem; color: #f1f5f9; margin-bottom: 24px; font-weight: 700; line-height: 1.4; }
+    .btn-suite-ack { background: #16a34a; color: #fff; border: none; padding: 18px 24px; border-radius: 10px; font-size: 1.3rem; font-weight: 900; cursor: pointer; width: 100%; }
 
     /* MODAL RUPTURE DE STOCK */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
@@ -100,13 +109,19 @@
     .btn-toggle-stock.out { background: var(--danger); color: #fff; }
   </style>
 </head>
-<body onclick="debloquerAudio()">
+<body>
 
-  <!-- BANDEAU DE DÉVERROUILLAGE AUDIO -->
-  <div id="audio-unlock-banner" onclick="debloquerAudio()">
-    🔊 CLIQUEZ ICI POUR ACTIVER LE BIP SONORE CUISINE
+  <!-- ÉCRAN D'ACTIVATION AUDIO INITIALE (Obligatoire pour que le navigateur autorise le son) -->
+  <div id="audio-unlock-overlay">
+    <div style="font-size: 3rem; margin-bottom: 10px;">👨‍🍳</div>
+    <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Écran Cuisine & KDS</h2>
+    <p style="color: #94a3b8; margin-bottom: 24px;">Cliquez sur le bouton pour activer les bips d'alerte des commandes et des suites :</p>
+    <button class="btn-unlock-big" onclick="activerAudioCuisine()">
+      🔊 ACTIVER LE SON CUISINE
+    </button>
   </div>
 
+  <!-- POPUP PLEIN ÉCRAN ALERTE SUITE -->
   <div class="suite-alert-overlay" id="suite-alert-modal">
     <div class="suite-alert-card">
       <div class="suite-alert-title">🔔 Suite Réclamée !</div>
@@ -119,7 +134,7 @@
   <header>
     <h1 id="kds-title">👨‍🍳 Écran Cuisine & Bar</h1>
     <div class="header-btns">
-      <button class="btn-header" id="btn-test-sound" onclick="emettreBipAiguFort(1)">🔊 Tester le son</button>
+      <button class="btn-header" style="background:#059669;" onclick="emettreBipAiguFort(1)">🔊 Test Bip</button>
       <button class="btn-header btn-stock" onclick="ouvrirModalStock()">🚫 Ruptures (86-List)</button>
       <a href="/index.html" class="btn-header">📱 Salle & Caisse</a>
       <a href="/admin.html" class="btn-header">📊 Admin</a>
@@ -157,21 +172,29 @@
     let audioCtx = null;
     let alarmInterval = null;
 
-    // 🔊 MOTEUR AUDIO STRIDENT (2200 Hz - Fréquence Alerte Cuisine Industrielle)
-    function debloquerAudio() {
+    // 🔊 MOTEUR SONORE CUISINE INDUSTRIELLE (2200 Hz - Bip Aigu Strident)
+    function activerAudioCuisine() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        document.getElementById('audio-unlock-overlay').style.display = 'none';
+        emettreBipAiguFort(1); // Bip de confirmation
+      } catch (e) {
+        document.getElementById('audio-unlock-overlay').style.display = 'none';
+      }
+    }
+
+    function emettreBipAiguFort(repetitions = 3) {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
-      const banner = document.getElementById('audio-unlock-banner');
-      if (banner) banner.style.display = 'none';
-    }
-
-    function emettreBipAiguFort(repetitions = 3) {
-      debloquerAudio();
-      if (!audioCtx) return;
 
       for (let i = 0; i < repetitions; i++) {
         setTimeout(() => {
@@ -179,21 +202,21 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
 
-            osc.type = 'square'; // Son d'alarme net et perçant
-            osc.frequency.setValueAtTime(2200, audioCtx.currentTime); // 2200 Hz
+            osc.type = 'square'; // Son carré perçant type alarme
+            osc.frequency.setValueAtTime(2200, audioCtx.currentTime); // 2200 Hz aigu
 
-            gain.gain.setValueAtTime(0.9, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+            gain.gain.setValueAtTime(0.95, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.28);
 
             osc.connect(gain);
             gain.connect(audioCtx.destination);
 
             osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.28);
+            osc.stop(audioCtx.currentTime + 0.3);
           } catch (e) {
-            console.error("Erreur audio:", e);
+            console.error("Erreur son:", e);
           }
-        }, i * 350);
+        }, i * 360);
       }
     }
 
@@ -307,14 +330,15 @@
       } catch (e) {}
     }
 
+    // GESTION ALERTE SUITE RÉCLAMÉE (Visuelle + Sonore en boucle)
     function afficherAlerteSuite(data) {
       document.getElementById('suite-alert-table-txt').innerText = `TABLE ${data.table_num}`;
-      document.getElementById('suite-alert-course-txt').innerText = `Lancer la suite : ${data.course.toUpperCase()} (Demandé par ${data.serveur_nom || 'Salle'} à ${data.date})`;
+      document.getElementById('suite-alert-course-txt').innerText = `Lancer : ${data.course.toUpperCase()}<br><small style="color:#94a3b8;">Demandé par ${data.serveur_nom || 'Salle'} à ${data.date}</small>`;
       document.getElementById('suite-alert-modal').style.display = 'flex';
 
       emettreBipAiguFort(4);
       if (alarmInterval) clearInterval(alarmInterval);
-      alarmInterval = setInterval(() => emettreBipAiguFort(2), 2500);
+      alarmInterval = setInterval(() => emettreBipAiguFort(2), 3000);
     }
 
     function acquitterSuite() {

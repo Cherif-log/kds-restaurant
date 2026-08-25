@@ -25,7 +25,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS licence_config (id INTEGER PRIMARY KEY, etablissement TEXT, super_pin TEXT, date_expiration DATETIME, statut TEXT DEFAULT 'actif', tarif_mensuel REAL, support_tel TEXT, support_email TEXT);
 `);
 
-// Migrations automatiques de sécurité
+// Migrations
 try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_tel TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_email TEXT`); } catch (e) {}
 
@@ -39,14 +39,14 @@ if (!licenceExists) {
   );
 }
 
-// Initialisation Équipe
+// Initialisation Serveurs
 const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
 if (countServeurs.count === 0 && config.serveursInitiaux) {
   const insertServ = db.prepare(`INSERT INTO serveurs (nom, pin) VALUES (?, ?)`);
   config.serveursInitiaux.forEach(s => insertServ.run(s.nom, s.pin));
 }
 
-// Initialisation Plan de Salle
+// Initialisation Plan
 const countZones = db.prepare(`SELECT count(*) as count FROM zones`).get();
 if (countZones.count === 0 && config.planInitial) {
   const insertZone = db.prepare(`INSERT INTO zones (nom) VALUES (?)`);
@@ -57,7 +57,7 @@ if (countZones.count === 0 && config.planInitial) {
   });
 }
 
-// Initialisation Carte
+// Initialisation Menu
 const countMenu = db.prepare(`SELECT count(*) as count FROM menu_articles`).get();
 if (countMenu.count === 0 && config.carteInitiale) {
   const insertMenu = db.prepare(`INSERT INTO menu_articles (id, slug, nom, cat, section, prix, has_options, has_cuisson, actif) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`);
@@ -70,7 +70,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
-// Validation Super-PIN Support
 function isSuperPinValid(pin) {
   if (!pin) return false;
   const p = String(pin).trim();
@@ -81,7 +80,7 @@ function isSuperPinValid(pin) {
   return (p === config.superPin || p === '7777');
 }
 
-// 🎨 API CONFIGURATION CLIENT & THÈME DYNAMIQUE
+// Config Client
 app.get('/api/config/client', (req, res) => {
   const lic = db.prepare(`SELECT etablissement FROM licence_config WHERE id = 1`).get();
   res.json({
@@ -90,11 +89,7 @@ app.get('/api/config/client', (req, res) => {
     siret: config.siret,
     telephone: config.telephone,
     wifi: config.wifi,
-    theme: config.theme || {
-      couleurPrimary: "#0f172a",
-      couleurAccent: "#2563eb",
-      couleurHeaderTexte: "#ffffff"
-    },
+    theme: config.theme || { couleurPrimary: "#0f172a", couleurAccent: "#2563eb" },
     options: config.options
   });
 });
@@ -152,7 +147,7 @@ app.post('/api/admin/menu', (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur création article' }); }
 });
 
-// Licence & Configuration Master
+// Licence
 app.get('/api/licence/status', (req, res) => {
   try {
     const lic = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
@@ -228,7 +223,7 @@ app.post('/api/auth/pin', (req, res) => {
   try {
     const rawPin = String(req.body.pin || '').trim();
     if (isSuperPinValid(rawPin)) {
-      return res.json({ success: true, role: 'super_admin', isSuperAdmin: true, serveur: { id: 99999, nom: 'Support Éditeur (Super-Admin)' } });
+      return res.json({ success: true, role: 'super_admin', isSuperAdmin: true, serveur: { id: 99999, nom: 'Support Éditeur' } });
     }
     const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(rawPin);
     if (serveur) {
@@ -251,7 +246,7 @@ app.put('/api/admin/serveurs/:id/pin', (req, res) => {
   try {
     db.prepare(`UPDATE serveurs SET pin = ? WHERE id = ?`).run(String(req.body.pin).trim(), req.params.id);
     res.json({ success: true });
-  } catch (e) { res.status(400).json({ error: 'PIN non valide ou déjà utilisé' }); }
+  } catch (e) { res.status(400).json({ error: 'PIN invalide' }); }
 });
 app.delete('/api/admin/serveurs/:id', (req, res) => {
   db.prepare(`DELETE FROM serveurs WHERE id = ?`).run(req.params.id);
@@ -303,7 +298,7 @@ app.get('/api/tables/statuts', (req, res) => {
   res.json(statuts);
 });
 
-// Ruptures de Stock
+// Ruptures Stock
 app.get('/api/stock/indisponibles', (req, res) => res.json(db.prepare(`SELECT article_id FROM articles_indisponibles`).all().map(r => r.article_id)));
 app.post('/api/stock/toggle', (req, res) => {
   const exists = db.prepare(`SELECT article_id FROM articles_indisponibles WHERE article_id = ?`).get(req.body.article_id);
@@ -314,7 +309,7 @@ app.post('/api/stock/toggle', (req, res) => {
   res.json({ success: true, indisponibles: indispo });
 });
 
-// Prise de Commande & KDS Cuisine
+// Commandes
 app.get('/api/commandes', (req, res) => {
   const cmds = db.prepare(`SELECT * FROM commandes WHERE statut NOT IN ('servi', 'encaisse', 'annule') ORDER BY id DESC`).all();
   const getI = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
@@ -335,7 +330,7 @@ app.post('/api/commandes', (req, res) => {
   res.status(201).json(fullOrder);
 });
 
-// 🔔 RÉCLAMER LA SUITE (Vérification stricte de commande active)
+// 🔔 RÉCLAMER LA SUITE (Broadcast complet + Contrôle Commande Active)
 app.post('/api/tables/:table_num/suite', (req, res) => {
   const tNum = parseInt(req.params.table_num, 10);
   const activeOrders = db.prepare(`SELECT id, serveur_nom FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(tNum);
@@ -346,7 +341,12 @@ app.post('/api/tables/:table_num/suite', (req, res) => {
 
   const course = req.body.course || 'Plats';
   const serveur = req.body.serveur_nom || activeOrders[0].serveur_nom || 'Salle';
-  const payload = { table_num: tNum, course: course, serveur_nom: serveur, date: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) };
+  const payload = { 
+    table_num: tNum, 
+    course: course, 
+    serveur_nom: serveur, 
+    date: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) 
+  };
   
   io.emit('reclamer_suite', payload);
   res.json({ success: true });
@@ -360,7 +360,7 @@ app.post('/api/tables/:table_num/transfer', (req, res) => {
     const serveur = req.body.serveur_nom || 'Salle';
 
     if (!fromTable || !toTable || fromTable === toTable) {
-      return res.status(400).json({ error: 'Numéros de table invalides' });
+      return res.status(400).json({ error: 'Tables invalides' });
     }
 
     const info = db.prepare(`UPDATE commandes SET table_num = ?, serveur_nom = ? WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).run(toTable, serveur, fromTable);
@@ -369,11 +369,11 @@ app.post('/api/tables/:table_num/transfer', (req, res) => {
     io.emit('statut_mis_a_jour');
     res.json({ success: true, modifiees: info.changes });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur lors du transfert de table' });
+    res.status(500).json({ error: 'Erreur transfert table' });
   }
 });
 
-// Addition & Encaissement
+// Addition
 app.get('/api/tables/:table_num/addition', (req, res) => {
   const tNum = parseInt(req.params.table_num, 10);
   const cmds = db.prepare(`SELECT id, serveur_nom FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(tNum);
