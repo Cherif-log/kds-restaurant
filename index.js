@@ -83,7 +83,9 @@ db.exec(`
     super_pin TEXT DEFAULT '7777',
     date_expiration DATETIME,
     statut TEXT DEFAULT 'actif',
-    tarif_mensuel REAL DEFAULT 49.99
+    tarif_mensuel REAL DEFAULT 49.99,
+    support_tel TEXT DEFAULT '06 00 00 00 00',
+    support_email TEXT DEFAULT 'support@pos-hoteldespins.fr'
   );
 `);
 
@@ -104,13 +106,15 @@ try { db.exec(`ALTER TABLE licence_config ADD COLUMN tarif_mensuel REAL DEFAULT 
 try { db.exec(`ALTER TABLE licence_config ADD COLUMN etablissement TEXT DEFAULT 'Hôtel des Pins'`); } catch (e) {}
 try { db.exec(`ALTER TABLE licence_config ADD COLUMN statut TEXT DEFAULT 'actif'`); } catch (e) {}
 try { db.exec(`ALTER TABLE licence_config ADD COLUMN date_expiration DATETIME`); } catch (e) {}
+try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_tel TEXT DEFAULT '06 00 00 00 00'`); } catch (e) {}
+try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_email TEXT DEFAULT 'support@pos-hoteldespins.fr'`); } catch (e) {}
 
 // Initialisation Licence
 const licenceExists = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
 if (!licenceExists) {
   const dExp = new Date();
   dExp.setDate(dExp.getDate() + 30);
-  db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel) VALUES (1, 'Hôtel des Pins', '7777', ?, 'actif', 49.99)`).run(dExp.toISOString());
+  db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel, support_tel, support_email) VALUES (1, 'Hôtel des Pins', '7777', ?, 'actif', 49.99, '06 00 00 00 00', 'support@pos-hoteldespins.fr')`).run(dExp.toISOString());
 } else {
   const currentPin = licenceExists.super_pin ? String(licenceExists.super_pin).trim() : '';
   const safePin = (currentPin === '9999' || !currentPin) ? '7777' : currentPin;
@@ -118,12 +122,14 @@ if (!licenceExists) {
     etablissement = COALESCE(etablissement, 'Hôtel des Pins'),
     super_pin = ?,
     statut = COALESCE(statut, 'actif'),
-    tarif_mensuel = COALESCE(tarif_mensuel, 49.99)
+    tarif_mensuel = COALESCE(tarif_mensuel, 49.99),
+    support_tel = COALESCE(support_tel, '06 00 00 00 00'),
+    support_email = COALESCE(support_email, 'support@pos-hoteldespins.fr')
     WHERE id = 1
   `).run(safePin);
 }
 
-// Initialisation Serveurs par défaut
+// Initialisation Serveurs
 const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
 if (countServeurs.count === 0) {
   const insertServ = db.prepare(`INSERT INTO serveurs (nom, pin) VALUES (?, ?)`);
@@ -150,31 +156,22 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
-// 🔒 VÉRIFICATION STRICTE DU SUPER-PIN
+// Validation Super-PIN
 function isSuperPinValid(pin) {
   if (!pin) return false;
   const p = String(pin).trim();
-  
-  // 9999 et codes serveurs NE SONT JAMAIS SUPER-ADMIN
-  if (['9999', '1234', '5678', '0000', ''].includes(p)) {
-    return false;
-  }
-  
-  if (process.env.SUPER_PIN && p === String(process.env.SUPER_PIN).trim()) {
-    return true;
-  }
-  
+  if (['9999', '1234', '5678', '0000', ''].includes(p)) return false;
+  if (process.env.SUPER_PIN && p === String(process.env.SUPER_PIN).trim()) return true;
   const lic = db.prepare(`SELECT super_pin FROM licence_config WHERE id = 1`).get();
   if (lic && lic.super_pin && p === String(lic.super_pin).trim() && !['9999', '1234', '5678', '0000'].includes(String(lic.super_pin).trim())) {
     return true;
   }
-  
   return (p === '7777' || p === '8492');
 }
 
-// --- ROUTES API ---
+// --- ROUTES API SUPER-ADMIN & LICENCE ---
 
-// 1. Statut licence
+// 1. Statut licence et coordonnées de contact support
 app.get('/api/licence/status', (req, res) => {
   try {
     const lic = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
@@ -189,19 +186,21 @@ app.get('/api/licence/status', (req, res) => {
       jours_restants: diffDays,
       statut: lic.statut || 'actif',
       est_valide: estValide,
-      tarif_mensuel: typeof lic.tarif_mensuel === 'number' ? lic.tarif_mensuel : 49.99
+      tarif_mensuel: typeof lic.tarif_mensuel === 'number' ? lic.tarif_mensuel : 49.99,
+      support_tel: lic.support_tel || '06 00 00 00 00',
+      support_email: lic.support_email || 'support@pos-hoteldespins.fr'
     });
   } catch (err) {
     res.status(500).json({ error: 'Erreur licence' });
   }
 });
 
-// 2. Configuration Master (Plein Pouvoir)
+// 2. Configuration Master avec coordonnées S.O.S (Plein Pouvoir)
 app.put('/api/admin/master/config', (req, res) => {
   try {
-    const { etablissement, tarif_mensuel, date_expiration, statut, super_pin } = req.body;
+    const { etablissement, tarif_mensuel, date_expiration, statut, support_tel, support_email, super_pin } = req.body;
     if (!isSuperPinValid(super_pin)) {
-      return res.status(403).json({ error: 'Super-PIN invalide.' });
+      return res.status(403).json({ error: 'Super-PIN invalide. Action réservée au support éditeur.' });
     }
 
     const current = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
@@ -209,15 +208,17 @@ app.put('/api/admin/master/config', (req, res) => {
     const newTarif = (tarif_mensuel !== undefined && !isNaN(parseFloat(tarif_mensuel))) ? parseFloat(tarif_mensuel) : (current.tarif_mensuel || 49.99);
     const newExp = date_expiration ? new Date(date_expiration).toISOString() : (current.date_expiration || new Date().toISOString());
     const newStatut = statut || current.statut || 'actif';
+    const newTel = support_tel ? String(support_tel).trim() : (current.support_tel || '06 00 00 00 00');
+    const newEmail = support_email ? String(support_email).trim() : (current.support_email || 'support@pos-hoteldespins.fr');
 
     db.prepare(`
       UPDATE licence_config 
-      SET etablissement = ?, tarif_mensuel = ?, date_expiration = ?, statut = ?
+      SET etablissement = ?, tarif_mensuel = ?, date_expiration = ?, statut = ?, support_tel = ?, support_email = ?
       WHERE id = 1
-    `).run(newEtab, newTarif, newExp, newStatut);
+    `).run(newEtab, newTarif, newExp, newStatut, newTel, newEmail);
 
     io.emit('licence_update');
-    res.json({ success: true, message: 'Paramètres mis à jour avec succès.' });
+    res.json({ success: true, message: 'Paramètres et coordonnées mis à jour avec succès.' });
   } catch (err) {
     res.status(500).json({ error: 'Erreur mise à jour configuration' });
   }
@@ -317,7 +318,6 @@ app.post('/api/auth/pin', (req, res) => {
   try {
     const rawPin = req.body.pin ? String(req.body.pin).trim() : '';
 
-    // 1. Super-Admin (Plein Pouvoir)
     if (isSuperPinValid(rawPin)) {
       return res.json({ 
         success: true, 
@@ -327,7 +327,6 @@ app.post('/api/auth/pin', (req, res) => {
       });
     }
 
-    // 2. Direction ou Serveur (Mode Client)
     const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(rawPin);
     if (serveur) {
       const isDir = serveur.nom.toLowerCase().includes('direction') || rawPin === '9999';
