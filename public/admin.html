@@ -151,9 +151,9 @@
     .stat-encaisse { background: #e2e8f0; color: #334155; }
 
     /* ARDOISE MATINALE & ÉDITION MENU */
-    .ardoise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .ardoise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-bottom: 14px; }
     .ardoise-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
-    .ardoise-title { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .ardoise-title { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
 
     #z-caisse-print, #chambre-ticket-print { display: none; }
     @media print {
@@ -202,6 +202,7 @@
         <button class="btn-key action" onclick="deleteAdminPin()">⌫</button>
       </div>
 
+      <!-- BOUTONS ACTION BAS DU CLAVIER -->
       <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
         <button class="btn-sos-trigger" onclick="ouvrirModalSOS()">
           🆘 S.O.S Support Développeur
@@ -347,7 +348,7 @@
       </div>
     </div>
 
-    <!-- 🍲 MODULE 1 : ARDOISE DU JOUR (GESTION CLIENT QUOTIDIENNE) -->
+    <!-- 🍲 MODULE 1 : ARDOISE DU JOUR (GESTION CLIENT QUOTIDIENNE AVEC PRIX À LA CARTE) -->
     <div class="panel-card" style="border:1.5px solid #fed7aa; background:#fffaf5;">
       <div class="panel-title" style="color:#ea580c;">
         <span>🍲 Ardoise du Jour & Suggestions du Chef (Mise à jour directe)</span>
@@ -356,20 +357,35 @@
       <div class="ardoise-grid">
         <div class="ardoise-card">
           <div class="ardoise-title">🥗 Entrée du Jour :</div>
-          <input type="text" id="input-ardoise-entree" class="form-input" placeholder="Ex: Gaspacho de tomates anciennes & burrata">
+          <input type="text" id="input-ardoise-entree" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Gaspacho de tomates & burrata">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Prix à la carte :</span>
+            <input type="number" step="0.5" id="input-ardoise-entree-prix" class="form-input-short" value="14.00">
+            <span style="font-weight:700; font-size:0.85rem;">€</span>
+          </div>
         </div>
         <div class="ardoise-card">
           <div class="ardoise-title">🍽️ Plat du Jour :</div>
-          <input type="text" id="input-ardoise-plat" class="form-input" placeholder="Ex: Filet de dorade royale rôtie, écrasé de pdt">
+          <input type="text" id="input-ardoise-plat" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Filet de dorade royale rôtie">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Prix à la carte :</span>
+            <input type="number" step="0.5" id="input-ardoise-plat-prix" class="form-input-short" value="19.50">
+            <span style="font-weight:700; font-size:0.85rem;">€</span>
+          </div>
         </div>
         <div class="ardoise-card">
           <div class="ardoise-title">🍰 Dessert du Jour :</div>
-          <input type="text" id="input-ardoise-dessert" class="form-input" placeholder="Ex: Tartelette fraises du pays & crème d'amande">
+          <input type="text" id="input-ardoise-dessert" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Tartelette fraises du pays">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Prix à la carte :</span>
+            <input type="number" step="0.5" id="input-ardoise-dessert-prix" class="form-input-short" value="8.50">
+            <span style="font-weight:700; font-size:0.85rem;">€</span>
+          </div>
         </div>
       </div>
       <div style="display:flex; justify-content:flex-end;">
-        <button class="btn-action-primary" style="background:#ea580c;" onclick="enregistrerArdoiseDuJour()">
-          ✨ Mettre à jour l'Ardoise en Salle
+        <button class="btn-action-primary" style="background:#ea580c; padding:10px 18px; font-size:0.9rem;" onclick="enregistrerArdoiseDuJour()">
+          ✨ Mettre à jour l'Ardoise & les Prix en Salle
         </button>
       </div>
     </div>
@@ -856,8 +872,11 @@
 
     async function enregistrerArdoiseDuJour() {
       const entree = document.getElementById('input-ardoise-entree').value.trim();
+      const entreePrix = parseFloat(document.getElementById('input-ardoise-entree-prix').value);
       const plat = document.getElementById('input-ardoise-plat').value.trim();
+      const platPrix = parseFloat(document.getElementById('input-ardoise-plat-prix').value);
       const dessert = document.getElementById('input-ardoise-dessert').value.trim();
+      const dessertPrix = parseFloat(document.getElementById('input-ardoise-dessert-prix').value);
 
       if (!entree && !plat && !dessert) return alert("Veuillez renseigner au moins une suggestion.");
 
@@ -865,11 +884,18 @@
         const res = await fetch('/api/admin/menu/plat-du-jour', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ entree_jour: entree, plat_jour: plat, dessert_jour: dessert })
+          body: JSON.stringify({ 
+            entree_jour: entree, 
+            entree_prix: isNaN(entreePrix) ? 14.0 : entreePrix,
+            plat_jour: plat, 
+            plat_prix: isNaN(platPrix) ? 19.5 : platPrix,
+            dessert_jour: dessert,
+            dessert_prix: isNaN(dessertPrix) ? 8.5 : dessertPrix
+          })
         });
         const data = await res.json();
         if (res.ok) {
-          alert("✨ L'Ardoise du jour a été mise à jour en direct sur toutes les tablettes de salle !");
+          alert("✨ L'Ardoise et les prix ont été mis à jour en direct sur toutes les tablettes !");
           chargerMenuAdmin();
         }
       } catch (e) { alert("Erreur de connexion."); }

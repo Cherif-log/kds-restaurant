@@ -127,21 +127,9 @@ if (!licenceExists) {
   const dExp = new Date();
   dExp.setDate(dExp.getDate() + 30);
   db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel, support_tel, support_email) VALUES (1, 'Hôtel des Pins', '7777', ?, 'actif', 49.99, '06 00 00 00 00', 'support@pos-hoteldespins.fr')`).run(dExp.toISOString());
-} else {
-  const currentPin = licenceExists.super_pin ? String(licenceExists.super_pin).trim() : '';
-  const safePin = (currentPin === '9999' || !currentPin) ? '7777' : currentPin;
-  db.prepare(`UPDATE licence_config SET 
-    etablissement = COALESCE(etablissement, 'Hôtel des Pins'),
-    super_pin = ?,
-    statut = COALESCE(statut, 'actif'),
-    tarif_mensuel = COALESCE(tarif_mensuel, 49.99),
-    support_tel = COALESCE(support_tel, '06 00 00 00 00'),
-    support_email = COALESCE(support_email, 'support@pos-hoteldespins.fr')
-    WHERE id = 1
-  `).run(safePin);
 }
 
-// Initialisation de la Carte par défaut si vide
+// Initialisation Carte par défaut
 const countMenu = db.prepare(`SELECT count(*) as count FROM menu_articles`).get();
 if (countMenu.count === 0) {
   const defaultMenu = [
@@ -153,14 +141,14 @@ if (countMenu.count === 0) {
     { id: "m40_e5", slug: "calamars", nom: "Friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
     { id: "m40_e6", slug: "charcuterie", nom: "Assiette de charcuterie (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
     { id: "m40_e7", slug: "asperges", nom: "Asperges blanches & jambon (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
-    { id: "m40_p1", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
-    { id: "m40_p2", slug: "cabillaud", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
-    { id: "m40_p3", slug: "bar", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
-    { id: "m40_p4", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
-    { id: "m40_p5", slug: "carpaccio", nom: "Carpaccio de bœuf & Parmesan (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p1", slug: "plat_jour_menu", nom: "Plat du jour (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p2", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p3", slug: "cabillaud", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p4", slug: "bar", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p5", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
     { id: "m40_p6", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 1, has_cuisson: 1 },
     { id: "m40_p7", slug: "magret", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 1, has_cuisson: 1 },
-    { id: "m40_d1", slug: "dessert_jour", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d1", slug: "dessert_jour_menu", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
     { id: "m40_d2", slug: "fromages", nom: "Assiette de fromages (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
     { id: "m40_d3", slug: "creme_brulee", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
     { id: "m40_d4", slug: "tiramisu", nom: "Tiramisu au café (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
@@ -169,12 +157,14 @@ if (countMenu.count === 0) {
     { id: "m40_d7", slug: "mousse_chocolat", nom: "Mousse au chocolat noir (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
     { id: "m40_d8", slug: "cheesecake", nom: "Cheesecake au citron (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
     { id: "m40_d9", slug: "glace", nom: "Coupe glacée 2 boules (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    
+    // PLATS À LA CARTE (AVEC PRIX)
+    { id: "c_e0", slug: "entree_jour_carte", nom: "Entrée du jour (À la carte)", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 14.00, has_options: 0, has_cuisson: 0 },
     { id: "c_e1", slug: "foie_gras", nom: "Terrine de foie de canard maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
     { id: "c_e2", slug: "soupe_poissons", nom: "Soupe de poissons et accompagnement", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
     { id: "c_e3", slug: "saumon_fume", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
     { id: "c_e4", slug: "calamars", nom: "Friture de calamars, tartare", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
-    { id: "c_e5", slug: "charcuterie", nom: "Assiette de charcuterie", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
-    { id: "c_e6", slug: "asperges", nom: "Asperges blanches, jambon & vierge", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_p0", slug: "plat_jour_carte", nom: "Plat du jour (À la carte)", cat: "Poissons (25 €)", section: "Suggestions du Chef", prix: 19.50, has_options: 0, has_cuisson: 0 },
     { id: "c_p1", slug: "bar", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
     { id: "c_p2", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
     { id: "c_p3", slug: "cabillaud", nom: "Pavé de cabillaud rôti, légumes", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
@@ -182,6 +172,7 @@ if (countMenu.count === 0) {
     { id: "c_v1", slug: "carpaccio", nom: "Carpaccio de bœuf maison Parmesan", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
     { id: "c_v2", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 1, has_cuisson: 1 },
     { id: "c_v3", slug: "magret", nom: "Magret de canard, sauce au poivre", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 1, has_cuisson: 1 },
+    { id: "c_d0", slug: "dessert_jour_carte", nom: "Dessert du jour (À la carte)", cat: "Desserts", section: "Desserts à la carte", prix: 8.50, has_options: 0, has_cuisson: 0 },
     { id: "c_d1", slug: "dessert_jour", nom: "Dessert du jour", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
     { id: "c_d2", slug: "cafe_gourmand", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00, has_options: 0, has_cuisson: 0 },
     { id: "c_d3", slug: "fromage_blanc", nom: "Fromage blanc fermier & fruits", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
@@ -193,11 +184,7 @@ if (countMenu.count === 0) {
     { id: "c_d9", slug: "glace", nom: "Coupe de glaces 2 boules", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
     { id: "enf_p1", slug: "tenders_enf", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 0, has_cuisson: 0 },
     { id: "enf_p2", slug: "steak_enf", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 1, has_cuisson: 1 },
-    { id: "enf_p3", slug: "poisson_enf", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 0, has_cuisson: 0 },
-    { id: "enf_g1", slug: "garn_salade", nom: "Garniture : Salade du jardin", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, has_options: 0, has_cuisson: 0 },
-    { id: "enf_g2", slug: "garn_frites", nom: "Garniture : Frites maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, has_options: 0, has_cuisson: 0 },
-    { id: "enf_g3", slug: "garn_puree", nom: "Garniture : Purée maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, has_options: 0, has_cuisson: 0 },
-    { id: "enf_g4", slug: "garn_legumes", nom: "Garniture : Légumes sautés", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, has_options: 0, has_cuisson: 0 }
+    { id: "enf_p3", slug: "poisson_enf", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 0, has_cuisson: 0 }
   ];
 
   const insertStmt = db.prepare(`INSERT INTO menu_articles (id, slug, nom, cat, section, prix, has_options, has_cuisson, actif) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`);
@@ -246,9 +233,8 @@ function isSuperPinValid(pin) {
   return (p === '7777' || p === '8492');
 }
 
-// --- GESTION DYNAMIQUE DE LA CARTE ---
+// --- GESTION DE LA CARTE & DU PLAT DU JOUR ---
 
-// 1. Récupération de toute la carte
 app.get('/api/menu', (req, res) => {
   try {
     const articles = db.prepare(`SELECT * FROM menu_articles WHERE actif = 1 ORDER BY rowid ASC`).all();
@@ -258,7 +244,6 @@ app.get('/api/menu', (req, res) => {
   }
 });
 
-// 1bis. Récupération administration
 app.get('/api/admin/menu/all', (req, res) => {
   try {
     const articles = db.prepare(`SELECT * FROM menu_articles ORDER BY rowid ASC`).all();
@@ -268,29 +253,35 @@ app.get('/api/admin/menu/all', (req, res) => {
   }
 });
 
-// 2. Mise à jour rapide des Plats du Jour (Ardoise matinale)
+// Mise à jour de l'Ardoise du Jour (Intitulé + Prix à la carte)
 app.put('/api/admin/menu/plat-du-jour', (req, res) => {
   try {
-    const { entree_jour, plat_jour, dessert_jour } = req.body;
+    const { entree_jour, entree_prix, plat_jour, plat_prix, dessert_jour, dessert_prix } = req.body;
     
     if (entree_jour) {
       db.prepare(`UPDATE menu_articles SET nom = ? WHERE id = 'm40_e1'`).run(`Entrée du jour : ${entree_jour.trim()} (Menu 40€)`);
+      const pEntree = parseFloat(entree_prix) || 14.00;
+      db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'c_e0'`).run(`Entrée du jour : ${entree_jour.trim()}`, pEntree);
     }
     if (plat_jour) {
-      db.prepare(`UPDATE menu_articles SET nom = ? WHERE id = 'm40_p1' OR id = 'c_p1'`).run(`Plat du jour : ${plat_jour.trim()}`);
+      db.prepare(`UPDATE menu_articles SET nom = ? WHERE id = 'm40_p1'`).run(`Plat du jour : ${plat_jour.trim()} (Menu 40€)`);
+      const pPlat = parseFloat(plat_prix) || 19.50;
+      db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'c_p0'`).run(`Plat du jour : ${plat_jour.trim()}`, pPlat);
     }
     if (dessert_jour) {
-      db.prepare(`UPDATE menu_articles SET nom = ? WHERE id = 'm40_d1' OR id = 'c_d1'`).run(`Dessert du jour : ${dessert_jour.trim()}`);
+      db.prepare(`UPDATE menu_articles SET nom = ? WHERE id = 'm40_d1'`).run(`Dessert du jour : ${dessert_jour.trim()} (Menu 40€)`);
+      const pDessert = parseFloat(dessert_prix) || 8.50;
+      db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'c_d0'`).run(`Dessert du jour : ${dessert_jour.trim()}`, pDessert);
     }
 
     io.emit('menu_update');
-    res.json({ success: true, message: 'Ardoise du jour mise à jour en direct !' });
+    res.json({ success: true, message: 'Ardoise et tarifs mis à jour en direct !' });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur mise à jour plat du jour' });
+    res.status(500).json({ error: 'Erreur mise à jour ardoise' });
   }
 });
 
-// 3. Modifier un article spécifique (Prix, Nom, Actif)
+// Modifier un article
 app.put('/api/admin/menu/:id', (req, res) => {
   try {
     const { id } = req.params;
@@ -312,7 +303,7 @@ app.put('/api/admin/menu/:id', (req, res) => {
   }
 });
 
-// 4. Ajouter un nouvel article à la carte
+// Ajouter un article
 app.post('/api/admin/menu', (req, res) => {
   try {
     const { nom, cat, section, prix, has_options, has_cuisson } = req.body;
