@@ -3,240 +3,67 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const Database = require('better-sqlite3');
+const config = require('./config'); // Import du profil client
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 10000;
-
-// Base de données SQLite
 const db = new Database('restaurant.db');
 
-// Structure des tables
+// Tables
 db.exec(`
-  CREATE TABLE IF NOT EXISTS serveurs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nom TEXT NOT NULL,
-    pin TEXT NOT NULL UNIQUE
-  );
-
-  CREATE TABLE IF NOT EXISTS zones (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nom TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS tables_plan (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    zone_id INTEGER NOT NULL,
-    numero INTEGER UNIQUE NOT NULL,
-    FOREIGN KEY(zone_id) REFERENCES zones(id) ON DELETE CASCADE
-  );
-
-  CREATE TABLE IF NOT EXISTS menu_articles (
-    id TEXT PRIMARY KEY,
-    slug TEXT NOT NULL,
-    nom TEXT NOT NULL,
-    cat TEXT NOT NULL,
-    section TEXT NOT NULL,
-    prix REAL DEFAULT 0,
-    has_options INTEGER DEFAULT 0,
-    has_cuisson INTEGER DEFAULT 0,
-    actif INTEGER DEFAULT 1
-  );
-
-  CREATE TABLE IF NOT EXISTS commandes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    table_num INTEGER NOT NULL,
-    statut TEXT DEFAULT 'en_attente',
-    serveur_nom TEXT DEFAULT 'Salle',
-    mode_paiement TEXT,
-    remise_montant REAL DEFAULT 0,
-    pourboire REAL DEFAULT 0,
-    total_paye REAL,
-    numero_chambre TEXT,
-    nom_client_chambre TEXT,
-    paiements_details TEXT,
-    remarques TEXT,
-    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
-    date_fin DATETIME
-  );
-
-  CREATE TABLE IF NOT EXISTS commande_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    commande_id INTEGER,
-    article_nom TEXT NOT NULL,
-    prix REAL DEFAULT 0,
-    quantite INTEGER DEFAULT 1,
-    remarques TEXT,
-    FOREIGN KEY(commande_id) REFERENCES commandes(id) ON DELETE CASCADE
-  );
-
-  CREATE TABLE IF NOT EXISTS articles_indisponibles (
-    article_id TEXT PRIMARY KEY,
-    article_nom TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS paiements (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    table_num INTEGER NOT NULL,
-    serveur_nom TEXT DEFAULT 'Salle',
-    mode_paiement TEXT NOT NULL,
-    montant REAL NOT NULL,
-    pourboire REAL DEFAULT 0,
-    numero_chambre TEXT,
-    nom_client_chambre TEXT,
-    date_paiement DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS licence_config (
-    id INTEGER PRIMARY KEY,
-    etablissement TEXT DEFAULT 'Hôtel des Pins',
-    super_pin TEXT DEFAULT '7777',
-    date_expiration DATETIME,
-    statut TEXT DEFAULT 'actif',
-    tarif_mensuel REAL DEFAULT 49.99,
-    support_tel TEXT DEFAULT '06 00 00 00 00',
-    support_email TEXT DEFAULT 'support@pos-hoteldespins.fr'
-  );
+  CREATE TABLE IF NOT EXISTS serveurs (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT NOT NULL, pin TEXT NOT NULL UNIQUE);
+  CREATE TABLE IF NOT EXISTS zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS tables_plan (id INTEGER PRIMARY KEY AUTOINCREMENT, zone_id INTEGER NOT NULL, numero INTEGER UNIQUE NOT NULL, FOREIGN KEY(zone_id) REFERENCES zones(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS menu_articles (id TEXT PRIMARY KEY, slug TEXT NOT NULL, nom TEXT NOT NULL, cat TEXT NOT NULL, section TEXT NOT NULL, prix REAL DEFAULT 0, has_options INTEGER DEFAULT 0, has_cuisson INTEGER DEFAULT 0, actif INTEGER DEFAULT 1);
+  CREATE TABLE IF NOT EXISTS commandes (id INTEGER PRIMARY KEY AUTOINCREMENT, table_num INTEGER NOT NULL, statut TEXT DEFAULT 'en_attente', serveur_nom TEXT DEFAULT 'Salle', mode_paiement TEXT, remise_montant REAL DEFAULT 0, pourboire REAL DEFAULT 0, total_paye REAL, numero_chambre TEXT, nom_client_chambre TEXT, paiements_details TEXT, remarques TEXT, date_creation DATETIME DEFAULT CURRENT_TIMESTAMP, date_fin DATETIME);
+  CREATE TABLE IF NOT EXISTS commande_items (id INTEGER PRIMARY KEY AUTOINCREMENT, commande_id INTEGER, article_nom TEXT NOT NULL, prix REAL DEFAULT 0, quantite INTEGER DEFAULT 1, remarques TEXT, FOREIGN KEY(commande_id) REFERENCES commandes(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS articles_indisponibles (article_id TEXT PRIMARY KEY, article_nom TEXT);
+  CREATE TABLE IF NOT EXISTS paiements (id INTEGER PRIMARY KEY AUTOINCREMENT, table_num INTEGER NOT NULL, serveur_nom TEXT DEFAULT 'Salle', mode_paiement TEXT NOT NULL, montant REAL NOT NULL, pourboire REAL DEFAULT 0, numero_chambre TEXT, nom_client_chambre TEXT, date_paiement DATETIME DEFAULT CURRENT_TIMESTAMP);
+  CREATE TABLE IF NOT EXISTS licence_config (id INTEGER PRIMARY KEY, etablissement TEXT, super_pin TEXT, date_expiration DATETIME, statut TEXT DEFAULT 'actif', tarif_mensuel REAL, support_tel TEXT, support_email TEXT);
 `);
 
 // Migrations automatiques
-try { db.exec(`ALTER TABLE commandes ADD COLUMN date_fin DATETIME`); } catch (e) {}
-try { db.exec(`ALTER TABLE commandes ADD COLUMN mode_paiement TEXT`); } catch (e) {}
-try { db.exec(`ALTER TABLE commandes ADD COLUMN remise_montant REAL DEFAULT 0`); } catch (e) {}
-try { db.exec(`ALTER TABLE commandes ADD COLUMN total_paye REAL`); } catch (e) {}
-try { db.exec(`ALTER TABLE commandes ADD COLUMN serveur_nom TEXT DEFAULT 'Salle'`); } catch (e) {}
-try { db.exec(`ALTER TABLE commandes ADD COLUMN pourboire REAL DEFAULT 0`); } catch (e) {}
-try { db.exec(`ALTER TABLE commandes ADD COLUMN paiements_details TEXT`); } catch (e) {}
-try { db.exec(`ALTER TABLE commandes ADD COLUMN numero_chambre TEXT`); } catch (e) {}
-try { db.exec(`ALTER TABLE commandes ADD COLUMN nom_client_chambre TEXT`); } catch (e) {}
-try { db.exec(`ALTER TABLE paiements ADD COLUMN numero_chambre TEXT`); } catch (e) {}
-try { db.exec(`ALTER TABLE paiements ADD COLUMN nom_client_chambre TEXT`); } catch (e) {}
-try { db.exec(`ALTER TABLE licence_config ADD COLUMN super_pin TEXT DEFAULT '7777'`); } catch (e) {}
-try { db.exec(`ALTER TABLE licence_config ADD COLUMN tarif_mensuel REAL DEFAULT 49.99`); } catch (e) {}
-try { db.exec(`ALTER TABLE licence_config ADD COLUMN etablissement TEXT DEFAULT 'Hôtel des Pins'`); } catch (e) {}
-try { db.exec(`ALTER TABLE licence_config ADD COLUMN statut TEXT DEFAULT 'actif'`); } catch (e) {}
-try { db.exec(`ALTER TABLE licence_config ADD COLUMN date_expiration DATETIME`); } catch (e) {}
-try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_tel TEXT DEFAULT '06 00 00 00 00'`); } catch (e) {}
-try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_email TEXT DEFAULT 'support@pos-hoteldespins.fr'`); } catch (e) {}
+try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_tel TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_email TEXT`); } catch (e) {}
 
-// Initialisation Licence
+// Initialisation Licence basée sur config.js
 const licenceExists = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
 if (!licenceExists) {
   const dExp = new Date();
   dExp.setDate(dExp.getDate() + 30);
-  db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel, support_tel, support_email) VALUES (1, 'Hôtel des Pins', '7777', ?, 'actif', 49.99, '06 00 00 00 00', 'support@pos-hoteldespins.fr')`).run(dExp.toISOString());
+  db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel, support_tel, support_email) VALUES (1, ?, ?, ?, 'actif', ?, ?, ?)`).run(
+    config.etablissement, config.superPin, dExp.toISOString(), config.tarifMensuel, "06 00 00 00 00", "support@mon-entreprise.fr"
+  );
 }
 
-// Initialisation et mise à jour de la Carte
-const insertOrReplaceMenu = db.prepare(`
-  INSERT INTO menu_articles (id, slug, nom, cat, section, prix, has_options, has_cuisson, actif) 
-  VALUES (@id, @slug, @nom, @cat, @section, @prix, @has_options, @has_cuisson, @actif)
-  ON CONFLICT(id) DO UPDATE SET 
-    nom=excluded.nom, 
-    cat=excluded.cat, 
-    section=excluded.section, 
-    prix=excluded.prix, 
-    actif=excluded.actif
-`);
-
-const initialMenuArticles = [
-  // 🍲 1. ARDOISE DU JOUR (CATÉGORIE DISTINCTE & INDÉPENDANTE)
-  { id: "ard_formule", slug: "formule_jour", nom: "Formule du Jour (Entrée + Plat ou Plat + Dessert)", cat: "🍲 Ardoise du Jour", section: "1. Formules du Jour", prix: 22.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "ard_entree", slug: "entree_jour", nom: "Entrée du jour : Gaspacho de tomates & burrata", cat: "🍲 Ardoise du Jour", section: "2. Suggestions du Marché", prix: 8.50, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "ard_plat", slug: "plat_jour", nom: "Plat du jour : Dos de cabillaud rôti aux agrumes", cat: "🍲 Ardoise du Jour", section: "2. Suggestions du Marché", prix: 17.50, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "ard_dessert", slug: "dessert_jour", nom: "Dessert du jour : Tartelette fraises & crème d'amande", cat: "🍲 Ardoise du Jour", section: "2. Suggestions du Marché", prix: 7.50, has_options: 0, has_cuisson: 0, actif: 1 },
-
-  // 🍽️ 2. MENU 40 € (COMPOSITION FIXE NOBLE SANS PLATS DU JOUR FORCÉS)
-  { id: "m40_formule", slug: "formule_40", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_e1", slug: "saumon_fume", nom: "Saumon fumé maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_e2", slug: "foie_gras", nom: "Foie gras de canard maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_e3", slug: "soupe_poissons", nom: "Soupe de poissons du Bassin (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_e4", slug: "calamars", nom: "Friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_e5", slug: "charcuterie", nom: "Assiette de charcuterie (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_e6", slug: "asperges", nom: "Asperges blanches & jambon (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  
-  { id: "m40_p1", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_p2", slug: "cabillaud", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_p3", slug: "bar", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_p4", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_p5", slug: "carpaccio", nom: "Carpaccio de bœuf & Parmesan (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_p6", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 1, has_cuisson: 1, actif: 1 },
-  { id: "m40_p7", slug: "magret", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 1, has_cuisson: 1, actif: 1 },
-
-  { id: "m40_d1", slug: "fromages", nom: "Assiette de fromages (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_d2", slug: "creme_brulee", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_d3", slug: "tiramisu", nom: "Tiramisu au café (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_d4", slug: "cafe_gourmand", nom: "Café gourmand (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_d5", slug: "fromage_blanc", nom: "Fromage blanc fermier & coulis (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_d6", slug: "mousse_chocolat", nom: "Mousse au chocolat noir (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_d7", slug: "cheesecake", nom: "Cheesecake au citron (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "m40_d8", slug: "glace", nom: "Coupe glacée 2 boules (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 1 },
-
-  // OPTIONNEL : Suggestions dans Menu 40 € (désactivées par défaut)
-  { id: "m40_opt_e", slug: "entree_jour_opt", nom: "Entrée du jour (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 0 },
-  { id: "m40_opt_p", slug: "plat_jour_opt", nom: "Plat du jour (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 0 },
-  { id: "m40_opt_d", slug: "dessert_jour_opt", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0, actif: 0 },
-
-  // 🥩 3. ENTRÉES À LA CARTE
-  { id: "c_e1", slug: "foie_gras", nom: "Terrine de foie de canard maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_e2", slug: "soupe_poissons", nom: "Soupe de poissons et accompagnement", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_e3", slug: "saumon_fume", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_e4", slug: "calamars", nom: "Friture de calamars, tartare", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_e5", slug: "charcuterie", nom: "Assiette de charcuterie", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_e6", slug: "asperges", nom: "Asperges blanches, jambon & vierge", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0, actif: 1 },
-
-  // 🐟 4. POISSONS À LA CARTE
-  { id: "c_p1", slug: "bar", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_p2", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_p3", slug: "cabillaud", nom: "Pavé de cabillaud rôti, légumes", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_p4", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0, actif: 1 },
-
-  // 🥩 5. VIANDES À LA CARTE
-  { id: "c_v1", slug: "carpaccio", nom: "Carpaccio de bœuf maison Parmesan", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_v2", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 1, has_cuisson: 1, actif: 1 },
-  { id: "c_v3", slug: "magret", nom: "Magret de canard, sauce au poivre", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 1, has_cuisson: 1, actif: 1 },
-
-  // 🍨 6. DESSERTS À LA CARTE
-  { id: "c_d1", slug: "cafe_gourmand", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_d2", slug: "fromage_blanc", nom: "Fromage blanc fermier & fruits", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_d3", slug: "mousse_chocolat", nom: "Mousse au chocolat", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_d4", slug: "fromages", nom: "Assiette de fromages", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_d5", slug: "creme_brulee", nom: "Crème brûlée à la vanille", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_d6", slug: "cheesecake", nom: "Cheesecake au citron", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_d7", slug: "tiramisu", nom: "Tiramisu au café", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "c_d8", slug: "glace", nom: "Coupe de glaces 2 boules", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0, actif: 1 },
-
-  // 🧒 7. MENU ENFANT
-  { id: "enf_p1", slug: "tenders_enf", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 0, has_cuisson: 0, actif: 1 },
-  { id: "enf_p2", slug: "steak_enf", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 1, has_cuisson: 1, actif: 1 },
-  { id: "enf_p3", slug: "poisson_enf", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 0, has_cuisson: 0, actif: 1 }
-];
-
-initialMenuArticles.forEach(item => insertOrReplaceMenu.run(item));
-
-// Initialisation Serveurs
+// Initialisation automatique de l'équipe
 const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
-if (countServeurs.count === 0) {
+if (countServeurs.count === 0 && config.serveursInitiaux) {
   const insertServ = db.prepare(`INSERT INTO serveurs (nom, pin) VALUES (?, ?)`);
-  insertServ.run('Thomas', '1234');
-  insertServ.run('Sarah', '5678');
-  insertServ.run('Maxime', '0000');
-  insertServ.run('Direction', '9999');
+  config.serveursInitiaux.forEach(s => insertServ.run(s.nom, s.pin));
 }
 
-// Initialisation Plan de Salle
+// Initialisation automatique du Plan de Salle
 const countZones = db.prepare(`SELECT count(*) as count FROM zones`).get();
-if (countZones.count === 0) {
-  const z1 = db.prepare(`INSERT INTO zones (nom) VALUES (?)`).run('🌲 Terrasse & Pinède').lastInsertRowid;
-  const z2 = db.prepare(`INSERT INTO zones (nom) VALUES (?)`).run('🍽️ Salle Intérieure').lastInsertRowid;
-  const z3 = db.prepare(`INSERT INTO zones (nom) VALUES (?)`).run('🌿 Patio & Véranda').lastInsertRowid;
-
+if (countZones.count === 0 && config.planInitial) {
+  const insertZone = db.prepare(`INSERT INTO zones (nom) VALUES (?)`);
   const insertTable = db.prepare(`INSERT INTO tables_plan (zone_id, numero) VALUES (?, ?)`);
-  for (let i = 1; i <= 6; i++) insertTable.run(z1, i);
-  for (let i = 7; i <= 12; i++) insertTable.run(z2, i);
-  for (let i = 13; i <= 15; i++) insertTable.run(z3, i);
+  config.planInitial.forEach(z => {
+    const zId = insertZone.run(z.zone).lastInsertRowid;
+    z.tables.forEach(t => insertTable.run(zId, t));
+  });
+}
+
+// Initialisation automatique de la Carte
+const countMenu = db.prepare(`SELECT count(*) as count FROM menu_articles`).get();
+if (countMenu.count === 0 && config.carteInitiale) {
+  const insertMenu = db.prepare(`INSERT INTO menu_articles (id, slug, nom, cat, section, prix, has_options, has_cuisson, actif) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`);
+  config.carteInitiale.forEach(item => {
+    insertMenu.run(item.id, item.slug, item.nom, item.cat, item.section, item.prix, item.has_options, item.has_cuisson);
+  });
 }
 
 app.use(express.json());
@@ -250,770 +77,300 @@ function isSuperPinValid(pin) {
   if (['9999', '1234', '5678', '0000', ''].includes(p)) return false;
   if (process.env.SUPER_PIN && p === String(process.env.SUPER_PIN).trim()) return true;
   const lic = db.prepare(`SELECT super_pin FROM licence_config WHERE id = 1`).get();
-  if (lic && lic.super_pin && p === String(lic.super_pin).trim() && !['9999', '1234', '5678', '0000'].includes(String(lic.super_pin).trim())) {
-    return true;
-  }
-  return (p === '7777' || p === '8492');
+  if (lic && lic.super_pin && p === String(lic.super_pin).trim()) return true;
+  return (p === config.superPin || p === '7777');
 }
 
-// --- GESTION DE LA CARTE & DE L'ARDOISE DU JOUR ---
+// Endpoint de configuration globale pour le front-end
+app.get('/api/config/client', (req, res) => {
+  res.json({
+    etablissement: config.etablissement,
+    adresse: config.adresse,
+    siret: config.siret,
+    telephone: config.telephone,
+    wifi: config.wifi,
+    options: config.options
+  });
+});
 
-// Récupération de la carte active
+// Menu
 app.get('/api/menu', (req, res) => {
   try {
-    const articles = db.prepare(`SELECT * FROM menu_articles WHERE actif = 1 ORDER BY rowid ASC`).all();
-    res.json(articles);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur menu' });
-  }
+    res.json(db.prepare(`SELECT * FROM menu_articles WHERE actif = 1 ORDER BY rowid ASC`).all());
+  } catch (err) { res.status(500).json({ error: 'Erreur menu' }); }
 });
 
-// Récupération complète pour administration
 app.get('/api/admin/menu/all', (req, res) => {
   try {
-    const articles = db.prepare(`SELECT * FROM menu_articles ORDER BY rowid ASC`).all();
-    res.json(articles);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur menu admin' });
-  }
+    res.json(db.prepare(`SELECT * FROM menu_articles ORDER BY rowid ASC`).all());
+  } catch (err) { res.status(500).json({ error: 'Erreur menu admin' }); }
 });
 
-// Mise à jour de l'Ardoise du Jour (Indépendante)
 app.put('/api/admin/menu/plat-du-jour', (req, res) => {
   try {
-    const { 
-      formule_nom, formule_prix, 
-      entree_jour, entree_prix, 
-      plat_jour, plat_prix, 
-      dessert_jour, dessert_prix,
-      inclure_dans_menu_40 
-    } = req.body;
-    
-    // 1. Formule du Jour
-    if (formule_nom) {
-      db.prepare(`UPDATE menu_articles SET nom = ?, prix = ?, actif = 1 WHERE id = 'ard_formule'`).run(formule_nom.trim(), parseFloat(formule_prix) || 22.00);
-    }
-
-    // 2. Entrée du Jour
-    if (entree_jour) {
-      const pEntree = parseFloat(entree_prix) || 8.50;
-      db.prepare(`UPDATE menu_articles SET nom = ?, prix = ?, actif = 1 WHERE id = 'ard_entree'`).run(`Entrée du jour : ${entree_jour.trim()}`, pEntree);
-      
-      // Option Menu 40 €
-      if (inclure_dans_menu_40) {
-        db.prepare(`UPDATE menu_articles SET nom = ?, actif = 1 WHERE id = 'm40_opt_e'`).run(`Entrée du jour : ${entree_jour.trim()} (Menu 40€)`);
-      } else {
-        db.prepare(`UPDATE menu_articles SET actif = 0 WHERE id = 'm40_opt_e'`).run();
-      }
-    }
-
-    // 3. Plat du Jour
-    if (plat_jour) {
-      const pPlat = parseFloat(plat_prix) || 17.50;
-      db.prepare(`UPDATE menu_articles SET nom = ?, prix = ?, actif = 1 WHERE id = 'ard_plat'`).run(`Plat du jour : ${plat_jour.trim()}`, pPlat);
-      
-      if (inclure_dans_menu_40) {
-        db.prepare(`UPDATE menu_articles SET nom = ?, actif = 1 WHERE id = 'm40_opt_p'`).run(`Plat du jour : ${plat_jour.trim()} (Menu 40€)`);
-      } else {
-        db.prepare(`UPDATE menu_articles SET actif = 0 WHERE id = 'm40_opt_p'`).run();
-      }
-    }
-
-    // 4. Dessert du Jour
-    if (dessert_jour) {
-      const pDessert = parseFloat(dessert_prix) || 7.50;
-      db.prepare(`UPDATE menu_articles SET nom = ?, prix = ?, actif = 1 WHERE id = 'ard_dessert'`).run(`Dessert du jour : ${dessert_jour.trim()}`, pDessert);
-      
-      if (inclure_dans_menu_40) {
-        db.prepare(`UPDATE menu_articles SET nom = ?, actif = 1 WHERE id = 'm40_opt_d'`).run(`Dessert du jour : ${dessert_jour.trim()} (Menu 40€)`);
-      } else {
-        db.prepare(`UPDATE menu_articles SET actif = 0 WHERE id = 'm40_opt_d'`).run();
-      }
-    }
-
+    const { formule_nom, formule_prix, entree_jour, entree_prix, plat_jour, plat_prix, dessert_jour, dessert_prix } = req.body;
+    if (formule_nom) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_formule'`).run(formule_nom.trim(), parseFloat(formule_prix) || 24.0);
+    if (entree_jour) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_entree'`).run(`Entrée du jour : ${entree_jour.trim()}`, parseFloat(entree_prix) || 10.0);
+    if (plat_jour) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_plat'`).run(`Plat du jour : ${plat_jour.trim()}`, parseFloat(plat_prix) || 19.0);
+    if (dessert_jour) db.prepare(`UPDATE menu_articles SET nom = ?, prix = ? WHERE id = 'ard_dessert'`).run(`Dessert du jour : ${dessert_jour.trim()}`, parseFloat(dessert_prix) || 8.0);
     io.emit('menu_update');
-    res.json({ success: true, message: 'Ardoise du Jour mise à jour avec succès !' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur mise à jour ardoise' });
-  }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: 'Erreur ardoise' }); }
 });
 
-// Modifier un article
 app.put('/api/admin/menu/:id', (req, res) => {
   try {
-    const { id } = req.params;
     const { nom, prix, actif } = req.body;
-    
-    const current = db.prepare(`SELECT * FROM menu_articles WHERE id = ?`).get(id);
-    if (!current) return res.status(404).json({ error: 'Article introuvable' });
-
-    const newNom = nom !== undefined ? String(nom).trim() : current.nom;
-    const newPrix = prix !== undefined && !isNaN(parseFloat(prix)) ? parseFloat(prix) : current.prix;
-    const newActif = actif !== undefined ? (actif ? 1 : 0) : current.actif;
-
-    db.prepare(`UPDATE menu_articles SET nom = ?, prix = ?, actif = ? WHERE id = ?`).run(newNom, newPrix, newActif, id);
-
+    const current = db.prepare(`SELECT * FROM menu_articles WHERE id = ?`).get(req.params.id);
+    if (!current) return res.status(404).json({ error: 'Introuvable' });
+    db.prepare(`UPDATE menu_articles SET nom = ?, prix = ?, actif = ? WHERE id = ?`).run(
+      nom !== undefined ? String(nom).trim() : current.nom,
+      prix !== undefined ? parseFloat(prix) : current.prix,
+      actif !== undefined ? (actif ? 1 : 0) : current.actif,
+      req.params.id
+    );
     io.emit('menu_update');
-    res.json({ success: true, message: 'Article mis à jour' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur article' });
-  }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: 'Erreur article' }); }
 });
 
-// Ajouter un article
 app.post('/api/admin/menu', (req, res) => {
   try {
-    const { nom, cat, section, prix, has_options, has_cuisson } = req.body;
-    if (!nom || !cat) return res.status(400).json({ error: 'Nom et catégorie requis' });
-
-    const newId = 'custom_' + Date.now();
-    const slug = nom.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    const itemPrice = parseFloat(prix) || 0;
-
-    db.prepare(`
-      INSERT INTO menu_articles (id, slug, nom, cat, section, prix, has_options, has_cuisson, actif) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-    `).run(newId, slug, nom.trim(), cat.trim(), section ? section.trim() : cat.trim(), itemPrice, has_options ? 1 : 0, has_cuisson ? 1 : 0);
-
+    const { nom, cat, prix } = req.body;
+    const newId = 'art_' + Date.now();
+    db.prepare(`INSERT INTO menu_articles (id, slug, nom, cat, section, prix, has_options, has_cuisson, actif) VALUES (?, ?, ?, ?, ?, ?, 0, 0, 1)`).run(
+      newId, nom.toLowerCase().replace(/[^a-z0-9]/g, '_'), nom.trim(), cat.trim(), cat.trim(), parseFloat(prix) || 0
+    );
     io.emit('menu_update');
     res.status(201).json({ success: true, id: newId });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur création article' });
-  }
+  } catch (err) { res.status(500).json({ error: 'Erreur création article' }); }
 });
 
-// --- LICENCE & AUTHENTIFICATION ---
+// Licence & Administration
 app.get('/api/licence/status', (req, res) => {
   try {
     const lic = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
-    const now = new Date();
     const exp = lic.date_expiration ? new Date(lic.date_expiration) : new Date(Date.now() + 30 * 86400000);
-    const diffDays = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
-    const estValide = ((lic.statut || 'actif') === 'actif' && diffDays >= 0);
-
+    const diffDays = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
     res.json({
-      etablissement: lic.etablissement || 'Hôtel des Pins',
+      etablissement: lic.etablissement || config.etablissement,
       date_expiration: exp.toISOString(),
       jours_restants: diffDays,
       statut: lic.statut || 'actif',
-      est_valide: estValide,
-      tarif_mensuel: typeof lic.tarif_mensuel === 'number' ? lic.tarif_mensuel : 49.99,
-      support_tel: lic.support_tel || '06 00 00 00 00',
-      support_email: lic.support_email || 'support@pos-hoteldespins.fr'
+      est_valide: ((lic.statut || 'actif') === 'actif' && diffDays >= 0),
+      tarif_mensuel: lic.tarif_mensuel || config.tarifMensuel,
+      support_tel: lic.support_tel || "06 00 00 00 00",
+      support_email: lic.support_email || "support@mon-entreprise.fr"
     });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur licence' });
-  }
+  } catch (err) { res.status(500).json({ error: 'Erreur licence' }); }
 });
 
 app.put('/api/admin/master/config', (req, res) => {
   try {
     const { etablissement, tarif_mensuel, date_expiration, statut, support_tel, support_email, super_pin } = req.body;
-    if (!isSuperPinValid(super_pin)) {
-      return res.status(403).json({ error: 'Super-PIN invalide. Action réservée au support éditeur.' });
-    }
-
+    if (!isSuperPinValid(super_pin)) return res.status(403).json({ error: 'Super-PIN invalide' });
     const current = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
-    const newEtab = (etablissement !== undefined && etablissement !== null) ? String(etablissement).trim() : (current.etablissement || 'Hôtel des Pins');
-    const newTarif = (tarif_mensuel !== undefined && !isNaN(parseFloat(tarif_mensuel))) ? parseFloat(tarif_mensuel) : (current.tarif_mensuel || 49.99);
-    const newExp = date_expiration ? new Date(date_expiration).toISOString() : (current.date_expiration || new Date().toISOString());
-    const newStatut = statut || current.statut || 'actif';
-    const newTel = support_tel ? String(support_tel).trim() : (current.support_tel || '06 00 00 00 00');
-    const newEmail = support_email ? String(support_email).trim() : (current.support_email || 'support@pos-hoteldespins.fr');
-
-    db.prepare(`
-      UPDATE licence_config 
-      SET etablissement = ?, tarif_mensuel = ?, date_expiration = ?, statut = ?, support_tel = ?, support_email = ?
-      WHERE id = 1
-    `).run(newEtab, newTarif, newExp, newStatut, newTel, newEmail);
-
+    db.prepare(`UPDATE licence_config SET etablissement = ?, tarif_mensuel = ?, date_expiration = ?, statut = ?, support_tel = ?, support_email = ? WHERE id = 1`).run(
+      etablissement || current.etablissement,
+      tarif_mensuel !== undefined ? parseFloat(tarif_mensuel) : current.tarif_mensuel,
+      date_expiration ? new Date(date_expiration).toISOString() : current.date_expiration,
+      statut || current.statut,
+      support_tel || current.support_tel,
+      support_email || current.support_email
+    );
     io.emit('licence_update');
-    res.json({ success: true, message: 'Paramètres et coordonnées mis à jour avec succès.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur mise à jour configuration' });
-  }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: 'Erreur master config' }); }
 });
 
 app.post('/api/licence/prolonger', (req, res) => {
   try {
     const { jours, super_pin } = req.body;
-    if (!isSuperPinValid(super_pin)) {
-      return res.status(403).json({ error: 'Super-PIN invalide. Action réservée à l\'éditeur.' });
-    }
-
+    if (!isSuperPinValid(super_pin)) return res.status(403).json({ error: 'Super-PIN invalide' });
     const lic = db.prepare(`SELECT date_expiration FROM licence_config WHERE id = 1`).get() || {};
-    let baseDate = lic.date_expiration ? new Date(lic.date_expiration) : new Date();
-    const now = new Date();
-    if (baseDate < now) baseDate = now;
-
-    baseDate.setDate(baseDate.getDate() + (parseInt(jours, 10) || 30));
-    db.prepare(`UPDATE licence_config SET date_expiration = ?, statut = 'actif' WHERE id = 1`).run(baseDate.toISOString());
-
+    let base = lic.date_expiration ? new Date(lic.date_expiration) : new Date();
+    if (base < new Date()) base = new Date();
+    base.setDate(base.getDate() + (parseInt(jours, 10) || 30));
+    db.prepare(`UPDATE licence_config SET date_expiration = ?, statut = 'actif' WHERE id = 1`).run(base.toISOString());
     io.emit('licence_update');
-    res.json({ success: true, nouvelle_date: baseDate.toISOString() });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur prolongation' });
-  }
-});
-
-app.put('/api/licence/super-pin', (req, res) => {
-  try {
-    const { old_pin, new_pin } = req.body;
-    if (!isSuperPinValid(old_pin)) {
-      return res.status(403).json({ error: 'Ancien Super-PIN incorrect.' });
-    }
-    const cleanNew = String(new_pin).trim();
-    if (!cleanNew || cleanNew.length < 4 || ['9999', '1234', '5678', '0000'].includes(cleanNew)) {
-      return res.status(400).json({ error: 'Le nouveau Super-PIN est invalide.' });
-    }
-
-    db.prepare(`UPDATE licence_config SET super_pin = ? WHERE id = 1`).run(cleanNew);
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur modification Super-PIN' });
-  }
+  } catch (err) { res.status(500).json({ error: 'Erreur prolongation' }); }
 });
 
 app.post('/api/admin/master/reset-all-tables', (req, res) => {
   try {
-    const { super_pin } = req.body;
-    if (!isSuperPinValid(super_pin)) return res.status(403).json({ error: 'Super-PIN invalide.' });
-
-    const nowIso = new Date().toISOString();
-    db.prepare(`UPDATE commandes SET statut = 'annule', date_fin = ? WHERE statut NOT IN ('encaisse', 'annule')`).run(nowIso);
+    if (!isSuperPinValid(req.body.super_pin)) return res.status(403).json({ error: 'Super-PIN invalide' });
+    db.prepare(`UPDATE commandes SET statut = 'annule', date_fin = ? WHERE statut NOT IN ('encaisse', 'annule')`).run(new Date().toISOString());
     io.emit('table_status_change');
-    io.emit('statut_mis_a_jour');
-    res.json({ success: true, message: 'Toutes les tables bloquées ont été libérées.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur reset tables' });
-  }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: 'Erreur reset' }); }
 });
 
 app.post('/api/admin/master/purge-history', (req, res) => {
   try {
-    const { super_pin } = req.body;
-    if (!isSuperPinValid(super_pin)) return res.status(403).json({ error: 'Super-PIN invalide.' });
-
+    if (!isSuperPinValid(req.body.super_pin)) return res.status(403).json({ error: 'Super-PIN invalide' });
     db.prepare(`DELETE FROM commande_items`).run();
     db.prepare(`DELETE FROM commandes`).run();
     db.prepare(`DELETE FROM paiements`).run();
     io.emit('table_status_change');
-    io.emit('statut_mis_a_jour');
-    res.json({ success: true, message: 'Données purgées.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur purge' });
-  }
-});
-
-app.delete('/api/admin/commandes/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    db.prepare(`DELETE FROM commande_items WHERE commande_id = ?`).run(id);
-    db.prepare(`DELETE FROM commandes WHERE id = ?`).run(id);
-    io.emit('table_status_change');
-    io.emit('statut_mis_a_jour');
     res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur suppression commande' });
-  }
+  } catch (err) { res.status(500).json({ error: 'Erreur purge' }); }
 });
 
 // Authentification PIN
 app.post('/api/auth/pin', (req, res) => {
   try {
-    const rawPin = req.body.pin ? String(req.body.pin).trim() : '';
-
+    const rawPin = String(req.body.pin || '').trim();
     if (isSuperPinValid(rawPin)) {
-      return res.json({ 
-        success: true, 
-        role: 'super_admin',
-        isSuperAdmin: true,
-        serveur: { id: 99999, nom: 'Support Éditeur (Super-Admin)' } 
-      });
+      return res.json({ success: true, role: 'super_admin', isSuperAdmin: true, serveur: { id: 99999, nom: 'Support Éditeur (Super-Admin)' } });
     }
-
     const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(rawPin);
     if (serveur) {
-      const isDir = serveur.nom.toLowerCase().includes('direction') || rawPin === '9999';
-      return res.json({ 
-        success: true, 
-        role: isDir ? 'direction' : 'serveur',
-        isSuperAdmin: false,
-        serveur 
-      });
+      const isDir = serveur.nom.toLowerCase().includes('direction') || rawPin === config.pinDirection;
+      return res.json({ success: true, role: isDir ? 'direction' : 'serveur', isSuperAdmin: false, serveur });
     }
-
-    return res.status(401).json({ success: false, error: 'Code PIN incorrect' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur auth' });
-  }
+    return res.status(401).json({ success: false, error: 'PIN incorrect' });
+  } catch (err) { res.status(500).json({ error: 'Erreur auth' }); }
 });
 
-// Équipe
-app.get('/api/admin/serveurs', (req, res) => {
-  try {
-    res.json(db.prepare(`SELECT * FROM serveurs ORDER BY id ASC`).all());
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur serveurs' });
-  }
-});
-
+// Plan & Serveurs
+app.get('/api/admin/serveurs', (req, res) => res.json(db.prepare(`SELECT * FROM serveurs ORDER BY id ASC`).all()));
 app.post('/api/admin/serveurs', (req, res) => {
   try {
-    const { nom, pin } = req.body;
-    const info = db.prepare(`INSERT INTO serveurs (nom, pin) VALUES (?, ?)`).run(nom.trim(), pin.trim());
-    res.status(201).json({ id: info.lastInsertRowid, nom: nom.trim(), pin: pin.trim() });
-  } catch (err) {
-    res.status(400).json({ error: 'Code PIN déjà attribué.' });
-  }
+    const info = db.prepare(`INSERT INTO serveurs (nom, pin) VALUES (?, ?)`).run(req.body.nom.trim(), req.body.pin.trim());
+    res.status(201).json({ id: info.lastInsertRowid, nom: req.body.nom, pin: req.body.pin });
+  } catch (e) { res.status(400).json({ error: 'PIN déjà utilisé' }); }
 });
-
 app.delete('/api/admin/serveurs/:id', (req, res) => {
-  try {
-    db.prepare(`DELETE FROM serveurs WHERE id = ?`).run(req.params.id);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur suppression' });
-  }
+  db.prepare(`DELETE FROM serveurs WHERE id = ?`).run(req.params.id);
+  res.json({ success: true });
 });
 
-app.put('/api/admin/serveurs/:id/pin', (req, res) => {
-  try {
-    const { id } = req.params;
-    const { pin } = req.body;
-    
-    if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-      return res.status(400).json({ error: 'Le code PIN doit comporter exactement 4 chiffres.' });
-    }
-
-    const existing = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ? AND id != ?`).get(pin.trim(), id);
-    if (existing) {
-      return res.status(400).json({ error: `Ce code PIN est déjà utilisé par ${existing.nom}.` });
-    }
-
-    db.prepare(`UPDATE serveurs SET pin = ? WHERE id = ?`).run(pin.trim(), id);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur modification PIN' });
-  }
-});
-
-// Plan de salle
 app.get('/api/plan/zones-tables', (req, res) => {
-  try {
-    const zones = db.prepare(`SELECT * FROM zones ORDER BY id ASC`).all();
-    const getTables = db.prepare(`SELECT * FROM tables_plan WHERE zone_id = ? ORDER BY numero ASC`);
-    const result = zones.map(z => ({
-      ...z,
-      tables: getTables.all(z.id)
-    }));
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur plan' });
-  }
+  const zones = db.prepare(`SELECT * FROM zones ORDER BY id ASC`).all();
+  const getT = db.prepare(`SELECT * FROM tables_plan WHERE zone_id = ? ORDER BY numero ASC`);
+  res.json(zones.map(z => ({ ...z, tables: getT.all(z.id) })));
 });
-
 app.post('/api/admin/zones', (req, res) => {
-  try {
-    const { nom } = req.body;
-    if (!nom) return res.status(400).json({ error: 'Nom requis' });
-    const info = db.prepare(`INSERT INTO zones (nom) VALUES (?)`).run(nom.trim());
-    io.emit('plan_update');
-    res.status(201).json({ id: info.lastInsertRowid, nom: nom.trim(), tables: [] });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur zone' });
-  }
+  const info = db.prepare(`INSERT INTO zones (nom) VALUES (?)`).run(req.body.nom.trim());
+  io.emit('plan_update');
+  res.status(201).json({ id: info.lastInsertRowid, nom: req.body.nom, tables: [] });
 });
-
 app.delete('/api/admin/zones/:id', (req, res) => {
-  try {
-    const { id } = req.params;
-    db.prepare(`DELETE FROM tables_plan WHERE zone_id = ?`).run(id);
-    db.prepare(`DELETE FROM zones WHERE id = ?`).run(id);
-    io.emit('plan_update');
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur zone' });
-  }
+  db.prepare(`DELETE FROM tables_plan WHERE zone_id = ?`).run(req.params.id);
+  db.prepare(`DELETE FROM zones WHERE id = ?`).run(req.params.id);
+  io.emit('plan_update');
+  res.json({ success: true });
 });
-
 app.post('/api/admin/tables', (req, res) => {
   try {
-    const { zone_id, numero } = req.body;
-    const tableNum = parseInt(numero, 10);
-    if (!zone_id || isNaN(tableNum) || tableNum <= 0) {
-      return res.status(400).json({ error: 'Numéro de table invalide' });
-    }
-    const info = db.prepare(`INSERT INTO tables_plan (zone_id, numero) VALUES (?, ?)`).run(zone_id, tableNum);
+    const info = db.prepare(`INSERT INTO tables_plan (zone_id, numero) VALUES (?, ?)`).run(req.body.zone_id, parseInt(req.body.numero, 10));
     io.emit('plan_update');
-    io.emit('table_status_change');
-    res.status(201).json({ id: info.lastInsertRowid, zone_id, numero: tableNum });
-  } catch (err) {
-    res.status(400).json({ error: `La Table ${req.body.numero} existe déjà.` });
-  }
+    res.status(201).json({ id: info.lastInsertRowid });
+  } catch (e) { res.status(400).json({ error: 'Table déjà existante' }); }
 });
-
 app.delete('/api/admin/tables/:id', (req, res) => {
-  try {
-    db.prepare(`DELETE FROM tables_plan WHERE id = ?`).run(req.params.id);
-    io.emit('plan_update');
-    io.emit('table_status_change');
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur table' });
-  }
+  db.prepare(`DELETE FROM tables_plan WHERE id = ?`).run(req.params.id);
+  io.emit('plan_update');
+  res.json({ success: true });
 });
 
-// Statuts tables
 app.get('/api/tables/statuts', (req, res) => {
-  try {
-    const allTables = db.prepare(`SELECT numero FROM tables_plan`).all();
-    const activeOrders = db.prepare(`SELECT table_num, statut, serveur_nom FROM commandes WHERE statut NOT IN ('encaisse', 'annule') ORDER BY id DESC`).all();
-
-    const statuts = {};
-    allTables.forEach(t => { 
-      statuts[t.numero] = { statut: 'libre', serveur: null }; 
-    });
-
-    activeOrders.forEach(ord => {
-      const tNum = parseInt(ord.table_num, 10);
-      if (!statuts[tNum] || statuts[tNum].statut === 'libre') {
-        statuts[tNum] = {
-          statut: ord.statut === 'servi' ? 'servi' : 'occupee',
-          serveur: ord.serveur_nom || 'Salle'
-        };
-      } else if (ord.statut === 'servi') {
-        statuts[tNum].statut = 'servi';
-      }
-    });
-
-    res.json(statuts);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur statuts' });
-  }
-});
-
-// Ruptures stock
-app.get('/api/stock/indisponibles', (req, res) => {
-  try {
-    const rows = db.prepare(`SELECT article_id FROM articles_indisponibles`).all();
-    res.json(rows.map(r => r.article_id));
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur stock' });
-  }
-});
-
-app.post('/api/stock/toggle', (req, res) => {
-  try {
-    const { article_id, article_nom } = req.body;
-    const exists = db.prepare(`SELECT article_id FROM articles_indisponibles WHERE article_id = ?`).get(article_id);
-
-    if (exists) {
-      db.prepare(`DELETE FROM articles_indisponibles WHERE article_id = ?`).run(article_id);
-    } else {
-      db.prepare(`INSERT INTO articles_indisponibles (article_id, article_nom) VALUES (?, ?)`).run(article_id, article_nom || article_id);
+  const allTables = db.prepare(`SELECT numero FROM tables_plan`).all();
+  const activeOrders = db.prepare(`SELECT table_num, statut, serveur_nom FROM commandes WHERE statut NOT IN ('encaisse', 'annule') ORDER BY id DESC`).all();
+  const statuts = {};
+  allTables.forEach(t => { statuts[t.numero] = { statut: 'libre', serveur: null }; });
+  activeOrders.forEach(ord => {
+    const tNum = parseInt(ord.table_num, 10);
+    if (!statuts[tNum] || statuts[tNum].statut === 'libre') {
+      statuts[tNum] = { statut: ord.statut === 'servi' ? 'servi' : 'occupee', serveur: ord.serveur_nom || 'Salle' };
+    } else if (ord.statut === 'servi') {
+      statuts[tNum].statut = 'servi';
     }
-
-    const rows = db.prepare(`SELECT article_id FROM articles_indisponibles`).all();
-    const indisponibles = rows.map(r => r.article_id);
-
-    io.emit('stock_update', indisponibles);
-    res.json({ success: true, indisponibles });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur stock' });
-  }
-});
-
-// Commandes cuisine
-app.get('/api/commandes', (req, res) => {
-  try {
-    const commandes = db.prepare(`SELECT * FROM commandes WHERE statut NOT IN ('servi', 'encaisse', 'annule') ORDER BY id DESC`).all();
-    const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
-    res.json(commandes.map(cmd => ({ ...cmd, items: getItems.all(cmd.id) })));
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur commandes' });
-  }
-});
-
-// Addition
-app.get('/api/tables/:table_num/addition', (req, res) => {
-  try {
-    const table_num = parseInt(req.params.table_num, 10);
-    const commandes = db.prepare(`SELECT id, serveur_nom FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(table_num);
-
-    if (commandes.length === 0) {
-      return res.json({ table_num, items: [], total: 0, serveur_nom: 'Salle' });
-    }
-
-    const commandeIds = commandes.map(c => c.id);
-    const getItems = db.prepare(`
-      SELECT article_nom, prix, SUM(quantite) as quantite, (prix * SUM(quantite)) as total_ligne 
-      FROM commande_items 
-      WHERE commande_id IN (${commandeIds.join(',')})
-      GROUP BY article_nom, prix
-    `);
-
-    const items = getItems.all();
-    const total = items.reduce((acc, it) => acc + it.total_ligne, 0);
-
-    res.json({
-      table_num,
-      items,
-      serveur_nom: commandes[0].serveur_nom || 'Salle',
-      total: parseFloat(total.toFixed(2)),
-      total_ht: parseFloat((total / 1.10).toFixed(2)),
-      tva: parseFloat((total - (total / 1.10)).toFixed(2))
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur addition' });
-  }
-});
-
-// Créer commande
-app.post('/api/commandes', (req, res) => {
-  try {
-    const { table_num, items, remarques, serveur_nom } = req.body;
-    const tNum = parseInt(table_num, 10) || 1;
-    const nowIso = new Date().toISOString();
-
-    const insertCmd = db.prepare(`INSERT INTO commandes (table_num, statut, serveur_nom, remarques, date_creation) VALUES (?, 'en_attente', ?, ?, ?)`);
-    const info = insertCmd.run(tNum, serveur_nom || 'Salle', remarques || '', nowIso);
-    const commandeId = info.lastInsertRowid;
-
-    const insertItem = db.prepare(`INSERT INTO commande_items (commande_id, article_nom, prix, quantite, remarques) VALUES (?, ?, ?, ?, ?)`);
-    if (items && Array.isArray(items)) {
-      items.forEach(it => {
-        insertItem.run(commandeId, it.article_nom || it.nom || 'Article', it.prix || 0, it.quantite || 1, it.remarques || '');
-      });
-    }
-
-    const completeOrder = {
-      id: commandeId,
-      table_num: tNum,
-      statut: 'en_attente',
-      serveur_nom: serveur_nom || 'Salle',
-      remarques: remarques || '',
-      date_creation: nowIso,
-      items: db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`).all(commandeId)
-    };
-
-    io.emit('nouvelle_commande', completeOrder);
-    io.emit('table_status_change');
-    res.status(201).json(completeOrder);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur création' });
-  }
-});
-
-// Encaisser Table
-app.post('/api/tables/:table_num/encaisser', (req, res) => {
-  try {
-    const table_num = parseInt(req.params.table_num, 10);
-    const { paiements, mode_paiement, remise_montant, pourboire, total_paye, serveur_nom, numero_chambre, nom_client_chambre } = req.body;
-    const nowIso = new Date().toISOString();
-
-    const tipAmount = parseFloat(pourboire) || 0;
-    const discountAmount = parseFloat(remise_montant) || 0;
-    const netPaye = parseFloat(total_paye) || 0;
-    const sNom = serveur_nom || 'Salle';
-
-    let numChambre = numero_chambre ? String(numero_chambre).trim() : null;
-    let nomClient = nom_client_chambre ? String(nom_client_chambre).trim() : null;
-
-    let paiementsList = [];
-    if (paiements && Array.isArray(paiements) && paiements.length > 0) {
-      paiementsList = paiements;
-      const chPay = paiementsList.find(p => (p.mode && p.mode.includes('Chambre')) || p.numero_chambre);
-      if (chPay) {
-        if (!numChambre && chPay.numero_chambre) numChambre = String(chPay.numero_chambre).trim();
-        if (!nomClient && chPay.nom_client) nomClient = String(chPay.nom_client).trim();
-      }
-    } else {
-      paiementsList = [{ 
-        mode: mode_paiement || 'CB', 
-        montant: netPaye,
-        numero_chambre: numChambre,
-        nom_client: nomClient
-      }];
-    }
-
-    const modeResume = paiementsList.length === 1 
-      ? paiementsList[0].mode 
-      : 'Panaché (' + paiementsList.map(p => `${p.mode}: ${p.montant.toFixed(2)}€`).join(', ') + ')';
-
-    const paiementsJson = JSON.stringify(paiementsList);
-
-    const insertPaiement = db.prepare(`
-      INSERT INTO paiements (table_num, serveur_nom, mode_paiement, montant, pourboire, numero_chambre, nom_client_chambre, date_paiement) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    paiementsList.forEach((p, index) => {
-      const pTip = (index === 0) ? tipAmount : 0;
-      const pChambre = p.numero_chambre || numChambre;
-      const pNom = p.nom_client || nomClient;
-      insertPaiement.run(table_num, sNom, p.mode || 'CB', p.montant || 0, pTip, pChambre, pNom, nowIso);
-    });
-
-    const update = db.prepare(`
-      UPDATE commandes 
-      SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, pourboire = ?, total_paye = ?, numero_chambre = ?, nom_client_chambre = ?, paiements_details = ?, serveur_nom = COALESCE(?, serveur_nom), date_fin = ? 
-      WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
-    `);
-    update.run(modeResume, discountAmount, tipAmount, netPaye, numChambre, nomClient, paiementsJson, sNom, nowIso, table_num);
-
-    io.emit('table_status_change');
-    io.emit('statut_mis_a_jour');
-    res.json({ success: true, modeResume, total_paye: netPaye, pourboire: tipAmount, numero_chambre: numChambre });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de l\'encaissement.' });
-  }
-});
-
-// Forcer libération
-app.post('/api/tables/:table_num/reset', (req, res) => {
-  try {
-    const table_num = parseInt(req.params.table_num, 10);
-    const nowIso = new Date().toISOString();
-    db.prepare(`UPDATE commandes SET statut = 'annule', date_fin = ? WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).run(nowIso, table_num);
-    io.emit('table_status_change');
-    io.emit('statut_mis_a_jour');
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur reset table' });
-  }
-});
-
-// Transfert & Fusion
-app.post('/api/tables/:table_num/transfer', (req, res) => {
-  try {
-    const sourceTable = parseInt(req.params.table_num, 10);
-    const targetTable = parseInt(req.body.target_table, 10);
-    const serveurNom = req.body.serveur_nom || 'Salle';
-
-    if (!targetTable || isNaN(targetTable) || sourceTable === targetTable) {
-      return res.status(400).json({ error: 'Table de destination invalide.' });
-    }
-
-    const activeOrders = db.prepare(`SELECT id FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(sourceTable);
-    if (activeOrders.length === 0) {
-      return res.status(400).json({ error: `La Table ${sourceTable} n'a aucune commande active à transférer.` });
-    }
-
-    db.prepare(`
-      UPDATE commandes 
-      SET table_num = ?, serveur_nom = ? 
-      WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')
-    `).run(targetTable, serveurNom, sourceTable);
-
-    io.emit('table_status_change');
-    io.emit('statut_mis_a_jour');
-
-    res.json({ success: true, message: `Table ${sourceTable} transférée/fusionnée vers Table ${targetTable}` });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors du transfert de table.' });
-  }
-});
-
-// Réclamer suite
-app.post('/api/tables/:table_num/suite', (req, res) => {
-  try {
-    const table_num = parseInt(req.params.table_num, 10);
-    const { course, serveur_nom } = req.body;
-    const nowIso = new Date().toISOString();
-
-    const activeOrders = db.prepare(`SELECT id FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(table_num);
-    if (activeOrders.length === 0) {
-      return res.status(400).json({ error: `Aucune commande en cours sur la Table ${table_num}.` });
-    }
-
-    const suiteData = {
-      table_num,
-      course: course || 'Plats',
-      serveur_nom: serveur_nom || 'Salle',
-      timestamp: nowIso
-    };
-
-    io.emit('reclamer_suite', suiteData);
-    res.json({ success: true, message: `Suite (${suiteData.course}) réclamée pour la Table ${table_num}` });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de la réclamation de la suite.' });
-  }
-});
-
-// Statut commande
-app.put('/api/commandes/:id/statut', (req, res) => {
-  try {
-    const { id } = req.params;
-    const { statut } = req.body;
-    const nowIso = new Date().toISOString();
-
-    if (statut === 'servi') {
-      db.prepare(`UPDATE commandes SET statut = ?, date_fin = ? WHERE id = ?`).run(statut, nowIso, id);
-    } else {
-      db.prepare(`UPDATE commandes SET statut = ? WHERE id = ?`).run(statut, id);
-    }
-
-    io.emit('statut_mis_a_jour', { id, statut });
-    io.emit('table_status_change');
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur statut' });
-  }
-});
-
-// Admin historique & paiements
-app.get('/api/admin/commandes', (req, res) => {
-  try {
-    const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
-    const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
-    res.json(commandes.map(cmd => ({ ...cmd, items: getItems.all(cmd.id) })));
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur admin' });
-  }
-});
-
-app.get('/api/admin/paiements', (req, res) => {
-  try {
-    res.json(db.prepare(`SELECT * FROM paiements ORDER BY id DESC`).all());
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur paiements' });
-  }
-});
-
-app.get('/api/admin/notes-chambres', (req, res) => {
-  try {
-    const commandes = db.prepare(`
-      SELECT * FROM commandes 
-      WHERE statut = 'encaisse' AND (
-        (numero_chambre IS NOT NULL AND numero_chambre != '') 
-        OR mode_paiement LIKE '%Chambre%'
-        OR paiements_details LIKE '%Chambre%'
-      )
-      ORDER BY id DESC
-    `).all();
-
-    const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
-    res.json(commandes.map(cmd => ({ ...cmd, items: getItems.all(cmd.id) })));
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur notes de chambres' });
-  }
-});
-
-// Backup SQLite
-app.get('/api/admin/backup-db', (req, res) => {
-  const dbPath = path.join(__dirname, 'restaurant.db');
-  res.download(dbPath, `backup_restaurant_${new Date().toISOString().slice(0,10)}.db`);
-});
-
-// Socket.io
-io.on('connection', (socket) => {
-  socket.on('changer_statut', (data) => {
-    io.emit('statut_mis_a_jour', data);
-    io.emit('table_status_change');
   });
+  res.json(statuts);
 });
 
-server.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+// Ruptures
+app.get('/api/stock/indisponibles', (req, res) => res.json(db.prepare(`SELECT article_id FROM articles_indisponibles`).all().map(r => r.article_id)));
+app.post('/api/stock/toggle', (req, res) => {
+  const exists = db.prepare(`SELECT article_id FROM articles_indisponibles WHERE article_id = ?`).get(req.body.article_id);
+  if (exists) db.prepare(`DELETE FROM articles_indisponibles WHERE article_id = ?`).run(req.body.article_id);
+  else db.prepare(`INSERT INTO articles_indisponibles (article_id, article_nom) VALUES (?, ?)`).run(req.body.article_id, req.body.article_nom || req.body.article_id);
+  const indispo = db.prepare(`SELECT article_id FROM articles_indisponibles`).all().map(r => r.article_id);
+  io.emit('stock_update', indispo);
+  res.json({ success: true, indisponibles: indispo });
 });
+
+// Commandes Salle & Cuisine
+app.get('/api/commandes', (req, res) => {
+  const cmds = db.prepare(`SELECT * FROM commandes WHERE statut NOT IN ('servi', 'encaisse', 'annule') ORDER BY id DESC`).all();
+  const getI = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
+  res.json(cmds.map(c => ({ ...c, items: getI.all(c.id) })));
+});
+
+app.post('/api/commandes', (req, res) => {
+  const nowIso = new Date().toISOString();
+  const cId = db.prepare(`INSERT INTO commandes (table_num, statut, serveur_nom, remarques, date_creation) VALUES (?, 'en_attente', ?, ?, ?)`).run(
+    parseInt(req.body.table_num, 10), req.body.serveur_nom || 'Salle', req.body.remarques || '', nowIso
+  ).lastInsertRowid;
+  const insertItem = db.prepare(`INSERT INTO commande_items (commande_id, article_nom, prix, quantite, remarques) VALUES (?, ?, ?, ?, ?)`);
+  (req.body.items || []).forEach(it => insertItem.run(cId, it.article_nom, it.prix || 0, it.quantite || 1, it.remarques || ''));
+  const fullOrder = { id: cId, table_num: req.body.table_num, statut: 'en_attente', serveur_nom: req.body.serveur_nom, remarques: req.body.remarques, date_creation: nowIso, items: db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`).all(cId) };
+  io.emit('nouvelle_commande', fullOrder);
+  io.emit('table_status_change');
+  res.status(201).json(fullOrder);
+});
+
+app.get('/api/tables/:table_num/addition', (req, res) => {
+  const tNum = parseInt(req.params.table_num, 10);
+  const cmds = db.prepare(`SELECT id, serveur_nom FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(tNum);
+  if (cmds.length === 0) return res.json({ table_num: tNum, items: [], total: 0, serveur_nom: 'Salle' });
+  const ids = cmds.map(c => c.id).join(',');
+  const items = db.prepare(`SELECT article_nom, prix, SUM(quantite) as quantite, (prix * SUM(quantite)) as total_ligne FROM commande_items WHERE commande_id IN (${ids}) GROUP BY article_nom, prix`).all();
+  const total = items.reduce((acc, it) => acc + it.total_ligne, 0);
+  res.json({ table_num: tNum, items, serveur_nom: cmds[0].serveur_nom || 'Salle', total: parseFloat(total.toFixed(2)), total_ht: parseFloat((total / (1 + config.options.tauxTVA)).toFixed(2)), tva: parseFloat((total - (total / (1 + config.options.tauxTVA))).toFixed(2)) });
+});
+
+app.post('/api/tables/:table_num/encaisser', (req, res) => {
+  const tNum = parseInt(req.params.table_num, 10);
+  const nowIso = new Date().toISOString();
+  const { paiements, mode_paiement, remise_montant, pourboire, total_paye, serveur_nom, numero_chambre, nom_client_chambre } = req.body;
+  const payList = (paiements && paiements.length > 0) ? paiements : [{ mode: mode_paiement || 'CB', montant: total_paye, numero_chambre, nom_client: nom_client_chambre }];
+  const modeTxt = payList.length === 1 ? payList[0].mode : 'Panaché (' + payList.map(p => `${p.mode}: ${p.montant}€`).join(', ') + ')';
+  const insPay = db.prepare(`INSERT INTO paiements (table_num, serveur_nom, mode_paiement, montant, pourboire, numero_chambre, nom_client_chambre, date_paiement) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+  payList.forEach((p, idx) => insPay.run(tNum, serveur_nom || 'Salle', p.mode, p.montant, idx === 0 ? (pourboire || 0) : 0, p.numero_chambre || numero_chambre, p.nom_client || nom_client_chambre, nowIso));
+  db.prepare(`UPDATE commandes SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, pourboire = ?, total_paye = ?, numero_chambre = ?, nom_client_chambre = ?, date_fin = ? WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).run(
+    modeTxt, remise_montant || 0, pourboire || 0, total_paye || 0, numero_chambre, nom_client_chambre, nowIso, tNum
+  );
+  io.emit('table_status_change');
+  res.json({ success: true });
+});
+
+app.post('/api/tables/:table_num/suite', (req, res) => {
+  io.emit('reclamer_suite', { table_num: parseInt(req.params.table_num, 10), course: req.body.course || 'Plats', serveur_nom: req.body.serveur_nom || 'Salle' });
+  res.json({ success: true });
+});
+
+app.put('/api/commandes/:id/statut', (req, res) => {
+  db.prepare(`UPDATE commandes SET statut = ?, date_fin = ? WHERE id = ?`).run(req.body.statut, req.body.statut === 'servi' ? new Date().toISOString() : null, req.params.id);
+  io.emit('statut_mis_a_jour');
+  io.emit('table_status_change');
+  res.json({ success: true });
+});
+
+// Admin Commandes & Backup
+app.get('/api/admin/commandes', (req, res) => {
+  const cmds = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
+  const getI = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
+  res.json(cmds.map(c => ({ ...c, items: getI.all(c.id) })));
+});
+app.get('/api/admin/paiements', (req, res) => res.json(db.prepare(`SELECT * FROM paiements ORDER BY id DESC`).all()));
+app.get('/api/admin/notes-chambres', (req, res) => {
+  const cmds = db.prepare(`SELECT * FROM commandes WHERE statut = 'encaisse' AND ((numero_chambre IS NOT NULL AND numero_chambre != '') OR mode_paiement LIKE '%Chambre%') ORDER BY id DESC`).all();
+  const getI = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
+  res.json(cmds.map(c => ({ ...c, items: getI.all(c.id) })));
+});
+app.get('/api/admin/backup-db', (req, res) => res.download(path.join(__dirname, 'restaurant.db'), `backup_${config.etablissement.replace(/[^a-z0-9]/gi, '_')}.db`));
+
+server.listen(PORT, () => console.log(`Serveur POS [${config.etablissement}] lancé sur le port ${PORT}`));
