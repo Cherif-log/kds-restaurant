@@ -12,7 +12,7 @@ const io = new Server(server);
 const PORT = process.env.PORT || 10000;
 const db = new Database('restaurant.db');
 
-// Tables
+// Tables SQLite
 db.exec(`
   CREATE TABLE IF NOT EXISTS serveurs (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT NOT NULL, pin TEXT NOT NULL UNIQUE);
   CREATE TABLE IF NOT EXISTS zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT NOT NULL);
@@ -24,10 +24,6 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS paiements (id INTEGER PRIMARY KEY AUTOINCREMENT, table_num INTEGER NOT NULL, serveur_nom TEXT DEFAULT 'Salle', mode_paiement TEXT NOT NULL, montant REAL NOT NULL, pourboire REAL DEFAULT 0, numero_chambre TEXT, nom_client_chambre TEXT, date_paiement DATETIME DEFAULT CURRENT_TIMESTAMP);
   CREATE TABLE IF NOT EXISTS licence_config (id INTEGER PRIMARY KEY, etablissement TEXT, super_pin TEXT, date_expiration DATETIME, statut TEXT DEFAULT 'actif', tarif_mensuel REAL, support_tel TEXT, support_email TEXT);
 `);
-
-// Migrations automatiques
-try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_tel TEXT`); } catch (e) {}
-try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_email TEXT`); } catch (e) {}
 
 // Initialisation Licence
 const licenceExists = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
@@ -46,7 +42,7 @@ if (countServeurs.count === 0 && config.serveursInitiaux) {
   config.serveursInitiaux.forEach(s => insertServ.run(s.nom, s.pin));
 }
 
-// Initialisation Plan de Salle
+// Initialisation Plan
 const countZones = db.prepare(`SELECT count(*) as count FROM zones`).get();
 if (countZones.count === 0 && config.planInitial) {
   const insertZone = db.prepare(`INSERT INTO zones (nom) VALUES (?)`);
@@ -70,7 +66,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
-// Validation Super-PIN
 function isSuperPinValid(pin) {
   if (!pin) return false;
   const p = String(pin).trim();
@@ -81,7 +76,7 @@ function isSuperPinValid(pin) {
   return (p === config.superPin || p === '7777');
 }
 
-// 🎨 ENDPOINT THÈME & IDENTITÉ POUR LE FRONT-END
+// Config client
 app.get('/api/config/client', (req, res) => {
   const lic = db.prepare(`SELECT etablissement FROM licence_config WHERE id = 1`).get();
   res.json({
@@ -90,12 +85,7 @@ app.get('/api/config/client', (req, res) => {
     siret: config.siret,
     telephone: config.telephone,
     wifi: config.wifi,
-    theme: config.theme || {
-      logoUrl: "",
-      couleurPrimary: "#0f172a",
-      couleurAccent: "#2563eb",
-      couleurHeaderTexte: "#ffffff"
-    },
+    theme: config.theme || { couleurPrimary: "#0f172a", couleurAccent: "#2563eb" },
     options: config.options
   });
 });
@@ -110,7 +100,7 @@ app.get('/api/menu', (req, res) => {
 app.get('/api/admin/menu/all', (req, res) => {
   try {
     res.json(db.prepare(`SELECT * FROM menu_articles ORDER BY rowid ASC`).all());
-  } catch (err) { res.status(500).json({ error: 'Erreur menu admin' }); }
+  } catch (err) { res.status(500).json({ error: 'Erreur menu' }); }
 });
 
 app.put('/api/admin/menu/plat-du-jour', (req, res) => {
@@ -153,7 +143,7 @@ app.post('/api/admin/menu', (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur création article' }); }
 });
 
-// Licence & Administration
+// Licence
 app.get('/api/licence/status', (req, res) => {
   try {
     const lic = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
@@ -229,7 +219,7 @@ app.post('/api/auth/pin', (req, res) => {
   try {
     const rawPin = String(req.body.pin || '').trim();
     if (isSuperPinValid(rawPin)) {
-      return res.json({ success: true, role: 'super_admin', isSuperAdmin: true, serveur: { id: 99999, nom: 'Support Éditeur (Super-Admin)' } });
+      return res.json({ success: true, role: 'super_admin', isSuperAdmin: true, serveur: { id: 99999, nom: 'Support Éditeur' } });
     }
     const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(rawPin);
     if (serveur) {
@@ -274,7 +264,7 @@ app.post('/api/admin/tables', (req, res) => {
     const info = db.prepare(`INSERT INTO tables_plan (zone_id, numero) VALUES (?, ?)`).run(req.body.zone_id, parseInt(req.body.numero, 10));
     io.emit('plan_update');
     res.status(201).json({ id: info.lastInsertRowid });
-  } catch (e) { res.status(400).json({ error: 'Table déjà existante' }); }
+  } catch (e) { res.status(400).json({ error: 'Table existante' }); }
 });
 app.delete('/api/admin/tables/:id', (req, res) => {
   db.prepare(`DELETE FROM tables_plan WHERE id = ?`).run(req.params.id);
@@ -298,7 +288,7 @@ app.get('/api/tables/statuts', (req, res) => {
   res.json(statuts);
 });
 
-// Ruptures
+// Ruptures Stock
 app.get('/api/stock/indisponibles', (req, res) => res.json(db.prepare(`SELECT article_id FROM articles_indisponibles`).all().map(r => r.article_id)));
 app.post('/api/stock/toggle', (req, res) => {
   const exists = db.prepare(`SELECT article_id FROM articles_indisponibles WHERE article_id = ?`).get(req.body.article_id);
@@ -324,9 +314,42 @@ app.post('/api/commandes', (req, res) => {
   const insertItem = db.prepare(`INSERT INTO commande_items (commande_id, article_nom, prix, quantite, remarques) VALUES (?, ?, ?, ?, ?)`);
   (req.body.items || []).forEach(it => insertItem.run(cId, it.article_nom, it.prix || 0, it.quantite || 1, it.remarques || ''));
   const fullOrder = { id: cId, table_num: req.body.table_num, statut: 'en_attente', serveur_nom: req.body.serveur_nom, remarques: req.body.remarques, date_creation: nowIso, items: db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`).all(cId) };
+  
   io.emit('nouvelle_commande', fullOrder);
   io.emit('table_status_change');
   res.status(201).json(fullOrder);
+});
+
+// 🔔 RÉCLAMER LA SUITE (Broadcast complet temps réel)
+app.post('/api/tables/:table_num/suite', (req, res) => {
+  const tNum = parseInt(req.params.table_num, 10);
+  const course = req.body.course || 'Plats';
+  const serveur = req.body.serveur_nom || 'Salle';
+  const payload = { table_num: tNum, course: course, serveur_nom: serveur, date: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) };
+  
+  io.emit('reclamer_suite', payload);
+  res.json({ success: true });
+});
+
+// 🔀 DÉPLACER ET FUSIONNER LES TABLES
+app.post('/api/tables/:table_num/transfer', (req, res) => {
+  try {
+    const fromTable = parseInt(req.params.table_num, 10);
+    const toTable = parseInt(req.body.target_table, 10);
+    const serveur = req.body.serveur_nom || 'Salle';
+
+    if (!fromTable || !toTable || fromTable === toTable) {
+      return res.status(400).json({ error: 'Tables invalides' });
+    }
+
+    const info = db.prepare(`UPDATE commandes SET table_num = ?, serveur_nom = ? WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).run(toTable, serveur, fromTable);
+
+    io.emit('table_status_change');
+    io.emit('statut_mis_a_jour');
+    res.json({ success: true, modifiees: info.changes });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur lors du transfert de table' });
+  }
 });
 
 app.get('/api/tables/:table_num/addition', (req, res) => {
@@ -354,11 +377,6 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/tables/:table_num/suite', (req, res) => {
-  io.emit('reclamer_suite', { table_num: parseInt(req.params.table_num, 10), course: req.body.course || 'Plats', serveur_nom: req.body.serveur_nom || 'Salle' });
-  res.json({ success: true });
-});
-
 app.put('/api/commandes/:id/statut', (req, res) => {
   db.prepare(`UPDATE commandes SET statut = ?, date_fin = ? WHERE id = ?`).run(req.body.statut, req.body.statut === 'servi' ? new Date().toISOString() : null, req.params.id);
   io.emit('statut_mis_a_jour');
@@ -366,7 +384,7 @@ app.put('/api/commandes/:id/statut', (req, res) => {
   res.json({ success: true });
 });
 
-// Admin Commandes & Backup
+// Admin & Backup
 app.get('/api/admin/commandes', (req, res) => {
   const cmds = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
   const getI = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);

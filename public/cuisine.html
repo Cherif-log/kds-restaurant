@@ -20,46 +20,57 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
 
-    header { background: #1e293b; border-bottom: 2px solid var(--border); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    header { background: #1e293b; border-bottom: 2px solid var(--border); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     h1 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
-    .header-btns { display: flex; gap: 10px; align-items: center; }
-    .btn-header { background: #334155; color: #fff; border: 1px solid #475569; padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .header-btns { display: flex; gap: 8px; align-items: center; }
+    .btn-header { background: #334155; color: #fff; border: 1px solid #475569; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
     .btn-header:hover { background: #475569; }
     .btn-stock { background: #b91c1c; border-color: #ef4444; }
-    .btn-stock:hover { background: #991b1b; }
+    .btn-audio-unlock { background: #059669; border-color: #10b981; animation: pulse-audio 1.5s infinite; }
+    @keyframes pulse-audio { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
     .kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; padding: 20px; flex: 1; overflow-y: auto; }
 
-    .kds-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .kds-card { background: var(--card-bg); border: 2.5px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
     .kds-card.en_preparation { border-color: var(--warning); }
     .kds-card.pret { border-color: var(--success); }
-    .kds-card.urgent { border-color: var(--danger); animation: pulse-card 1.5s infinite; }
+    .kds-card.urgent { border-color: var(--danger); animation: pulse-card 1.2s infinite; }
     @keyframes pulse-card { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
 
-    .kds-card-head { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
-    .kds-table-title { font-size: 1.2rem; font-weight: 800; }
-    .kds-timer { font-size: 0.85rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; }
+    .kds-card-head { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.25); }
+    .kds-table-title { font-size: 1.3rem; font-weight: 800; color: #fff; }
+    .kds-timer { font-size: 0.85rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
     .timer-green { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
     .timer-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-    .timer-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .timer-red { background: rgba(239, 68, 68, 0.3); color: #f87171; border: 1px solid #ef4444; }
 
-    .kds-card-subhead { padding: 6px 16px; font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border); }
+    .kds-card-subhead { padding: 6px 16px; font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border); }
 
     .kds-items-list { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
     .kds-item-row { display: flex; flex-direction: column; font-size: 0.95rem; }
     .kds-item-main { display: flex; justify-content: space-between; font-weight: 700; }
-    .kds-item-remark { font-size: 0.8rem; font-weight: 800; color: #f87171; margin-top: 2px; }
+    .kds-item-remark { font-size: 0.82rem; font-weight: 800; color: #f87171; margin-top: 2px; }
 
-    .kds-order-remark { background: #3b2020; border: 1px dashed #ef4444; color: #fca5a5; padding: 8px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; margin: 10px 16px; }
+    .kds-order-remark { background: #3b2020; border: 1.5px dashed #ef4444; color: #fca5a5; padding: 8px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; margin: 10px 16px; }
 
     .kds-card-actions { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
     .btn-action-kds { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 800; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-prep { background: var(--warning); color: #000; }
     .btn-pret { background: var(--success); color: #fff; }
     .btn-servi { background: #334155; color: #fff; }
+
+    /* 🚨 POPUP VISUELLE FLASHING SUITE RÉCLAMÉE */
+    .suite-alert-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; animation: flash-bg 0.8s infinite; }
+    @keyframes flash-bg { 0%, 100% { background: rgba(185, 28, 28, 0.85); } 50% { background: rgba(15, 23, 42, 0.95); } }
+    
+    .suite-alert-card { background: #1e293b; border: 3px solid #ef4444; border-radius: 16px; padding: 30px; text-align: center; max-width: 500px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+    .suite-alert-title { font-size: 1.8rem; font-weight: 900; color: #f87171; margin-bottom: 10px; text-transform: uppercase; }
+    .suite-alert-table { font-size: 2.2rem; font-weight: 900; color: #fff; margin-bottom: 12px; }
+    .suite-alert-desc { font-size: 1.1rem; color: #cbd5e1; margin-bottom: 24px; }
+    .btn-suite-ack { background: #16a34a; color: #fff; border: none; padding: 16px 24px; border-radius: 10px; font-size: 1.2rem; font-weight: 900; cursor: pointer; width: 100%; }
 
     /* MODAL RUPTURE DE STOCK */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
@@ -75,11 +86,22 @@
     .btn-toggle-stock.out { background: var(--danger); color: #fff; }
   </style>
 </head>
-<body>
+<body onclick="debloquerAudio()">
+
+  <!-- ALERTE SUITE RÉCLAMÉE (PLEIN ÉCRAN) -->
+  <div class="suite-alert-overlay" id="suite-alert-modal">
+    <div class="suite-alert-card">
+      <div class="suite-alert-title">🔔 Suite Réclamée !</div>
+      <div class="suite-alert-table" id="suite-alert-table-txt">Table 4</div>
+      <div class="suite-alert-desc" id="suite-alert-course-txt">Envoyez les Plats immédiatement !</div>
+      <button class="btn-suite-ack" onclick="acquitterSuite()">✔ VU PAR LE CHEF (STOP ALARME)</button>
+    </div>
+  </div>
 
   <header>
     <h1 id="kds-title">👨‍🍳 Écran Cuisine & Bar</h1>
     <div class="header-btns">
+      <button class="btn-header btn-audio-unlock" id="btn-audio-status" onclick="debloquerAudio()">🔊 Son Activé</button>
       <button class="btn-header btn-stock" onclick="ouvrirModalStock()">🚫 Ruptures (86-List)</button>
       <a href="/index.html" class="btn-header">📱 Salle & Caisse</a>
       <a href="/admin.html" class="btn-header">📊 Admin</a>
@@ -92,7 +114,6 @@
     </div>
   </main>
 
-  <!-- MODAL GESTION DU STOCK EN CUISINE -->
   <div class="modal-overlay" id="stock-modal">
     <div class="modal-card">
       <div class="modal-head">
@@ -115,6 +136,52 @@
     let orders = [];
     let menuItems = [];
     let indisponibles = [];
+    let audioCtx = null;
+    let alarmInterval = null;
+
+    // 🔊 MOTEUR SONORE ULTRA-PERÇANT (Bip d'alarme cuisine professionnel)
+    function debloquerAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const b = document.getElementById('btn-audio-status');
+      if (b) {
+        b.innerText = '🔊 Bip Alerte Prêt';
+        b.classList.remove('btn-audio-unlock');
+        b.style.background = '#334155';
+      }
+    }
+
+    function emettreBipAiguFort(repetitions = 3) {
+      debloquerAudio();
+      if (!audioCtx) return;
+
+      for (let i = 0; i < repetitions; i++) {
+        setTimeout(() => {
+          try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            // Fréquence aiguë ultra-perçante (1800 Hz)
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(1760, audioCtx.currentTime);
+
+            // Volume maximal
+            gain.gain.setValueAtTime(0.85, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.28);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.3);
+          } catch (e) {}
+        }, i * 380);
+      }
+    }
 
     function parseSqliteDate(dateStr) {
       if (!dateStr) return new Date();
@@ -222,10 +289,24 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ statut })
         });
-        if (res.ok) {
-          chargerCommandes();
-        }
+        if (res.ok) chargerCommandes();
       } catch (e) {}
+    }
+
+    // GESTION ALERTE DE SUITE (Plein écran + Répétition sonore)
+    function afficherAlerteSuite(data) {
+      document.getElementById('suite-alert-table-txt').innerText = `TABLE ${data.table_num}`;
+      document.getElementById('suite-alert-course-txt').innerText = `Lancer la suite : ${data.course.toUpperCase()} (Demandé par ${data.serveur_nom || 'Salle'} à ${data.date})`;
+      document.getElementById('suite-alert-modal').style.display = 'flex';
+
+      emettreBipAiguFort(4);
+      if (alarmInterval) clearInterval(alarmInterval);
+      alarmInterval = setInterval(() => emettreBipAiguFort(2), 2500);
+    }
+
+    function acquitterSuite() {
+      if (alarmInterval) clearInterval(alarmInterval);
+      document.getElementById('suite-alert-modal').style.display = 'none';
     }
 
     async function chargerStock() {
@@ -281,32 +362,16 @@
       document.getElementById('stock-modal').style.display = 'none';
     }
 
-    function playBeep() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      } catch (e) {}
-    }
-
     if (socket) {
       socket.on('nouvelle_commande', () => {
-        playBeep();
+        emettreBipAiguFort(3);
         chargerCommandes();
+      });
+      socket.on('reclamer_suite', (data) => {
+        afficherAlerteSuite(data);
       });
       socket.on('statut_mis_a_jour', () => chargerCommandes());
       socket.on('table_status_change', () => chargerCommandes());
-      socket.on('reclamer_suite', (data) => {
-        playBeep();
-        alert(`🔔 SUITE RÉCLAMÉE : Table ${data.table_num} demande la suite (${data.course}) !`);
-      });
       socket.on('stock_update', (data) => {
         indisponibles = data;
         renderStockModal();
@@ -315,7 +380,7 @@
 
     chargerThemeKds();
     chargerCommandes();
-    setInterval(renderKds, 30000);
+    setInterval(renderKds, 20000);
   </script>
 </body>
 </html>
