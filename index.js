@@ -112,13 +112,16 @@ if (!licenceExists) {
   dExp.setDate(dExp.getDate() + 30);
   db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel) VALUES (1, 'Hôtel des Pins', '7777', ?, 'actif', 49.99)`).run(dExp.toISOString());
 } else {
+  // S'assurer que le super_pin n'est JAMAIS le code client 9999
+  const currentPin = licenceExists.super_pin ? String(licenceExists.super_pin).trim() : '';
+  const safePin = (currentPin === '9999' || !currentPin) ? '7777' : currentPin;
   db.prepare(`UPDATE licence_config SET 
     etablissement = COALESCE(etablissement, 'Hôtel des Pins'),
-    super_pin = COALESCE(super_pin, '7777'),
+    super_pin = ?,
     statut = COALESCE(statut, 'actif'),
     tarif_mensuel = COALESCE(tarif_mensuel, 49.99)
     WHERE id = 1
-  `).run();
+  `).run(safePin);
 }
 
 // Initialisation Serveurs par défaut
@@ -148,17 +151,32 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
-// Fonction de validation du Super-PIN
+// 🔒 FONCTION STRICTE : Vérification du Super-PIN (9999 et les codes serveurs sont STRICTEMENT REFUSÉS)
 function isSuperPinValid(pin) {
   if (!pin) return false;
   const p = String(pin).trim();
-  if (process.env.SUPER_PIN && p === process.env.SUPER_PIN.trim()) return true;
+  
+  // SÉCURITÉ ABSOLUE : Ces codes ne peuvent JAMAIS être Super-Admin
+  if (['9999', '1234', '5678', '0000', ''].includes(p)) {
+    return false;
+  }
+  
+  // 1. Variable d'environnement prioritaire
+  if (process.env.SUPER_PIN && p === String(process.env.SUPER_PIN).trim()) {
+    return true;
+  }
+  
+  // 2. Base de données
   const lic = db.prepare(`SELECT super_pin FROM licence_config WHERE id = 1`).get();
-  if (lic && lic.super_pin && p === lic.super_pin.trim()) return true;
+  if (lic && lic.super_pin && p === String(lic.super_pin).trim() && !['9999', '1234', '5678', '0000'].includes(String(lic.super_pin).trim())) {
+    return true;
+  }
+  
+  // 3. Codes de secours éditeur par défaut
   return (p === '7777' || p === '8492');
 }
 
-// --- ROUTES API SUPER-ADMIN MASTER & LICENCE ---
+// --- ROUTES API SUPER-ADMIN & LICENCE ---
 
 // 1. Statut public de la licence
 app.get('/api/licence/status', (req, res) => {
@@ -182,12 +200,12 @@ app.get('/api/licence/status', (req, res) => {
   }
 });
 
-// 2. Configuration Master (Plein Pouvoir)
+// 2. Configuration Master (Plein Pouvoir - Réservé Super-Admin)
 app.put('/api/admin/master/config', (req, res) => {
   try {
     const { etablissement, tarif_mensuel, date_expiration, statut, super_pin } = req.body;
     if (!isSuperPinValid(super_pin)) {
-      return res.status(403).json({ error: 'Super-PIN invalide. Action réservée à l\'administrateur.' });
+      return res.status(403).json({ error: 'Super-PIN invalide. Action réservée au support éditeur.' });
     }
 
     const current = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
@@ -205,16 +223,16 @@ app.put('/api/admin/master/config', (req, res) => {
     io.emit('licence_update');
     res.json({ success: true, message: 'Paramètres système mis à jour avec succès.' });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de la mise à jour des paramètres.' });
+    res.status(500).json({ error: 'Erreur mise à jour configuration' });
   }
 });
 
-// 3. Prolonger la licence
+// 3. Prolonger licence
 app.post('/api/licence/prolonger', (req, res) => {
   try {
     const { jours, super_pin } = req.body;
     if (!isSuperPinValid(super_pin)) {
-      return res.status(403).json({ error: 'Super-PIN invalide.' });
+      return res.status(403).json({ error: 'Super-PIN invalide. Action réservée à l\'éditeur.' });
     }
 
     const lic = db.prepare(`SELECT date_expiration FROM licence_config WHERE id = 1`).get() || {};
@@ -232,25 +250,26 @@ app.post('/api/licence/prolonger', (req, res) => {
   }
 });
 
-// 4. Modifier le Super-PIN
+// 4. Modifier Super-PIN
 app.put('/api/licence/super-pin', (req, res) => {
   try {
     const { old_pin, new_pin } = req.body;
     if (!isSuperPinValid(old_pin)) {
       return res.status(403).json({ error: 'Ancien Super-PIN incorrect.' });
     }
-    if (!new_pin || String(new_pin).trim().length < 4) {
-      return res.status(400).json({ error: 'Le nouveau Super-PIN doit contenir au moins 4 chiffres.' });
+    const cleanNew = String(new_pin).trim();
+    if (!cleanNew || cleanNew.length < 4 || ['9999', '1234', '5678', '0000'].includes(cleanNew)) {
+      return res.status(400).json({ error: 'Le nouveau Super-PIN est invalide ou déjà utilisé par un rôle client.' });
     }
 
-    db.prepare(`UPDATE licence_config SET super_pin = ? WHERE id = 1`).run(String(new_pin).trim());
+    db.prepare(`UPDATE licence_config SET super_pin = ? WHERE id = 1`).run(cleanNew);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur Super-PIN' });
+    res.status(500).json({ error: 'Erreur modification Super-PIN' });
   }
 });
 
-// 5. Débloquer TOUTES les tables
+// 5. Débloquer toutes les tables
 app.post('/api/admin/master/reset-all-tables', (req, res) => {
   try {
     const { super_pin } = req.body;
@@ -266,7 +285,7 @@ app.post('/api/admin/master/reset-all-tables', (req, res) => {
   }
 });
 
-// 6. Purge complète de l'historique
+// 6. Purge historique
 app.post('/api/admin/master/purge-history', (req, res) => {
   try {
     const { super_pin } = req.body;
@@ -283,7 +302,7 @@ app.post('/api/admin/master/purge-history', (req, res) => {
   }
 });
 
-// 7. Supprimer une commande
+// 7. Supprimer commande individuelle
 app.delete('/api/admin/commandes/:id', (req, res) => {
   try {
     const { id } = req.params;
@@ -293,7 +312,7 @@ app.delete('/api/admin/commandes/:id', (req, res) => {
     io.emit('statut_mis_a_jour');
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur suppression' });
+    res.status(500).json({ error: 'Erreur suppression commande' });
   }
 });
 
@@ -302,17 +321,26 @@ app.post('/api/auth/pin', (req, res) => {
   try {
     const rawPin = req.body.pin ? String(req.body.pin).trim() : '';
 
+    // 1. Super-Admin (Plein Pouvoir)
     if (isSuperPinValid(rawPin)) {
       return res.json({ 
         success: true, 
         isSuperAdmin: true,
+        role: 'super_admin',
         serveur: { id: 99999, nom: 'Support Éditeur (Super-Admin)' } 
       });
     }
 
+    // 2. Serveur ou Direction (Mode Client)
     const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(rawPin);
     if (serveur) {
-      res.json({ success: true, isSuperAdmin: false, serveur });
+      const isDir = serveur.nom.toLowerCase().includes('direction') || rawPin === '9999';
+      res.json({ 
+        success: true, 
+        isSuperAdmin: false, 
+        role: isDir ? 'direction' : 'serveur',
+        serveur 
+      });
     } else {
       res.status(401).json({ success: false, error: 'Code PIN incorrect' });
     }
@@ -465,7 +493,7 @@ app.get('/api/tables/statuts', (req, res) => {
   }
 });
 
-// Ruptures stock
+// Ruptures de stock
 app.get('/api/stock/indisponibles', (req, res) => {
   try {
     const rows = db.prepare(`SELECT article_id FROM articles_indisponibles`).all();
@@ -734,7 +762,7 @@ app.put('/api/commandes/:id/statut', (req, res) => {
   }
 });
 
-// Admin historique, paiements & Notes de Chambres
+// Admin historique & paiements
 app.get('/api/admin/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
