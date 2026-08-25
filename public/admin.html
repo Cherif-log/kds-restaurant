@@ -25,6 +25,7 @@
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
     .container { max-width: 1200px; margin: 0 auto; }
 
+    /* ÉCRAN PIN DIRECTION / ÉDITEUR */
     .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 15px; }
     .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
     .pin-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; }
@@ -49,14 +50,14 @@
     .btn-print-z { background: var(--primary); color: #fff; border: 1px solid #475569; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
     .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
-    /* BANNIÈRE LICENCE SAAS / SUPPORT */
-    .saas-license-banner { background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .saas-title { font-size: 0.95rem; font-weight: 800; color: #6d28d9; display: flex; align-items: center; gap: 8px; }
-    .saas-info { font-size: 0.85rem; color: #5b21b6; }
+    /* BANNIÈRE SAAS / STATUT D'ABONNEMENT */
+    .saas-license-banner { background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08); }
+    .saas-title { font-size: 1rem; font-weight: 800; color: #6d28d9; display: flex; align-items: center; gap: 8px; }
+    .saas-info { font-size: 0.88rem; color: #5b21b6; }
     .saas-badge-valid { background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #86efac; }
-    .saas-badge-warn { background: #fef3c7; color: #b45309; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #fde68a; }
+    .saas-badge-warn { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #fca5a5; }
 
-    .btn-renew-saas { background: var(--saas); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-renew-saas { background: var(--saas); color: #fff; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
     .btn-renew-saas:hover { background: #7c3aed; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 24px; }
@@ -150,11 +151,11 @@
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE DIRECTION -->
+  <!-- ÉCRAN DE VERROUILLAGE SANS INDICE -->
   <div class="lock-overlay" id="admin-lock-overlay">
     <div class="pin-card">
-      <div class="pin-title">Accès Direction & Éditeur</div>
-      <div class="pin-subtitle">Saisissez le PIN Direction ou Super-PIN</div>
+      <div class="pin-title">Accès Direction</div>
+      <div class="pin-subtitle">Saisissez votre code PIN</div>
 
       <div class="pin-dots">
         <div class="pin-dot" id="dot-0"></div>
@@ -178,31 +179,37 @@
         <button class="btn-key action" onclick="deleteAdminPin()">⌫</button>
       </div>
 
-      <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
-        <button style="background:#334155; color:#38bdf8; border:1px solid #475569; padding:10px; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer;" onclick="window.location.href='/index.html'">
+      <div style="margin-top:14px;">
+        <button style="background:#334155; color:#38bdf8; border:1px solid #475569; padding:10px 14px; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer;" onclick="window.location.href='/index.html'">
           ⬅️ Retour à la Salle & Caisse
         </button>
-        <div style="font-size:0.75rem; color:#64748b;">Support Technique : 7777 | Direction : 9999</div>
       </div>
     </div>
   </div>
 
   <div class="container" id="admin-main-container" style="display:none;">
     
-    <!-- BANNIÈRE SAAS / ABONNEMENT ÉDITEUR (49,99 €/MOIS) -->
+    <!-- BANNIÈRE SAAS : VISIBLE POUR TOUS, MAIS BOUTONS VISIBLES SEULEMENT POUR VOUS -->
     <div class="saas-license-banner" id="saas-banner">
       <div>
         <div class="saas-title">
-          <span>💼 Abonnement SaaS & Maintenance Logicielle</span>
-          <span class="saas-badge-valid" id="saas-status-badge">🟢 Actif (49,99 € / mois)</span>
+          <span>💼 Abonnement Logiciel & Maintenance</span>
+          <span class="saas-badge-valid" id="saas-status-badge">🟢 Abonnement à jour (49,99 € / mois)</span>
         </div>
         <div class="saas-info" style="margin-top:4px;">
-          Établissement : <strong id="saas-client-name">Hôtel des Pins</strong> — Échéance : <strong id="saas-exp-date">--/--/----</strong> (<span id="saas-days-left">--</span> jours restants)
+          Établissement : <strong id="saas-client-name">Hôtel des Pins</strong> — Prochaine échéance : <strong id="saas-exp-date">--/--/----</strong> (<span id="saas-days-left">--</span> jours restants)
         </div>
       </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn-renew-saas" onclick="prolongerAbonnementClient(30)">➕ Renouveler 30 Jours (+49,99 €)</button>
+
+      <!-- BOUTONS RÉSERVÉS EXCLUSIVEMENT À VOUS (SUPER-ADMIN) -->
+      <div id="saas-admin-actions" style="display:none; gap:8px;">
+        <button class="btn-renew-saas" onclick="prolongerAbonnementClient(30)">➕ +30 Jours (+49,99 €)</button>
         <button class="btn-renew-saas" style="background:#475569;" onclick="prolongerAbonnementClient(365)">📅 +1 An</button>
+      </div>
+
+      <!-- NOTE INFORMATIVE AFFICHÉE POUR LE CLIENT -->
+      <div id="saas-client-note" style="display:flex; align-items:center; font-size:0.82rem; color:#6d28d9; font-weight:700;">
+        <span>ℹ️ Mises à jour & support technique inclus</span>
       </div>
     </div>
 
@@ -468,9 +475,22 @@
 
     function checkAdminAuth() {
       const isAuth = sessionStorage.getItem('hdp_admin_auth');
+      const isSuper = sessionStorage.getItem('hdp_is_super') === 'true';
+
       if (isAuth === 'true') {
         document.getElementById('admin-lock-overlay').style.display = 'none';
         document.getElementById('admin-main-container').style.display = 'block';
+
+        // 1. LA BANNIÈRE D'INFORMATION EST VISIBLE POUR TOUT LE MONDE
+        const saasBanner = document.getElementById('saas-banner');
+        if (saasBanner) saasBanner.style.display = 'flex';
+
+        // 2. LES BOUTONS D'ACTION NE SONT VISIBLES QUE POUR VOUS (SUPER-ADMIN)
+        const saasActions = document.getElementById('saas-admin-actions');
+        const clientNote = document.getElementById('saas-client-note');
+        if (saasActions) saasActions.style.display = isSuper ? 'flex' : 'none';
+        if (clientNote) clientNote.style.display = isSuper ? 'none' : 'flex';
+
         chargerDonneesAdmin();
         chargerServeurs();
         chargerPlanAdmin();
@@ -509,13 +529,14 @@
         });
         const data = await res.json();
         
-        if (res.ok && data.success && (data.isSuperAdmin || data.serveur.nom.toLowerCase().includes('direction') || enteredAdminPin === '9999' || enteredAdminPin === '7777')) {
+        if (res.ok && data.success && (data.isSuperAdmin || data.serveur.nom.toLowerCase().includes('direction') || enteredAdminPin === '9999')) {
           sessionStorage.setItem('hdp_admin_auth', 'true');
           sessionStorage.setItem('hdp_is_super', data.isSuperAdmin ? 'true' : 'false');
+          sessionStorage.setItem('hdp_super_pin_cache', data.isSuperAdmin ? enteredAdminPin : '');
           clearAdminPin();
           checkAdminAuth();
         } else {
-          alert("⛔ Accès refusé : Code Direction ou Super-PIN requis !");
+          alert("⛔ Accès refusé : Code Direction incorrect !");
           clearAdminPin();
         }
       } catch (e) {
@@ -527,10 +548,11 @@
     function verrouillerAdmin() {
       sessionStorage.removeItem('hdp_admin_auth');
       sessionStorage.removeItem('hdp_is_super');
+      sessionStorage.removeItem('hdp_super_pin_cache');
       checkAdminAuth();
     }
 
-    // --- GESTION LICENCE SAAS ---
+    // --- GESTION SAAS ---
     async function chargerLicenceStatus() {
       try {
         const res = await fetch('/api/licence/status');
@@ -545,7 +567,7 @@
           if (badge) {
             if (lic.est_valide) {
               badge.className = 'saas-badge-valid';
-              badge.innerText = `🟢 Abonnement Actif (${lic.tarif_mensuel.toFixed(2)} € / mois)`;
+              badge.innerText = `🟢 Abonnement à jour (${lic.tarif_mensuel.toFixed(2)} € / mois)`;
             } else {
               badge.className = 'saas-badge-warn';
               badge.innerText = `🔴 Échu (${lic.jours_restants} j)`;
@@ -556,7 +578,10 @@
     }
 
     async function prolongerAbonnementClient(jours) {
-      const superPin = prompt("Saisissez votre Super-PIN Support pour valider le renouvellement :", "7777");
+      let superPin = sessionStorage.getItem('hdp_super_pin_cache');
+      if (!superPin) {
+        superPin = prompt("Saisissez votre Super-PIN personnel :");
+      }
       if (!superPin) return;
 
       try {
@@ -567,7 +592,7 @@
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`✅ Abonnement renouvelé avec succès (+${jours} jours) !`);
+          alert(`✅ Abonnement prolongé avec succès (+${jours} jours) !`);
           chargerLicenceStatus();
         } else {
           alert(`❌ ${data.error || "Erreur de renouvellement"}`);
