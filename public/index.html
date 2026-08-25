@@ -2,509 +2,1072 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Salle & Caisse — Système POS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Caisse POS">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0f172a">
+
+  <title>Caisse & Salle</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --card-hover: #334155;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --success: #10b981;
+      --primary: #0f172a;
+      --accent: #2563eb;
+      --accent-light: #eff6ff;
+      --success: #16a34a;
       --warning: #f59e0b;
+      --served: #0284c7;
       --danger: #ef4444;
-      --purple: #8b5cf6;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --text: #1e293b;
+      --text-muted: #64748b;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
-    header { background: #1e293b; border-bottom: 2px solid var(--border); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .brand-title { font-size: 1.15rem; font-weight: 800; }
-    .server-badge { background: rgba(59, 130, 246, 0.15); border: 1px solid var(--accent); color: #93c5fd; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+    header { background: var(--primary); color: #fff; padding: 10px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; transition: background 0.3s; }
+    header h1 { font-size: 1.1rem; font-weight: 700; }
+    .header-user-zone { display: flex; align-items: center; gap: 8px; }
+    
+    .network-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: inline-flex; align-items: center; gap: 5px; }
+    .network-online { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
+    .network-offline { background: #b91c1c; color: #fff; border: 1px solid #ef4444; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
-    .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .btn-header { background: #334155; color: #fff; border: 1px solid #475569; padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-header:hover { background: #475569; }
+    .user-badge { background: rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .user-badge:hover { background: rgba(255,255,255,0.25); }
+    .btn-nav-link { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-nav-link:hover { background: rgba(255,255,255,0.2); }
 
-    /* BADGE STATUT SMARTVIEW CLOUD */
-    .btn-status-cloud {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #064e3b;
-      border: 1px solid #059669;
-      color: #6ee7b7;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      text-decoration: none;
-      font-weight: 700;
-      transition: all 0.2s;
-    }
-    .btn-status-cloud:hover { background: #047857; color: #ffffff; }
-    .status-dot-pulse {
-      width: 8px;
-      height: 8px;
-      background-color: #34d399;
-      border-radius: 50%;
-      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
-      animation: pulse-green 1.8s infinite;
-    }
-    @keyframes pulse-green {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
-    }
+    .app-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 54px); }
+    .main-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .ticket-sidebar { width: 380px; background: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; box-shadow: -4px 0 15px rgba(0,0,0,0.03); }
 
-    /* PLAN DE SALLE */
-    .salle-container { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
-    .grid-tables { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-    .table-card {
-      background: var(--card);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      min-height: 105px;
-      transition: transform 0.1s, border-color 0.2s;
-      position: relative;
-    }
-    .table-card:active { transform: scale(0.96); }
-    .table-card.libre { border-color: #334155; }
-    .table-card.occupee { border-color: var(--warning); background: rgba(245, 158, 11, 0.08); }
-    .table-card.pret { border-color: var(--success); background: rgba(16, 185, 129, 0.12); animation: pulse-card 1.5s infinite; }
-    @keyframes pulse-card { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+    .section-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
+    .table-legend { font-size: 0.72rem; display: flex; gap: 12px; font-weight: 600; }
+    .dot-legend { display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-right: 4px; vertical-align: middle; }
 
-    .table-num { font-size: 1.25rem; font-weight: 900; }
-    .table-statut { font-size: 0.75rem; font-weight: 700; margin-top: 4px; color: var(--text-muted); }
-    .table-total { font-size: 0.85rem; font-weight: 800; color: #38bdf8; margin-top: 4px; }
+    .floorplan-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .floor-zone { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
+    .floor-zone-header { font-size: 0.78rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }
+    
+    .zone-tables-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    
+    .btn-table { min-height: 52px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.15s; border: 2px solid transparent; padding: 4px 2px; }
+    .btn-table.status-libre { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
+    .btn-table.status-occupee { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
+    .btn-table.status-servi { background: #eff6ff; border-color: #0284c7; color: #0369a1; }
+    .btn-table.is-selected { border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent) !important; transform: scale(1.03); }
 
-    /* PANNEAU ACTIONS TABLE */
-    .table-action-drawer {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 500;
-      align-items: flex-end;
-    }
-    .drawer-content {
-      background: var(--card);
-      width: 100%;
-      border-radius: 20px 20px 0 0;
-      padding: 20px;
-      border-top: 2px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-height: 85vh;
-      overflow-y: auto;
-    }
-    .drawer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .drawer-title { font-size: 1.3rem; font-weight: 900; }
-    .drawer-grid-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .table-num-txt { font-weight: 800; font-size: 0.95rem; line-height: 1.1; }
+    .table-server-badge { font-size: 0.65rem; font-weight: 700; margin-top: 3px; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.3px; }
 
-    .btn-action {
-      padding: 14px;
-      border-radius: 10px;
-      border: none;
-      font-size: 0.95rem;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .btn-action-order { background: var(--accent); color: #fff; grid-column: span 2; }
-    .btn-action-pay { background: var(--success); color: #fff; }
-    .btn-action-suite { background: var(--purple); color: #fff; }
-    .btn-action-move { background: #334155; color: #fff; }
-    .btn-action-cancel { background: #1e293b; color: var(--text-muted); border: 1px solid var(--border); }
+    .table-action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
+    .btn-addition { flex: 2; background: var(--accent); color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-suite { flex: 1.2; background: #ea580c; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .btn-transfer { flex: 1; background: #475569; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
 
-    /* MODALES COMMANDE, PAIEMENT & SUITE */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 12px; }
-    .modal-card { background: var(--card); width: 100%; max-width: 600px; border-radius: 14px; border: 1px solid var(--border); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden; }
-    .modal-head { background: #0f172a; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 1.1rem; }
-    .modal-body { padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; }
-    .modal-foot { padding: 14px 18px; background: #0f172a; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+    .cat-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; scrollbar-width: none; }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .btn-cat-tab { white-space: nowrap; padding: 8px 16px; background: #e2e8f0; border: none; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer; color: #475569; }
+    .btn-cat-tab.active { background: var(--primary); color: #fff; }
 
-    /* LISTE MENU & PANIER */
-    .cat-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
-    .btn-cat { padding: 6px 14px; border-radius: 20px; background: #0f172a; border: 1px solid var(--border); color: #fff; font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
-    .btn-cat.active { background: var(--accent); border-color: var(--accent); }
+    .section-header { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin: 16px 0 10px 0; padding-bottom: 4px; border-bottom: 2px solid #e2e8f0; }
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    
+    .dish-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+    .dish-card.active { border-color: var(--accent); background: var(--accent-light); }
+    .dish-card.epuise { opacity: 0.45; background: #f1f5f9; border-color: #cbd5e1; }
+    
+    .dish-info { flex: 1; padding-right: 10px; cursor: pointer; }
+    .dish-name { font-weight: 600; font-size: 0.88rem; line-height: 1.3; color: var(--text); }
+    .dish-price { font-weight: 700; font-size: 0.85rem; color: var(--accent); margin-top: 3px; }
+    .badge-epuise { display: inline-block; background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-top: 4px; text-transform: uppercase; }
 
-    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; max-height: 240px; overflow-y: auto; padding: 4px; }
-    .menu-item-btn { background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: left; cursor: pointer; color: #fff; }
-    .menu-item-btn.epuise { opacity: 0.4; pointer-events: none; border-color: var(--danger); }
+    .qty-controls { display: flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
+    .dish-card.active .qty-controls { background: #fff; border-color: var(--accent); }
+    .btn-q { width: 30px; height: 30px; border: none; background: #fff; border-radius: 6px; font-weight: 800; font-size: 1.1rem; cursor: pointer; color: var(--text); display: flex; align-items: center; justify-content: center; }
+    .dish-card.active .btn-q.plus { background: var(--accent); color: #fff; }
+    .btn-q:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+    .q-val { font-weight: 800; font-size: 0.95rem; min-width: 22px; text-align: center; color: var(--text); }
 
-    .order-cart-list { border: 1px solid var(--border); border-radius: 8px; padding: 8px; max-height: 180px; overflow-y: auto; background: #0f172a; display: flex; flex-direction: column; gap: 6px; }
-    .cart-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dashed #334155; }
+    .ticket-header { padding: 14px 18px; background: var(--primary); color: #fff; font-size: 1rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+    .ticket-body { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+    .ticket-empty { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-top: 40px; }
+    
+    .ticket-row { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+    .ticket-row-info { flex: 1; padding-right: 8px; }
+    .ticket-row-title { font-weight: 700; font-size: 0.88rem; color: var(--text); }
+    .ticket-row-options { font-size: 0.78rem; font-weight: 700; color: #dc2626; margin-top: 2px; }
+    .ticket-row-cat { font-size: 0.72rem; color: var(--text-muted); }
+    .ticket-row-price { font-weight: 700; font-size: 0.9rem; color: var(--accent); margin-right: 8px; }
 
-    /* CAISSE & ENCAISSEMENT */
-    .pay-grid-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
-    .btn-pay-mode { padding: 14px; border-radius: 8px; border: 2px solid var(--border); background: #0f172a; color: #fff; font-weight: 800; cursor: pointer; text-align: center; }
-    .btn-pay-mode.active { border-color: var(--success); background: rgba(16, 185, 129, 0.15); }
+    .ticket-footer { padding: 14px 18px; border-top: 1px solid var(--border); background: #fff; }
+    .ticket-total { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; }
+    .ticket-note { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; outline: none; }
+    .btn-send { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+    .btn-send:disabled { background: #94a3b8; cursor: not-allowed; }
 
-    .receipt-preview { background: #fff; color: #000; font-family: "Courier New", monospace; padding: 14px; border-radius: 6px; font-size: 0.8rem; line-height: 1.3; }
+    .modifier-group { margin-bottom: 16px; }
+    .modifier-title { font-size: 0.82rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.5px; }
+    .modifier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
+    .btn-mod-choice { background: #f1f5f9; border: 1.5px solid var(--border); padding: 10px 6px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; color: var(--text); cursor: pointer; text-align: center; }
+    .btn-mod-choice.active { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+    .btn-mod-choice.active-side { background: #dbeafe; border-color: var(--accent); color: #1e40af; }
+
+    .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 15px; }
+    .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
+    .pin-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+    .pin-subtitle { font-size: 0.8rem; color: #94a3b8; margin-bottom: 20px; }
+    .pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
+    .pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #38bdf8; }
+    .pin-dot.filled { background: #38bdf8; }
+    .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+    .btn-key { background: #334155; color: #fff; border: none; border-radius: 12px; height: 58px; font-size: 1.4rem; font-weight: 800; cursor: pointer; }
+    .btn-key:active { background: #475569; }
+    .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { background: #fff; width: 100%; max-width: 480px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: pop 0.2s ease; }
+    @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .modal-head { background: var(--primary); color: #fff; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+    .modal-body { padding: 18px; max-height: 85vh; overflow-y: auto; }
+
+    .receipt-container { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-family: 'Courier New', Courier, monospace; color: #111; }
+    .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 12px; }
+    .receipt-header h2 { font-size: 1.15rem; font-weight: 800; }
+    .receipt-header p { font-size: 0.75rem; margin-top: 2px; }
+    .receipt-info { font-size: 0.78rem; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 8px; }
+    .receipt-line { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; }
+    .receipt-total-block { border-top: 2px solid #000; border-bottom: 1px dashed #000; margin-top: 8px; padding: 8px 0; }
+    .receipt-subtotal { display: flex; justify-content: space-between; font-size: 0.85rem; color: #555; }
+    .receipt-discount-line { display: none; justify-content: space-between; font-size: 0.88rem; color: #b91c1c; font-weight: 700; }
+    .receipt-total-ttc { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800; margin-top: 4px; }
+    .receipt-tax-table { font-size: 0.75rem; margin-top: 6px; }
+    .receipt-split-box { display: none; justify-content: space-between; border-top: 1px dashed #000; margin-top: 6px; padding-top: 4px; font-size: 0.85rem; font-weight: 700; }
+    .receipt-footer { text-align: center; font-size: 0.75rem; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; }
+    .receipt-chambre-sign { display: none; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; font-size: 0.78rem; }
+
+    .caisse-controls-box { margin-top: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .control-row:last-child { margin-bottom: 0; }
+    .control-label { font-size: 0.8rem; font-weight: 700; color: var(--primary); }
+
+    .discount-btn-group { display: flex; gap: 4px; }
+    .btn-disc { padding: 5px 10px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+    .btn-disc.active { background: #b91c1c; color: #fff; border-color: #b91c1c; }
+
+    .btn-tip { padding: 5px 10px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+    .btn-tip.active { background: #059669; color: #fff; border-color: #059669; }
+
+    .split-stepper { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; }
+    .btn-split-q { border: none; background: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; color: var(--primary); }
+    .split-val { font-size: 0.88rem; font-weight: 800; min-width: 20px; text-align: center; }
+
+    .multi-pay-card { margin-top: 14px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 12px; }
+    .reste-a-payer-box { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; font-weight: 800; color: #1e3a8a; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #bfdbfe; }
+    .registered-payments-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .registered-pay-row { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; }
+    
+    .pay-input-group { display: flex; gap: 6px; margin-bottom: 8px; }
+    .pay-amount-input { flex: 1; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.95rem; font-weight: 800; outline: none; }
+    .btn-add-partial-pay { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 800; font-size: 0.82rem; cursor: pointer; }
+    .btn-add-partial-pay:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .payment-methods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px; }
+    .btn-pay-method { padding: 8px 2px; border: 1.5px solid var(--border); background: #fff; border-radius: 6px; font-weight: 700; font-size: 0.74rem; cursor: pointer; text-align: center; }
+    .btn-pay-method.active { border-color: var(--accent); background: #dbeafe; color: #1e40af; }
+    .btn-pay-method.chambre-btn { border-color: #6366f1; color: #4338ca; }
+    .btn-pay-method.chambre-btn.active { background: #e0e7ff; }
+
+    .chambre-fields-box { display: none; background: #fff; border: 1.5px solid #6366f1; border-radius: 6px; padding: 8px; margin-bottom: 8px; gap: 6px; }
+    .chambre-input { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.82rem; font-weight: 700; outline: none; }
+
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-print { flex: 1; background: #334155; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .btn-encaisser { flex: 2; background: var(--success); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+    .btn-encaisser:disabled { background: #94a3b8; cursor: not-allowed; }
 
     @media print {
       body * { visibility: hidden; }
       #printable-receipt, #printable-receipt * { visibility: visible; }
-      #printable-receipt { position: absolute; left: 0; top: 0; width: 80mm; color: #000; background: #fff; padding: 5mm; }
+      #printable-receipt { position: absolute; left: 0; top: 0; width: 80mm; margin: 0; padding: 4mm; background: #fff; color: #000; border: none; }
+      .no-print { display: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="header-left">
-      <div class="brand-title" id="app-title">🏨 Hôtel des Pins</div>
-      <div class="server-badge" id="btn-switch-server" onclick="ouvrirPinModal()">👤 <span id="current-server-name">Serveur 1</span></div>
+  <!-- VERROUILLAGE PIN SERVEUR -->
+  <div class="lock-overlay" id="pin-lock-overlay">
+    <div class="pin-card">
+      <div class="pin-title" id="pin-establishment-title">Restaurant</div>
+      <div class="pin-subtitle">Saisissez votre code PIN serveur</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
+      <div class="keypad-grid">
+        <button class="btn-key" onclick="pressPin('1')">1</button>
+        <button class="btn-key" onclick="pressPin('2')">2</button>
+        <button class="btn-key" onclick="pressPin('3')">3</button>
+        <button class="btn-key" onclick="pressPin('4')">4</button>
+        <button class="btn-key" onclick="pressPin('5')">5</button>
+        <button class="btn-key" onclick="pressPin('6')">6</button>
+        <button class="btn-key" onclick="pressPin('7')">7</button>
+        <button class="btn-key" onclick="pressPin('8')">8</button>
+        <button class="btn-key" onclick="pressPin('9')">9</button>
+        <button class="btn-key action" onclick="clearPin()">C</button>
+        <button class="btn-key" onclick="pressPin('0')">0</button>
+        <button class="btn-key action" onclick="deletePin()">⌫</button>
+      </div>
     </div>
-    <div class="header-right">
-      <a href="https://stats.uptimerobot.com/rnzYHtVN0v" target="_blank" class="btn-status-cloud">
-        <span class="status-dot-pulse"></span>
-        <span>SmartView Cloud : <strong>100 %</strong></span>
-      </a>
-      <a href="/cuisine.html" class="btn-header">👨‍🍳 Cuisine</a>
-      <a href="/admin.html" class="btn-header">📊 Admin</a>
+  </div>
+
+  <header>
+    <h1 id="header-restaurant-title">Caisse & Salle</h1>
+    <div class="header-user-zone">
+      <span class="network-badge network-online" id="network-status-badge">🟢 En ligne</span>
+      <div class="user-badge" onclick="deconnecterServeur()">
+        👤 <span id="active-server-name">Serveur</span> (Changer)
+      </div>
+      <a href="/cuisine.html" class="btn-nav-link">👨‍🍳 Cuisine</a>
+      <a href="/admin.html" class="btn-nav-link">📊 Admin</a>
     </div>
   </header>
 
-  <main class="salle-container">
-    <div class="grid-tables" id="tables-grid">
-      <!-- Injection dynamique des tables -->
-    </div>
-  </main>
+  <div class="app-layout">
+    
+    <main class="main-content">
+      <div class="section-label">
+        <span>1. Plan de salle</span>
+        <div class="table-legend">
+          <span><span class="dot-legend" style="background:#f8fafc; border:1px solid #cbd5e1;"></span>Libre</span>
+          <span><span class="dot-legend" style="background:#fffbeb; border:1px solid #f59e0b;"></span>En cuisine</span>
+          <span><span class="dot-legend" style="background:#eff6ff; border:1px solid #0284c7;"></span>À encaisser</span>
+        </div>
+      </div>
 
-  <!-- TIROIR D'ACTIONS TABLE -->
-  <div class="table-action-drawer" id="action-drawer" onclick="fermerDrawer(event)">
-    <div class="drawer-content" onclick="event.stopPropagation()">
-      <div class="drawer-head">
-        <div class="drawer-title" id="drawer-table-title">Table ?</div>
-        <button style="background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer;" onclick="fermerDrawer()">✕</button>
+      <div class="floorplan-container" id="floorplan-dynamic-container"></div>
+
+      <div class="table-action-bar">
+        <button class="btn-addition" onclick="ouvrirModalAddition()">
+          🧾 Note : T<span id="btn-add-table-num">1</span>
+        </button>
+        <button class="btn-suite" onclick="ouvrirModalSuite()">
+          🔔 Suite
+        </button>
+        <button class="btn-transfer" onclick="ouvrirModalTransfert()">
+          🔀 Déplacer
+        </button>
       </div>
-      <div class="drawer-grid-btns">
-        <button class="btn-action btn-action-order" onclick="ouvrirCommandeModal()">📝 Nouvelle Commande / Ajouter</button>
-        <button class="btn-action btn-action-pay" onclick="ouvrirPaiementModal()">💳 Encaisser l'Addition</button>
-        <button class="btn-action btn-action-suite" onclick="ouvrirSuiteModal()">🔔 Réclamer la Suite</button>
-        <button class="btn-action btn-action-move" onclick="ouvrirDeplacerModal()">🔀 Déplacer / Fusionner</button>
+
+      <div class="section-label">2. Choisir la catégorie</div>
+      <div class="cat-tabs" id="cat-tabs-container"></div>
+
+      <div id="dishes-content"></div>
+    </main>
+
+    <aside class="ticket-sidebar">
+      <div class="ticket-header">
+        <span>Nouvelle Commande Table <span id="current-table-title">1</span></span>
+        <span id="ticket-items-count" style="font-size:0.8rem; font-weight:500;">0 article</span>
       </div>
-    </div>
+
+      <div class="ticket-body" id="ticket-container">
+        <div class="ticket-empty">Aucun article sélectionné</div>
+      </div>
+
+      <div class="ticket-footer">
+        <div class="ticket-total">
+          <span>Total :</span>
+          <span id="ticket-total-val">0,00 €</span>
+        </div>
+        <input type="text" id="order-notes" class="ticket-note" placeholder="Remarque générale (allergies, horaire...)">
+        <button id="btn-submit" class="btn-send" disabled onclick="envoyerCommande()">
+          Envoyer en cuisine
+        </button>
+      </div>
+    </aside>
+
   </div>
 
-  <!-- MODAL PRISE DE COMMANDE -->
-  <div class="modal-overlay" id="order-modal">
-    <div class="modal-card">
-      <div class="modal-head">
-        <span id="order-modal-title">Commande Table ?</span>
-        <button style="background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer;" onclick="fermerModal('order-modal')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="cat-bar" id="category-chips"></div>
-        <div class="menu-grid" id="menu-items-grid"></div>
-        <div style="font-weight:800; font-size:0.85rem; margin-top:6px;">Panier en cours :</div>
-        <div class="order-cart-list" id="cart-items-container"></div>
-        <input type="text" id="order-notes-input" placeholder="Remarque générale pour la cuisine (ex: Tout sans sel)..." style="background:#0f172a; border:1px solid var(--border); color:#fff; padding:10px; border-radius:8px; width:100%;">
-      </div>
-      <div class="modal-foot">
-        <button class="btn-action btn-action-cancel" style="flex:1;" onclick="fermerModal('order-modal')">Annuler</button>
-        <button class="btn-action btn-action-order" style="flex:2;" onclick="validerEtEnvoyerCommande()">🚀 Envoyer en Cuisine</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL RÉCLAME DE SUITE -->
+  <!-- MODAL SUITE AVEC AFFICHAGE DE LA COMMANDE ACTIVE -->
   <div class="modal-overlay" id="suite-modal">
-    <div class="modal-card" style="max-width:400px;">
-      <div class="modal-head">
-        <span>🔔 Réclame de Suite Cuisine</span>
-        <button style="background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer;" onclick="fermerModal('suite-modal')">✕</button>
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-head" style="background:#ea580c;">
+        <span>🔔 Réclamer la Suite — Table <span id="suite-modal-table-num">1</span></span>
+        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalSuite()">✕</button>
       </div>
       <div class="modal-body">
-        <p style="font-size:0.9rem; color:var(--text-muted);">Sélectionnez quel plat envoyer maintenant en cuisine :</p>
-        <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
-          <button class="btn-action btn-action-suite" onclick="declencherSuite('Plats')">🥩 ENVOYEZ LES PLATS</button>
-          <button class="btn-action btn-action-suite" onclick="declencherSuite('Desserts')">🍰 ENVOYEZ LES DESSERTS</button>
-          <button class="btn-action btn-action-suite" onclick="declencherSuite('Entrées')">🥗 ENVOYEZ LES ENTRÉES</button>
-          <button class="btn-action btn-action-suite" onclick="declencherSuite('Cafés & Digestifs')">☕ ENVOYEZ LES CAFÉS</button>
+        <p style="font-size:0.88rem; color:#475569; margin-bottom:12px; line-height:1.4;">
+          Sélectionnez l'étape à lancer immédiatement en cuisine pour la <strong>Table <span id="suite-modal-table-bold">1</span></strong> :
+        </p>
+
+        <div id="suite-order-recap" style="background:#f1f5f9; padding:8px 10px; border-radius:6px; font-size:0.8rem; color:#334155; margin-bottom:12px; font-weight:600;">
+          Chargement des commandes en cours...
         </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+          <button class="btn-send" style="background:#2563eb; padding:12px; font-size:0.95rem;" onclick="envoyerSuite('Plats (Suite)')">
+            🍽️ Lancer les Plats (Suite)
+          </button>
+          <button class="btn-send" style="background:#059669; padding:12px; font-size:0.95rem;" onclick="envoyerSuite('Desserts')">
+            🍰 Lancer les Desserts
+          </button>
+          <button class="btn-send" style="background:#475569; padding:12px; font-size:0.95rem;" onclick="envoyerSuite('Cafés & Digestifs')">
+            ☕ Lancer les Cafés & Digestifs
+          </button>
+        </div>
+        <button style="width:100%; background:#e2e8f0; color:#334155; border:none; padding:10px; border-radius:8px; font-weight:700; cursor:pointer;" onclick="fermerModalSuite()">Annuler</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL ENCAISSEMENT & CAISSE -->
-  <div class="modal-overlay" id="pay-modal">
+  <!-- MODAL OPTIONS DE PREPARATION -->
+  <div class="modal-overlay" id="options-modal">
     <div class="modal-card">
       <div class="modal-head">
-        <span id="pay-modal-title">Encaissement Table ?</span>
-        <button style="background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer;" onclick="fermerModal('pay-modal')">✕</button>
+        <span id="opt-modal-title">Options de préparation</span>
+        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalOptions()">✕</button>
       </div>
       <div class="modal-body">
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#0f172a; padding:12px 16px; border-radius:8px;">
-          <span style="font-size:1rem; font-weight:700;">Total à régler :</span>
-          <span style="font-size:1.6rem; font-weight:900; color:var(--success);" id="pay-total-amount">0.00 €</span>
+        <div class="modifier-group" id="group-cuissons">
+          <div class="modifier-title">🔥 Choix de la Cuisson</div>
+          <div class="modifier-grid">
+            <button class="btn-mod-choice" onclick="selectionnerCuisson('Bleu', this)">Bleu</button>
+            <button class="btn-mod-choice active" onclick="selectionnerCuisson('Saignant', this)">Saignant</button>
+            <button class="btn-mod-choice" onclick="selectionnerCuisson('À point', this)">À point</button>
+            <button class="btn-mod-choice" onclick="selectionnerCuisson('Bien cuit', this)">Bien cuit</button>
+          </div>
         </div>
 
-        <div class="pay-grid-modes">
-          <button class="btn-pay-mode active" id="btn-mode-cb" onclick="selectionnerModePay('CB')">💳 Carte Bancaire</button>
-          <button class="btn-pay-mode" id="btn-mode-especes" onclick="selectionnerModePay('Espèces')">💵 Espèces</button>
-          <button class="btn-pay-mode" id="btn-mode-chambre" onclick="selectionnerModePay('Note de Chambre')">🏨 Note de Chambre</button>
-          <button class="btn-pay-mode" id="btn-mode-ancv" onclick="selectionnerModePay('Chèque Vacances')">🎟️ ANCV / Titres</button>
+        <div class="modifier-group" id="group-garnitures">
+          <div class="modifier-title">🥔 Accompagnement / Sauce</div>
+          <div class="modifier-grid">
+            <button class="btn-mod-choice active-side" onclick="toggleGarniture('Frites', this)">Frites maison</button>
+            <button class="btn-mod-choice" onclick="toggleGarniture('Purée', this)">Purée maison</button>
+            <button class="btn-mod-choice" onclick="toggleGarniture('Salade', this)">Salade verte</button>
+            <button class="btn-mod-choice" onclick="toggleGarniture('Légumes', this)">Légumes sautés</button>
+            <button class="btn-mod-choice" onclick="toggleGarniture('Sauce Poivre', this)">Sauce Poivre</button>
+            <button class="btn-mod-choice" onclick="toggleGarniture('Sauce Échalote', this)">Sauce Échalote</button>
+          </div>
         </div>
 
-        <div id="room-pay-inputs" style="display:none; flex-direction:column; gap:8px;">
-          <input type="text" id="pay-room-num" placeholder="Numéro de Chambre (ex: 104)" style="background:#0f172a; border:1px solid var(--border); color:#fff; padding:10px; border-radius:8px;">
-          <input type="text" id="pay-room-client" placeholder="Nom du Client (ex: M. Dupont)" style="background:#0f172a; border:1px solid var(--border); color:#fff; padding:10px; border-radius:8px;">
+        <div class="modifier-group">
+          <div class="modifier-title">✏️ Précision Cuisine (Optionnel)</div>
+          <input type="text" id="opt-custom-note" class="ticket-note" placeholder="Ex: Sans sel, sauce à part..." style="margin-bottom:0;">
         </div>
 
-        <div style="display:flex; gap:10px; align-items:center; margin-top:4px;">
-          <label style="font-size:0.85rem; font-weight:700;">Pourboire (€) :</label>
-          <input type="number" id="pay-tip-input" value="0" min="0" step="0.5" style="background:#0f172a; border:1px solid var(--border); color:#fff; padding:8px; border-radius:8px; width:80px; text-align:center;">
+        <div style="display:flex; gap:8px; margin-top:16px;">
+          <button style="flex:1; background:#e2e8f0; color:#334155; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;" onclick="fermerModalOptions()">Annuler</button>
+          <button style="flex:2; background:var(--success); color:#fff; border:none; padding:12px; border-radius:8px; font-weight:700; font-size:0.95rem; cursor:pointer;" onclick="confirmerAjoutAvecOptions()">✔ Ajouter au ticket</button>
         </div>
-      </div>
-      <div class="modal-foot">
-        <button class="btn-action btn-action-move" style="flex:1;" onclick="imprimerTicketCaisse()">🖨️ Imprimer Note</button>
-        <button class="btn-action btn-action-pay" style="flex:2;" onclick="validerEncaissement()">✔ Valider & Clôturer Table</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL DÉPLACER / FUSIONNER -->
-  <div class="modal-overlay" id="move-modal">
-    <div class="modal-card" style="max-width:400px;">
+  <!-- MODAL TRANSFERT DE TABLE -->
+  <div class="modal-overlay" id="transfer-modal">
+    <div class="modal-card">
       <div class="modal-head">
-        <span>🔀 Déplacer / Fusionner</span>
-        <button style="background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer;" onclick="fermerModal('move-modal')">✕</button>
+        <span>🔀 Déplacer / Fusionner la Table <span id="transfer-source-num">1</span></span>
+        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalTransfert()">✕</button>
       </div>
       <div class="modal-body">
-        <p style="font-size:0.85rem; color:var(--text-muted);">Transférer l'addition et les commandes vers une autre table :</p>
-        <label style="font-size:0.85rem; font-weight:700; margin-top:8px;">Table de destination :</label>
-        <select id="select-destination-table" style="background:#0f172a; border:1px solid var(--border); color:#fff; padding:12px; border-radius:8px; font-weight:800;"></select>
-      </div>
-      <div class="modal-foot">
-        <button class="btn-action btn-action-cancel" style="flex:1;" onclick="fermerModal('move-modal')">Annuler</button>
-        <button class="btn-action btn-action-move" style="flex:2;" onclick="executerDeplacement()">Confirmer Transfert</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL CODE PIN SERVEUR -->
-  <div class="modal-overlay" id="pin-modal">
-    <div class="modal-card" style="max-width:320px;">
-      <div class="modal-head">
-        <span>🔒 Code Serveur</span>
-        <button style="background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer;" onclick="fermerModal('pin-modal')">✕</button>
-      </div>
-      <div class="modal-body" style="align-items:center;">
-        <input type="password" id="pin-input" maxlength="4" placeholder="••••" style="background:#0f172a; border:2px solid var(--accent); color:#fff; padding:12px; border-radius:8px; font-size:1.8rem; text-align:center; width:160px; letter-spacing:8px;" readonly>
-        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:12px; width:100%;">
-          <button class="btn-action btn-action-move" onclick="taperPin('1')">1</button>
-          <button class="btn-action btn-action-move" onclick="taperPin('2')">2</button>
-          <button class="btn-action btn-action-move" onclick="taperPin('3')">3</button>
-          <button class="btn-action btn-action-move" onclick="taperPin('4')">4</button>
-          <button class="btn-action btn-action-move" onclick="taperPin('5')">5</button>
-          <button class="btn-action btn-action-move" onclick="taperPin('6')">6</button>
-          <button class="btn-action btn-action-move" onclick="taperPin('7')">7</button>
-          <button class="btn-action btn-action-move" onclick="taperPin('8')">8</button>
-          <button class="btn-action btn-action-move" onclick="taperPin('9')">9</button>
-          <button class="btn-action btn-action-cancel" onclick="effacerPin()">⌫</button>
-          <button class="btn-action btn-action-move" onclick="taperPin('0')">0</button>
-          <button class="btn-action btn-action-pay" onclick="validerPin()">OK</button>
+        <p style="font-size:0.88rem; color:#475569; margin-bottom:14px; line-height:1.4;">
+          Sélectionnez la <strong>table de destination</strong> :
+        </p>
+        <div style="margin-bottom:16px;">
+          <select id="transfer-target-select" style="width:100%; padding:10px; border:1.5px solid var(--border); border-radius:8px; font-size:1rem; font-weight:700; outline:none; background:#fff;"></select>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button style="flex:1; background:#e2e8f0; color:#334155; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;" onclick="fermerModalTransfert()">Annuler</button>
+          <button style="flex:2; background:var(--accent); color:#fff; border:none; padding:12px; border-radius:8px; font-weight:700; font-size:0.95rem; cursor:pointer;" onclick="validerTransfertTable()">✔ Confirmer le transfert</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- CONTENEUR IMPRESSION TICKET DE CAISSE MASQUÉ -->
-  <div id="printable-receipt" style="display:none;"></div>
+  <!-- MODAL ADDITION -->
+  <div class="modal-overlay" id="addition-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <span>Note de Table <span id="modal-table-num">1</span></span>
+        <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalAddition()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="receipt-container" id="printable-receipt">
+          <div class="receipt-header">
+            <h2 id="receipt-establishment-title">RESTAURANT</h2>
+            <p id="receipt-address-print"></p>
+            <p id="receipt-tel-print"></p>
+            <p id="receipt-siret-print"></p>
+          </div>
+
+          <div class="receipt-info">
+            <div style="display:flex; justify-content:space-between;">
+              <span>TABLE : <strong id="receipt-table-num">1</strong></span>
+              <span>SERVEUR : <strong id="receipt-server-name">Salle</strong></span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:2px;">
+              <span id="receipt-date-print"></span>
+              <span id="receipt-ticket-id"></span>
+            </div>
+          </div>
+
+          <div id="receipt-items-container"></div>
+
+          <div class="receipt-total-block">
+            <div class="receipt-subtotal" id="receipt-subtotal-row" style="display:none;">
+              <span>Sous-total brut :</span>
+              <span id="receipt-subtotal-val">0,00 €</span>
+            </div>
+            <div class="receipt-discount-line" id="receipt-discount-row">
+              <span id="receipt-discount-label">Remise :</span>
+              <span id="receipt-discount-val">-0,00 €</span>
+            </div>
+            <div class="receipt-total-ttc">
+              <span>TOTAL TTC</span>
+              <span id="modal-total-ttc">0,00 €</span>
+            </div>
+            <div class="receipt-tax-table">
+              <div style="display:flex; justify-content:space-between;"><span>Total HT :</span><span id="modal-total-ht">0,00 €</span></div>
+              <div style="display:flex; justify-content:space-between;"><span>TVA (10 %) :</span><span id="modal-total-tva">0,00 €</span></div>
+            </div>
+            <div class="receipt-split-box" id="receipt-split-box">
+              <span>Partage (<span id="receipt-split-count">1</span> pers.) :</span>
+              <span id="receipt-split-val">0,00 € / pers.</span>
+            </div>
+            <div id="receipt-tip-line" style="display:none; justify-content:space-between; border-top:1px dashed #000; margin-top:6px; padding-top:4px; font-weight:700; color:#059669;">
+              <span>Pourboire (Service) :</span>
+              <span id="receipt-tip-val">0,00 €</span>
+            </div>
+            <div id="receipt-payments-list-print" style="margin-top:6px; border-top:1px dashed #000; padding-top:4px; font-size:0.75rem;"></div>
+          </div>
+
+          <div class="receipt-chambre-sign" id="receipt-chambre-sign-block">
+            <div style="display:flex; justify-content:space-between;">
+              <span>CHAMBRE : <strong id="receipt-chambre-num-print">104</strong></span>
+              <span>CLIENT : <strong id="receipt-chambre-nom-print">Dupont</strong></span>
+            </div>
+            <div style="margin-top:14px; border-bottom:1px solid #000; padding-bottom:2px; font-size:0.7rem; color:#555;">
+              Signature du client :
+            </div>
+          </div>
+
+          <div class="receipt-footer">
+            <p>Merci de votre visite et à très bientôt !</p>
+            <p id="receipt-wifi-print" style="margin-top:2px;"></p>
+          </div>
+        </div>
+
+        <div class="caisse-controls-box no-print">
+          <div class="control-row">
+            <span class="control-label">✂️ Remise :</span>
+            <div class="discount-btn-group">
+              <button class="btn-disc active" onclick="appliquerRemise(0, this)">0%</button>
+              <button class="btn-disc" onclick="appliquerRemise(10, this)">-10%</button>
+              <button class="btn-disc" onclick="appliquerRemise(20, this)">-20%</button>
+              <button class="btn-disc" onclick="appliquerRemise(100, this)">Offert</button>
+            </div>
+          </div>
+          
+          <div class="control-row">
+            <span class="control-label">💚 Pourboire (Tip) :</span>
+            <div class="discount-btn-group">
+              <button class="btn-tip active" onclick="choisirPourboire(0, this)">0 €</button>
+              <button class="btn-tip" onclick="choisirPourboire(1, this)">+1 €</button>
+              <button class="btn-tip" onclick="choisirPourboire(2, this)">+2 €</button>
+              <button class="btn-tip" onclick="choisirPourboire(5, this)">+5 €</button>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <span class="control-label">👥 Partager note :</span>
+            <div class="split-stepper">
+              <button class="btn-split-q" onclick="modifierParts(-1)">-</button>
+              <span class="split-val" id="split-display">1</span>
+              <button class="btn-split-q" onclick="modifierParts(1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="multi-pay-card no-print">
+          <div class="reste-a-payer-box">
+            <span>Reste à régler :</span>
+            <span id="multi-pay-reste-val" style="font-size:1.15rem;">0,00 €</span>
+          </div>
+
+          <div class="registered-payments-list" id="registered-payments-container"></div>
+
+          <div class="payment-methods">
+            <button class="btn-pay-method active" onclick="choisirModeActif(this, 'CB')">💳 Carte</button>
+            <button class="btn-pay-method" onclick="choisirModeActif(this, 'Espèces')">💵 Espèces</button>
+            <button class="btn-pay-method" onclick="choisirModeActif(this, 'Titre Resto')">🎫 Titre Resto</button>
+            <button class="btn-pay-method chambre-btn" id="btn-pay-chambre" onclick="choisirModeActif(this, 'Chambre')">🏨 Chambre</button>
+          </div>
+
+          <div class="chambre-fields-box" id="chambre-inputs-zone">
+            <input type="text" id="input-chambre-num" class="chambre-input" placeholder="N° Chambre (ex: 104)">
+            <input type="text" id="input-chambre-nom" class="chambre-input" placeholder="Nom Client (ex: M. Dupont)">
+          </div>
+
+          <div class="pay-input-group">
+            <input type="number" step="0.01" id="partial-pay-amount" class="pay-amount-input" placeholder="Montant">
+            <button class="btn-add-partial-pay" id="btn-add-partial" onclick="ajouterVersement()">➕ Enregistrer</button>
+          </div>
+        </div>
+
+        <div class="modal-actions no-print">
+          <button class="btn-print" onclick="imprimerTicketClient()">🖨️ Imprimer</button>
+          <button class="btn-encaisser" id="btn-valider-encaissement" onclick="validerEncaissementComplet()">
+            ✔ Clôturer la table
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
-    let tablesData = [];
+    let currentTable = 1;
+    let currentTab = "🍲 Ardoise du Jour";
+    
     let menuData = [];
+    let cart = []; 
+    let tableStatuses = {};
+    let dynamicPlan = [];
     let indisponibles = [];
-    let activeTable = null;
-    let currentCart = [];
-    let currentModePay = 'CB';
-    let currentServer = localStorage.getItem('pos_server_name') || 'Serveur 1';
 
-    const SERVEURS = {
-      '1111': 'Jean (Rang 1)',
-      '2222': 'Sarah (Rang 2)',
-      '3333': 'Thomas (Terrasse)',
-      '0000': 'Direction'
-    };
+    let currentServeur = localStorage.getItem('hdp_serveur_nom') || null;
+    let enteredPin = '';
 
-    async function init() {
-      document.getElementById('current-server-name').innerText = currentServer;
-      await Promise.all([chargerConfig(), chargerMenu(), chargerTables(), chargerStock()]);
-    }
+    let rawTotalTTC = 0;
+    let discountPercent = 0;
+    let tipAmount = 0;
+    let splitParts = 1;
 
-    async function chargerConfig() {
+    let selectedMode = 'CB';
+    let versements = [];
+
+    let currentPendingPlat = null;
+    let selectedCuisson = 'Saignant';
+    let selectedGarnitures = ['Frites'];
+
+    // 🎨 APPLICATION DU THÈME & IDENTITÉ
+    async function chargerThemeEtMarqueBlanche() {
       try {
         const res = await fetch('/api/config/client');
         if (res.ok) {
           const cfg = await res.json();
-          document.getElementById('app-title').innerText = `🏨 ${cfg.etablissement}`;
-          document.title = `${cfg.etablissement} — Caisse & Salle`;
+          
+          if (cfg.theme) {
+            if (cfg.theme.couleurPrimary) document.documentElement.style.setProperty('--primary', cfg.theme.couleurPrimary);
+            if (cfg.theme.couleurAccent) document.documentElement.style.setProperty('--accent', cfg.theme.couleurAccent);
+          }
+
+          document.title = `${cfg.etablissement} — Salle & Caisse`;
+          const titleEl = document.getElementById('header-restaurant-title');
+          if (titleEl) titleEl.innerText = `${cfg.etablissement} — Salle & Caisse`;
+          const pinTitleEl = document.getElementById('pin-establishment-title');
+          if (pinTitleEl) pinTitleEl.innerText = cfg.etablissement;
+
+          if (cfg.options && cfg.options.moduleHotel === false) {
+            const btnChambre = document.getElementById('btn-pay-chambre');
+            if (btnChambre) btnChambre.style.display = 'none';
+          }
+
+          const rHead = document.getElementById('receipt-establishment-title');
+          if (rHead) rHead.innerText = cfg.etablissement.toUpperCase();
+          const rAdr = document.getElementById('receipt-address-print');
+          if (rAdr) rAdr.innerText = cfg.adresse || '';
+          const rTel = document.getElementById('receipt-tel-print');
+          if (rTel) rTel.innerText = cfg.telephone ? `Tél : ${cfg.telephone}` : '';
+          const rSir = document.getElementById('receipt-siret-print');
+          if (rSir) rSir.innerText = cfg.siret ? `SIRET : ${cfg.siret}` : '';
+          const rWifi = document.getElementById('receipt-wifi-print');
+          if (rWifi && cfg.wifi) rWifi.innerText = `Wi-Fi : ${cfg.wifi}`;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error("Erreur chargement thème:", e);
+      }
     }
 
-    async function chargerMenu() {
+    async function chargerMenuDynamique() {
       try {
         const res = await fetch('/api/menu');
-        if (res.ok) menuData = await res.json();
-      } catch (e) {}
+        if (res.ok) {
+          menuData = await res.json();
+          menuData = menuData.map(m => ({
+            ...m,
+            hasOptions: m.has_options === 1,
+            hasCuisson: m.has_cuisson === 1
+          }));
+          localStorage.setItem('hdp_cached_menu', JSON.stringify(menuData));
+        }
+      } catch (e) {
+        menuData = JSON.parse(localStorage.getItem('hdp_cached_menu') || '[]');
+      }
+      construireOngletsCategories();
+      afficherPlats();
+    }
+
+    function construireOngletsCategories() {
+      if (!menuData || menuData.length === 0) return;
+      const categories = [...new Set(menuData.map(d => d.cat))];
+      if (!categories.includes(currentTab)) currentTab = categories[0];
+
+      const catContainer = document.getElementById('cat-tabs-container');
+      catContainer.innerHTML = '';
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `btn-cat-tab ${cat === currentTab ? 'active' : ''}`;
+        btn.innerText = cat;
+        btn.onclick = () => {
+          document.querySelectorAll('.btn-cat-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentTab = cat;
+          afficherPlats();
+        };
+        catContainer.appendChild(btn);
+      });
+    }
+
+    function getOfflineQueue() { return JSON.parse(localStorage.getItem('hdp_offline_orders') || '[]'); }
+    function saveOfflineQueue(queue) { localStorage.setItem('hdp_offline_orders', JSON.stringify(queue)); updateNetworkBadge(); }
+
+    function updateNetworkBadge() {
+      const badge = document.getElementById('network-status-badge');
+      const queue = getOfflineQueue();
+      if (!navigator.onLine) {
+        badge.className = 'network-badge network-offline';
+        badge.innerText = `🔴 Hors-ligne (${queue.length} en attente)`;
+      } else if (queue.length > 0) {
+        badge.className = 'network-badge network-offline';
+        badge.innerText = `⏳ Synchro (${queue.length} en attente)...`;
+      } else {
+        badge.className = 'network-badge network-online';
+        badge.innerText = '🟢 En ligne';
+      }
+    }
+
+    async function synchroniserCommandesHorsLigne() {
+      if (!navigator.onLine) return;
+      const queue = getOfflineQueue();
+      if (queue.length === 0) return;
+      const remainingQueue = [];
+      for (const cmd of queue) {
+        try {
+          const res = await fetch('/api/commandes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cmd)
+          });
+          if (!res.ok) remainingQueue.push(cmd);
+        } catch (e) { remainingQueue.push(cmd); }
+      }
+      saveOfflineQueue(remainingQueue);
+      if (remainingQueue.length === 0) { updateNetworkBadge(); chargerPlanSalle(); }
+    }
+
+    window.addEventListener('online', () => { updateNetworkBadge(); synchroniserCommandesHorsLigne(); });
+    window.addEventListener('offline', () => { updateNetworkBadge(); });
+
+    function checkAuth() {
+      if (!currentServeur) {
+        document.getElementById('pin-lock-overlay').style.display = 'flex';
+      } else {
+        document.getElementById('pin-lock-overlay').style.display = 'none';
+        document.getElementById('active-server-name').innerText = currentServeur;
+      }
+    }
+
+    function pressPin(num) {
+      if (enteredPin.length < 4) {
+        enteredPin += num;
+        updatePinDots();
+        if (enteredPin.length === 4) verifierPin();
+      }
+    }
+
+    function deletePin() { enteredPin = enteredPin.slice(0, -1); updatePinDots(); }
+    function clearPin() { enteredPin = ''; updatePinDots(); }
+
+    function updatePinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < enteredPin.length) dot.classList.add('filled');
+        else dot.classList.remove('filled');
+      }
+    }
+
+    async function verifierPin() {
+      try {
+        const res = await fetch('/api/auth/pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: enteredPin })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          currentServeur = data.serveur.nom;
+          localStorage.setItem('hdp_serveur_nom', currentServeur);
+          clearPin();
+          checkAuth();
+        } else {
+          alert("❌ Code PIN incorrect !");
+          clearPin();
+        }
+      } catch (e) {
+        if (!navigator.onLine && enteredPin.length === 4) {
+          currentServeur = 'Serveur (Mode Dégradé)';
+          localStorage.setItem('hdp_serveur_nom', currentServeur);
+          clearPin();
+          checkAuth();
+          return;
+        }
+        alert("Erreur connexion serveur.");
+        clearPin();
+      }
+    }
+
+    function deconnecterServeur() {
+      currentServeur = null;
+      localStorage.removeItem('hdp_serveur_nom');
+      clearPin();
+      checkAuth();
+    }
+
+    async function chargerPlanSalle() {
+      try {
+        const [resPlan, resStatuts] = await Promise.all([
+          fetch('/api/plan/zones-tables'),
+          fetch('/api/tables/statuts')
+        ]);
+        if (resPlan.ok) {
+          dynamicPlan = await resPlan.json();
+          localStorage.setItem('hdp_cached_plan', JSON.stringify(dynamicPlan));
+        }
+        if (resStatuts.ok) {
+          tableStatuses = await resStatuts.json();
+          localStorage.setItem('hdp_cached_statuses', JSON.stringify(tableStatuses));
+        }
+        renderDynamicFloorPlan();
+      } catch (e) {
+        dynamicPlan = JSON.parse(localStorage.getItem('hdp_cached_plan') || '[]');
+        tableStatuses = JSON.parse(localStorage.getItem('hdp_cached_statuses') || '{}');
+        renderDynamicFloorPlan();
+      }
+    }
+
+    function renderDynamicFloorPlan() {
+      const container = document.getElementById('floorplan-dynamic-container');
+      if (dynamicPlan.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); padding:10px;">Aucune table configurée.</div>';
+        return;
+      }
+
+      let allTableNumbers = [];
+      dynamicPlan.forEach(z => z.tables.forEach(t => allTableNumbers.push(t.numero)));
+      if (allTableNumbers.length > 0 && !allTableNumbers.includes(currentTable)) {
+        currentTable = allTableNumbers[0];
+        document.getElementById('current-table-title').innerText = currentTable;
+        document.getElementById('btn-add-table-num').innerText = currentTable;
+      }
+
+      container.innerHTML = dynamicPlan.map(zone => {
+        const tablesHtml = zone.tables.map(t => {
+          const tableInfo = tableStatuses[t.numero] || { statut: 'libre', serveur: null };
+          const st = (typeof tableInfo === 'string') ? tableInfo : (tableInfo.statut || 'libre');
+          const serv = (typeof tableInfo === 'object' && tableInfo.serveur) ? tableInfo.serveur : null;
+          const isSel = (t.numero === currentTable);
+
+          return `
+            <button class="btn-table status-${st} ${isSel ? 'is-selected' : ''}" onclick="selectionnerTable(${t.numero})">
+              <span class="table-num-txt">T${t.numero}</span>
+              ${serv && st !== 'libre' ? `<span class="table-server-badge">${serv}</span>` : ''}
+            </button>
+          `;
+        }).join('');
+
+        return `
+          <div class="floor-zone">
+            <div class="floor-zone-header">
+              <span>${zone.nom}</span>
+              <span style="font-size:0.7rem; color:var(--text-muted);">${zone.tables.length} table${zone.tables.length > 1 ? 's' : ''}</span>
+            </div>
+            <div class="zone-tables-grid">${tablesHtml || '<span style="color:var(--text-muted); font-size:0.75rem; grid-column:1/-1;">Aucune table</span>'}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectionnerTable(num) {
+      currentTable = parseInt(num, 10);
+      document.getElementById('current-table-title').innerText = currentTable;
+      document.getElementById('btn-add-table-num').innerText = currentTable;
+      renderDynamicFloorPlan();
     }
 
     async function chargerStock() {
       try {
         const res = await fetch('/api/stock/indisponibles');
-        if (res.ok) indisponibles = await res.json();
-      } catch (e) {}
-    }
-
-    async function chargerTables() {
-      try {
-        const res = await fetch('/api/tables');
         if (res.ok) {
-          tablesData = await res.json();
-          renderTables();
+          indisponibles = await res.json();
+          afficherPlats();
         }
       } catch (e) {}
     }
 
-    function renderTables() {
-      const grid = document.getElementById('tables-grid');
-      if (!grid) return;
-
-      grid.innerHTML = tablesData.map(t => {
-        let statutClass = 'libre';
-        let statutTxt = 'Libre';
-        if (t.commandes_actives > 0) {
-          statutClass = t.statut_cuisine === 'pret' ? 'pret' : 'occupee';
-          statutTxt = t.statut_cuisine === 'pret' ? '🍽️ Prêt à servir' : 'En cours';
-        }
-
-        return `
-          <div class="table-card ${statutClass}" onclick="ouvrirTableDrawer(${t.numero})">
-            <div class="table-num">Table ${t.numero}</div>
-            <div class="table-statut">${statutTxt}</div>
-            ${t.total > 0 ? `<div class="table-total">${t.total.toFixed(2)} €</div>` : ''}
-          </div>
-        `;
-      }).join('');
+    function init() {
+      chargerThemeEtMarqueBlanche();
+      checkAuth();
+      updateNetworkBadge();
+      chargerMenuDynamique();
+      mettreAJourTicket();
+      chargerPlanSalle();
+      chargerStock();
+      synchroniserCommandesHorsLigne();
     }
 
-    function ouvrirTableDrawer(num) {
-      activeTable = tablesData.find(t => t.numero === num) || { numero: num, total: 0 };
-      document.getElementById('drawer-table-title').innerText = `Table ${num} ${activeTable.total > 0 ? `(${activeTable.total.toFixed(2)} €)` : ''}`;
-      document.getElementById('action-drawer').style.display = 'flex';
+    function afficherPlats() {
+      const container = document.getElementById('dishes-content');
+      container.innerHTML = '';
+      const platsFiltres = menuData.filter(d => d.cat === currentTab);
+      const sections = [...new Set(platsFiltres.map(d => d.section))];
+
+      sections.forEach(secTitle => {
+        const secHeader = document.createElement('div');
+        secHeader.className = 'section-header';
+        secHeader.innerText = secTitle;
+        container.appendChild(secHeader);
+
+        const grid = document.createElement('div');
+        grid.className = 'items-grid';
+
+        const platsDeLaSection = platsFiltres.filter(d => d.section === secTitle);
+        platsDeLaSection.forEach(plat => {
+          const totalQtePlat = cart.filter(it => it.platId === plat.id).reduce((sum, it) => sum + it.quantite, 0);
+          const isOut = indisponibles.includes(plat.slug);
+
+          const card = document.createElement('div');
+          card.className = `dish-card ${totalQtePlat > 0 ? 'active' : ''} ${isOut ? 'epuise' : ''}`;
+          card.id = `card-${plat.id}`;
+          card.innerHTML = `
+            <div class="dish-info" onclick="clicPlat('${plat.id}')">
+              <div class="dish-name">${plat.nom} ${plat.hasOptions ? '⚙️' : ''}</div>
+              <div class="dish-price">${plat.prix > 0 ? plat.prix.toFixed(2) + ' €' : 'Inclus'}</div>
+              ${isOut ? '<span class="badge-epuise">🔴 Épuisé en cuisine</span>' : ''}
+            </div>
+            <div class="qty-controls">
+              <button class="btn-q" onclick="diminuerDernierPlat('${plat.id}')" ${isOut && totalQtePlat === 0 ? 'disabled' : ''}>-</button>
+              <span class="q-val" id="qty-${plat.id}">${totalQtePlat}</span>
+              <button class="btn-q plus" onclick="clicPlat('${plat.id}')" ${isOut ? 'disabled' : ''}>+</button>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
+      });
     }
 
-    function fermerDrawer() {
-      document.getElementById('action-drawer').style.display = 'none';
-    }
-
-    function fermerModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-
-    // GESTION PRISE DE COMMANDE
-    function ouvrirCommandeModal() {
-      fermerDrawer();
-      currentCart = [];
-      document.getElementById('order-notes-input').value = '';
-      document.getElementById('order-modal-title').innerText = `Commande Table ${activeTable.numero}`;
-      renderCategories();
-      renderCart();
-      document.getElementById('order-modal').style.display = 'flex';
-    }
-
-    function renderCategories() {
-      const cats = [...new Set(menuData.map(m => m.categorie || 'Autres'))];
-      const bar = document.getElementById('category-chips');
-      bar.innerHTML = cats.map((c, i) => `
-        <button class="btn-cat ${i === 0 ? 'active' : ''}" onclick="filtrerCategorie('${c}', this)">${c}</button>
-      `).join('');
-      if (cats.length > 0) renderMenuItems(cats[0]);
-    }
-
-    function filtrerCategorie(cat, btn) {
-      document.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderMenuItems(cat);
-    }
-
-    function renderMenuItems(cat) {
-      const grid = document.getElementById('menu-items-grid');
-      const items = menuData.filter(m => (m.categorie || 'Autres') === cat);
-      grid.innerHTML = items.map(it => {
-        const isOut = indisponibles.includes(it.slug);
-        return `
-          <button class="menu-item-btn ${isOut ? 'epuise' : ''}" onclick="ajouterAuPanier('${it.slug}', '${it.nom.replace(/'/g, "\\'")}', ${it.prix})">
-            <div style="font-weight:800; font-size:0.85rem;">${it.nom}</div>
-            <div style="font-size:0.8rem; color:#38bdf8; margin-top:2px;">${it.prix.toFixed(2)} € ${isOut ? ' (Épuisé)' : ''}</div>
-          </button>
-        `;
-      }).join('');
-    }
-
-    function ajouterAuPanier(slug, nom, prix) {
-      const exist = currentCart.find(c => c.slug === slug);
-      if (exist) {
-        exist.quantite++;
-      } else {
-        currentCart.push({ slug, nom, prix, quantite: 1, remarques: '' });
-      }
-      renderCart();
-    }
-
-    function modifierQuantiteCart(idx, delta) {
-      currentCart[idx].quantite += delta;
-      if (currentCart[idx].quantite <= 0) currentCart.splice(idx, 1);
-      renderCart();
-    }
-
-    function renderCart() {
-      const container = document.getElementById('cart-items-container');
-      if (currentCart.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem; text-align:center; padding:10px;">Le panier est vide.</div>';
+    function clicPlat(platId) {
+      const plat = menuData.find(d => d.id === platId);
+      if (!plat) return;
+      if (indisponibles.includes(plat.slug)) {
+        alert("Ce plat est actuellement épuisé en cuisine !");
         return;
       }
-      container.innerHTML = currentCart.map((it, idx) => `
-        <div class="cart-item">
-          <span><strong>${it.quantite}x</strong> ${it.nom} (${(it.prix * it.quantite).toFixed(2)} €)</span>
-          <div style="display:flex; gap:6px;">
-            <button onclick="modifierQuantiteCart(${idx}, -1)" style="padding:2px 8px; background:#334155; color:#fff; border:none; border-radius:4px;">-</button>
-            <button onclick="modifierQuantiteCart(${idx}, 1)" style="padding:2px 8px; background:#334155; color:#fff; border:none; border-radius:4px;">+</button>
-          </div>
-        </div>
-      `).join('');
+      if (plat.hasOptions) {
+        ouvrirModalOptions(plat);
+      } else {
+        ajouterArticleAuPanier(plat, '');
+      }
     }
 
-    async function validerEtEnvoyerCommande() {
-      if (currentCart.length === 0) return alert('Veuillez sélectionner au moins un article.');
+    function ouvrirModalOptions(plat) {
+      currentPendingPlat = plat;
+      document.getElementById('opt-modal-title').innerText = `Options : ${plat.nom}`;
+      selectedCuisson = 'Saignant';
+      selectedGarnitures = ['Frites'];
+      document.getElementById('opt-custom-note').value = '';
+
+      document.querySelectorAll('#group-cuissons .btn-mod-choice').forEach(b => {
+        if (b.innerText === 'Saignant') b.classList.add('active');
+        else b.classList.remove('active');
+      });
+
+      document.querySelectorAll('#group-garnitures .btn-mod-choice').forEach(b => {
+        if (b.innerText.includes('Frites')) b.classList.add('active-side');
+        else b.classList.remove('active-side');
+      });
+
+      document.getElementById('options-modal').classList.add('open');
+    }
+
+    function fermerModalOptions() {
+      document.getElementById('options-modal').classList.remove('open');
+      currentPendingPlat = null;
+    }
+
+    function selectionnerCuisson(cuisson, btn) {
+      selectedCuisson = cuisson;
+      document.querySelectorAll('#group-cuissons .btn-mod-choice').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function toggleGarniture(garn, btn) {
+      const idx = selectedGarnitures.indexOf(garn);
+      if (idx > -1) {
+        selectedGarnitures.splice(idx, 1);
+        btn.classList.remove('active-side');
+      } else {
+        selectedGarnitures.push(garn);
+        btn.classList.add('active-side');
+      }
+    }
+
+    function confirmerAjoutAvecOptions() {
+      if (!currentPendingPlat) return;
+      const customNote = document.getElementById('opt-custom-note').value.trim();
+      const parts = [];
+      if (selectedCuisson) parts.push(selectedCuisson);
+      if (selectedGarnitures.length > 0) parts.push(selectedGarnitures.join(', '));
+      if (customNote) parts.push(customNote);
+
+      const optionsStr = parts.join(' | ');
+      ajouterArticleAuPanier(currentPendingPlat, optionsStr);
+      fermerModalOptions();
+    }
+
+    function ajouterArticleAuPanier(plat, optionsStr) {
+      const existing = cart.find(it => it.platId === plat.id && it.optionsStr === optionsStr);
+      if (existing) {
+        existing.quantite += 1;
+      } else {
+        cart.push({
+          cartId: Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          platId: plat.id,
+          nom: plat.nom,
+          cat: plat.cat,
+          prix: plat.prix,
+          quantite: 1,
+          optionsStr: optionsStr
+        });
+      }
+      afficherPlats();
+      mettreAJourTicket();
+    }
+
+    function diminuerDernierPlat(platId) {
+      const items = cart.filter(it => it.platId === platId);
+      if (items.length === 0) return;
+      const lastItem = items[items.length - 1];
+      if (lastItem.quantite > 1) {
+        lastItem.quantite -= 1;
+      } else {
+        cart = cart.filter(it => it.cartId !== lastItem.cartId);
+      }
+      afficherPlats();
+      mettreAJourTicket();
+    }
+
+    function modifierLignePanier(cartId, delta) {
+      const item = cart.find(it => it.cartId === cartId);
+      if (!item) return;
+      item.quantite += delta;
+      if (item.quantite <= 0) {
+        cart = cart.filter(it => it.cartId !== cartId);
+      }
+      afficherPlats();
+      mettreAJourTicket();
+    }
+
+    function mettreAJourTicket() {
+      const container = document.getElementById('ticket-container');
+      const countEl = document.getElementById('ticket-items-count');
+      const totalEl = document.getElementById('ticket-total-val');
+      const btnSend = document.getElementById('btn-submit');
+
+      if (cart.length === 0) {
+        container.innerHTML = '<div class="ticket-empty">Aucun article sélectionné</div>';
+        countEl.innerText = '0 article';
+        totalEl.innerText = '0,00 €';
+        btnSend.disabled = true;
+        return;
+      }
+
+      container.innerHTML = '';
+      let total = 0;
+      let totalQte = 0;
+
+      cart.forEach(it => {
+        const ligneTotal = it.prix * it.quantite;
+        total += ligneTotal;
+        totalQte += it.quantite;
+
+        const row = document.createElement('div');
+        row.className = 'ticket-row';
+        row.innerHTML = `
+          <div class="ticket-row-info">
+            <div class="ticket-row-title">${it.nom}</div>
+            ${it.optionsStr ? `<div class="ticket-row-options">👉 ${it.optionsStr}</div>` : ''}
+            <div class="ticket-row-cat">${it.cat}</div>
+          </div>
+          <div class="ticket-row-price">${ligneTotal > 0 ? ligneTotal.toFixed(2) + ' €' : 'Inclus'}</div>
+          <div class="qty-controls">
+            <button class="btn-q" onclick="modifierLignePanier('${it.cartId}', -1)">-</button>
+            <span class="q-val">${it.quantite}</span>
+            <button class="btn-q plus" onclick="modifierLignePanier('${it.cartId}', 1)">+</button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      countEl.innerText = `${totalQte} article${totalQte > 1 ? 's' : ''}`;
+      totalEl.innerText = `${total.toFixed(2)} €`;
+      btnSend.disabled = false;
+    }
+
+    async function envoyerCommande() {
+      const items = cart.map(it => ({
+        article_nom: it.nom,
+        prix: it.prix,
+        quantite: it.quantite,
+        remarques: it.optionsStr || ''
+      }));
+
       const payload = {
-        table_num: activeTable.numero,
-        serveur_nom: currentServer,
-        remarques: document.getElementById('order-notes-input').value.trim(),
-        items: currentCart
+        table_num: parseInt(currentTable, 10),
+        serveur_nom: currentServeur || 'Salle',
+        items: items,
+        remarques: document.getElementById('order-notes').value.trim()
       };
+
+      if (!navigator.onLine) {
+        const queue = getOfflineQueue();
+        queue.push(payload);
+        saveOfflineQueue(queue);
+        alert(`📡 MODE HORS-LIGNE : Commande Table ${currentTable} enregistrée localement !`);
+        cart = [];
+        document.getElementById('order-notes').value = '';
+        afficherPlats();
+        mettreAJourTicket();
+        return;
+      }
 
       try {
         const res = await fetch('/api/commandes', {
@@ -512,169 +1075,473 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (res.ok) {
-          fermerModal('order-modal');
-          chargerTables();
-        }
-      } catch (e) {
-        alert('Erreur de communication réseau.');
+        if (!res.ok) throw new Error('Erreur HTTP');
+
+        alert(`✅ Commande Table ${currentTable} envoyée en cuisine !`);
+        cart = [];
+        document.getElementById('order-notes').value = '';
+        afficherPlats();
+        mettreAJourTicket();
+        await chargerPlanSalle();
+      } catch (err) {
+        const queue = getOfflineQueue();
+        queue.push(payload);
+        saveOfflineQueue(queue);
+        alert(`📡 RÉSEAU INSTABLE : Commande Table ${currentTable} sécurisée localement.`);
+        cart = [];
+        document.getElementById('order-notes').value = '';
+        afficherPlats();
+        mettreAJourTicket();
       }
     }
 
-    // RÉCLAME DE SUITE
-    function ouvrirSuiteModal() {
-      fermerDrawer();
-      document.getElementById('suite-modal').style.display = 'flex';
-    }
-
-    async function declencherSuite(course) {
-      if (!socket) return;
-      socket.emit('reclamer_suite', {
-        table_num: activeTable.numero,
-        course: course,
-        serveur_nom: currentServer,
-        date: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-      });
-      fermerModal('suite-modal');
-      alert(`🔔 Suite "${course}" transmise en cuisine pour la Table ${activeTable.numero} !`);
-    }
-
-    // ENCAISSEMENT
-    function ouvrirPaiementModal() {
-      fermerDrawer();
-      document.getElementById('pay-modal-title').innerText = `Encaissement Table ${activeTable.numero}`;
-      document.getElementById('pay-total-amount').innerText = `${activeTable.total.toFixed(2)} €`;
-      document.getElementById('pay-tip-input').value = 0;
-      selectionnerModePay('CB');
-      document.getElementById('pay-modal').style.display = 'flex';
-    }
-
-    function selectionnerModePay(mode) {
-      currentModePay = mode;
-      document.querySelectorAll('.btn-pay-mode').forEach(b => b.classList.remove('active'));
-      if (mode === 'CB') document.getElementById('btn-mode-cb').classList.add('active');
-      if (mode === 'Espèces') document.getElementById('btn-mode-especes').classList.add('active');
-      if (mode === 'Note de Chambre') document.getElementById('btn-mode-chambre').classList.add('active');
-      if (mode === 'Chèque Vacances') document.getElementById('btn-mode-ancv').classList.add('active');
-
-      document.getElementById('room-pay-inputs').style.display = (mode === 'Note de Chambre') ? 'flex' : 'none';
-    }
-
-    async function validerEncaissement() {
-      const tip = parseFloat(document.getElementById('pay-tip-input').value) || 0;
-      const payload = {
-        table_num: activeTable.numero,
-        montant: activeTable.total,
-        pourboire: tip,
-        mode_reglement: currentModePay,
-        serveur_nom: currentServer,
-        numero_chambre: currentModePay === 'Note de Chambre' ? document.getElementById('pay-room-num').value.trim() : null,
-        client_nom: currentModePay === 'Note de Chambre' ? document.getElementById('pay-room-client').value.trim() : null
-      };
+    // 🔔 GESTION DE LA SUITE AVEC VÉRIFICATION DE COMMANDE ACTIVE
+    async function ouvrirModalSuite() {
+      document.getElementById('suite-modal-table-num').innerText = currentTable;
+      document.getElementById('suite-modal-table-bold').innerText = currentTable;
 
       try {
-        const res = await fetch('/api/paiements/encaisser', {
+        const res = await fetch(`/api/tables/${currentTable}/addition`);
+        const data = await res.json();
+
+        if (!data.items || data.items.length === 0) {
+          alert(`⚠️ La Table ${currentTable} est vide : aucune commande active en cuisine à réclamer.`);
+          return;
+        }
+
+        const recapTxt = data.items.map(it => `${it.quantite}x ${it.article_nom}`).join(', ');
+        document.getElementById('suite-order-recap').innerHTML = `📋 <strong>Articles actifs :</strong> ${recapTxt}`;
+        document.getElementById('suite-modal').classList.add('open');
+      } catch (e) {
+        alert("Impossible de vérifier l'état de la table.");
+      }
+    }
+
+    function fermerModalSuite() { 
+      document.getElementById('suite-modal').classList.remove('open'); 
+    }
+
+    async function envoyerSuite(course) {
+      try {
+        const res = await fetch(`/api/tables/${currentTable}/suite`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ 
+            course: course, 
+            serveur_nom: currentServeur || 'Salle' 
+          })
         });
+        
+        const data = await res.json();
         if (res.ok) {
-          fermerModal('pay-modal');
-          chargerTables();
+          alert(`🔔 Suite « ${course} » transmise avec succès au chef pour la Table ${currentTable} !`);
+          fermerModalSuite();
+        } else {
+          alert(`❌ ${data.error || "Erreur lors de l'envoi de la suite."}`);
         }
+      } catch (e) { 
+        alert("Erreur de communication avec le serveur."); 
+      }
+    }
+
+    // Addition & Multi-Paiements
+    async function ouvrirModalAddition() {
+      document.getElementById('modal-table-num').innerText = currentTable;
+      document.getElementById('receipt-table-num').innerText = currentTable;
+      document.getElementById('receipt-server-name').innerText = currentServeur || 'Salle';
+      document.getElementById('receipt-date-print').innerText = new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+      document.getElementById('receipt-ticket-id').innerText = `TICK #${Date.now().toString().slice(-4)}`;
+
+      discountPercent = 0;
+      tipAmount = 0;
+      splitParts = 1;
+      versements = [];
+      selectedMode = 'CB';
+
+      document.getElementById('split-display').innerText = '1';
+      document.getElementById('input-chambre-num').value = '';
+      document.getElementById('input-chambre-nom').value = '';
+      document.getElementById('chambre-inputs-zone').style.display = 'none';
+
+      document.querySelectorAll('.btn-disc').forEach((b, i) => {
+        if (i === 0) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+      document.querySelectorAll('.btn-tip').forEach((b, i) => {
+        if (i === 0) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+      document.querySelectorAll('.btn-pay-method').forEach((b, i) => {
+        if (i === 0) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+
+      const modal = document.getElementById('addition-modal');
+      const container = document.getElementById('receipt-items-container');
+      container.innerHTML = '<div style="text-align:center; padding:15px;">Chargement...</div>';
+      modal.classList.add('open');
+
+      try {
+        const res = await fetch(`/api/tables/${currentTable}/addition`);
+        const data = await res.json();
+
+        if (data.serveur_nom) {
+          document.getElementById('receipt-server-name').innerText = data.serveur_nom;
+        }
+
+        if (!data.items || data.items.length === 0) {
+          container.innerHTML = '<div style="text-align:center; padding:15px; color:var(--text-muted);">Aucune consommation active sur cette table.</div>';
+          rawTotalTTC = 0;
+          recalculerAddition();
+          document.getElementById('btn-valider-encaissement').disabled = true;
+          document.getElementById('btn-add-partial').disabled = true;
+          return;
+        }
+
+        rawTotalTTC = data.total;
+        container.innerHTML = '';
+        data.items.forEach(it => {
+          const row = document.createElement('div');
+          row.className = 'receipt-line';
+          row.innerHTML = `
+            <span>${it.quantite}x ${it.article_nom}</span>
+            <strong>${it.total_ligne > 0 ? it.total_ligne.toFixed(2) + ' €' : '0,00 €'}</strong>
+          `;
+          container.appendChild(row);
+        });
+
+        recalculerAddition();
       } catch (e) {
+        container.innerHTML = '<div style="color:red; text-align:center; padding:15px;">Connexion requise pour générer l\'addition.</div>';
+      }
+    }
+
+    function recalculerAddition() {
+      const discountAmount = (rawTotalTTC * discountPercent) / 100;
+      const netTotalPlatsTTC = Math.max(0, rawTotalTTC - discountAmount);
+      const totalHT = netTotalPlatsTTC / 1.10;
+      const totalTVA = netTotalPlatsTTC - totalHT;
+      const totalGlobalAEncaisser = netTotalPlatsTTC + tipAmount;
+
+      const subRow = document.getElementById('receipt-subtotal-row');
+      const discRow = document.getElementById('receipt-discount-row');
+      if (discountPercent > 0) {
+        subRow.style.display = 'flex';
+        document.getElementById('receipt-subtotal-val').innerText = `${rawTotalTTC.toFixed(2)} €`;
+        discRow.style.display = 'flex';
+        document.getElementById('receipt-discount-label').innerText = `Remise (${discountPercent === 100 ? 'Offert' : discountPercent + '%'}) :`;
+        document.getElementById('receipt-discount-val').innerText = `-${discountAmount.toFixed(2)} €`;
+      } else {
+        subRow.style.display = 'none';
+        discRow.style.display = 'none';
+      }
+
+      document.getElementById('modal-total-ttc').innerText = `${netTotalPlatsTTC.toFixed(2)} €`;
+      document.getElementById('modal-total-ht').innerText = `${totalHT.toFixed(2)} €`;
+      document.getElementById('modal-total-tva').innerText = `${totalTVA.toFixed(2)} €`;
+
+      const tipRow = document.getElementById('receipt-tip-line');
+      if (tipAmount > 0) {
+        tipRow.style.display = 'flex';
+        document.getElementById('receipt-tip-val').innerText = `+${tipAmount.toFixed(2)} €`;
+      } else {
+        tipRow.style.display = 'none';
+      }
+
+      const totalVerse = versements.reduce((sum, v) => sum + v.montant, 0);
+      const reste = Math.max(0, totalGlobalAEncaisser - totalVerse);
+
+      document.getElementById('multi-pay-reste-val').innerText = `${reste.toFixed(2)} €`;
+      document.getElementById('partial-pay-amount').value = reste > 0 ? reste.toFixed(2) : '';
+
+      renderVersements(totalGlobalAEncaisser);
+
+      const splitBox = document.getElementById('receipt-split-box');
+      if (splitParts > 1 && totalGlobalAEncaisser > 0) {
+        splitBox.style.display = 'flex';
+        const perPerson = totalGlobalAEncaisser / splitParts;
+        document.getElementById('receipt-split-count').innerText = splitParts;
+        document.getElementById('receipt-split-val').innerText = `${perPerson.toFixed(2)} € / pers.`;
+      } else {
+        splitBox.style.display = 'none';
+      }
+    }
+
+    function renderVersements(totalGlobal) {
+      const container = document.getElementById('registered-payments-container');
+      const printContainer = document.getElementById('receipt-payments-list-print');
+      const signBlock = document.getElementById('receipt-chambre-sign-block');
+      
+      let hasChambre = false;
+      let chambreInfo = { num: '', nom: '' };
+
+      if (versements.length === 0) {
+        container.innerHTML = '<div style="font-size:0.75rem; color:#64748b; font-style:italic;">Aucun versement enregistré. Choisissez le mode et validez.</div>';
+        printContainer.innerHTML = '';
+        signBlock.style.display = 'none';
+      } else {
+        container.innerHTML = versements.map((v, i) => {
+          if (v.numero_chambre) {
+            hasChambre = true;
+            chambreInfo = { num: v.numero_chambre, nom: v.nom_client || '' };
+          }
+          return `
+            <div class="registered-pay-row">
+              <span>🔹 ${v.mode}</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <strong>${v.montant.toFixed(2)} €</strong>
+                <button style="background:none; border:none; color:#ef4444; font-weight:800; cursor:pointer;" onclick="supprimerVersement(${i})">✕</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        printContainer.innerHTML = versements.map(v => `
+          <div style="display:flex; justify-content:space-between;">
+            <span>${v.mode} :</span>
+            <strong>${v.montant.toFixed(2)} €</strong>
+          </div>
+        `).join('');
+
+        if (hasChambre) {
+          signBlock.style.display = 'block';
+          document.getElementById('receipt-chambre-num-print').innerText = chambreInfo.num;
+          document.getElementById('receipt-chambre-nom-print').innerText = chambreInfo.nom || 'Client';
+        } else {
+          signBlock.style.display = 'none';
+        }
+      }
+
+      const totalVerse = versements.reduce((sum, v) => sum + v.montant, 0);
+      const estComplet = (totalVerse >= (totalGlobal - 0.001) && totalGlobal > 0);
+      
+      document.getElementById('btn-valider-encaissement').disabled = !estComplet;
+      document.getElementById('btn-add-partial').disabled = (totalVerse >= totalGlobal);
+    }
+
+    function choisirModeActif(btn, mode) {
+      document.querySelectorAll('.btn-pay-method').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedMode = mode;
+
+      const chambreZone = document.getElementById('chambre-inputs-zone');
+      if (mode === 'Chambre') {
+        chambreZone.style.display = 'flex';
+      } else {
+        chambreZone.style.display = 'none';
+      }
+    }
+
+    function ajouterVersement() {
+      const discountAmount = (rawTotalTTC * discountPercent) / 100;
+      const netTotalPlatsTTC = Math.max(0, rawTotalTTC - discountAmount);
+      const totalGlobalAEncaisser = netTotalPlatsTTC + tipAmount;
+
+      const input = document.getElementById('partial-pay-amount');
+      let montant = parseFloat(input.value);
+
+      if (isNaN(montant) || montant <= 0) {
+        alert("Veuillez saisir un montant valide.");
+        return;
+      }
+
+      const totalVerse = versements.reduce((sum, v) => sum + v.montant, 0);
+      const reste = totalGlobalAEncaisser - totalVerse;
+
+      if (montant > reste + 0.01) {
+        montant = reste;
+      }
+
+      let libelleMode = selectedMode;
+      let numChambre = null;
+      let nomClient = null;
+
+      if (selectedMode === 'Chambre') {
+        numChambre = document.getElementById('input-chambre-num').value.trim();
+        nomClient = document.getElementById('input-chambre-nom').value.trim();
+
+        if (!numChambre) {
+          alert("Veuillez indiquer le numéro de chambre du client.");
+          return;
+        }
+
+        libelleMode = `Chambre ${numChambre}${nomClient ? ' (' + nomClient + ')' : ''}`;
+      }
+
+      versements.push({
+        mode: libelleMode,
+        montant: parseFloat(montant.toFixed(2)),
+        numero_chambre: numChambre,
+        nom_client: nomClient
+      });
+
+      recalculerAddition();
+    }
+
+    function supprimerVersement(index) {
+      versements.splice(index, 1);
+      recalculerAddition();
+    }
+
+    function appliquerRemise(pct, btn) {
+      discountPercent = pct;
+      document.querySelectorAll('.btn-disc').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      versements = [];
+      recalculerAddition();
+    }
+
+    function choisirPourboire(montant, btn) {
+      tipAmount = montant;
+      document.querySelectorAll('.btn-tip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      recalculerAddition();
+    }
+
+    function modifierParts(delta) {
+      const next = splitParts + delta;
+      if (next >= 1 && next <= 20) {
+        splitParts = next;
+        document.getElementById('split-display').innerText = splitParts;
+        recalculerAddition();
+      }
+    }
+
+    function fermerModalAddition() { document.getElementById('addition-modal').classList.remove('open'); }
+    function imprimerTicketClient() { window.print(); }
+
+    async function validerEncaissementComplet() {
+      const discountAmount = (rawTotalTTC * discountPercent) / 100;
+      const netTotalPlatsTTC = Math.max(0, rawTotalTTC - discountAmount);
+
+      let resumeReglements = versements.map(v => `${v.mode}: ${v.montant.toFixed(2)}€`).join(', ');
+      const chPay = versements.find(v => v.numero_chambre);
+
+      let msg = `Confirmer l'encaissement Table ${currentTable} par ${currentServeur || 'Salle'} ?\n- Règlements : ${resumeReglements}\n- CA Net : ${netTotalPlatsTTC.toFixed(2)} €`;
+      if (tipAmount > 0) msg += `\n- Pourboire : +${tipAmount.toFixed(2)} €`;
+      if (chPay) msg += `\n- Note transférée sur Chambre ${chPay.numero_chambre}`;
+
+      if (!confirm(msg)) return;
+
+      try {
+        const res = await fetch(`/api/tables/${currentTable}/encaisser`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paiements: versements,
+            mode_paiement: selectedMode,
+            remise_montant: discountAmount,
+            pourboire: tipAmount,
+            total_paye: netTotalPlatsTTC,
+            numero_chambre: chPay ? chPay.numero_chambre : null,
+            nom_client_chambre: chPay ? chPay.nom_client : null,
+            serveur_nom: currentServeur || 'Salle'
+          })
+        });
+
+        if (res.ok) {
+          alert(`✅ Table ${currentTable} encaissée et libérée avec succès !`);
+          fermerModalAddition();
+          await chargerPlanSalle();
+        }
+      } catch (err) {
         alert("Erreur lors de l'encaissement.");
       }
     }
 
-    function imprimerTicketCaisse() {
-      const container = document.getElementById('printable-receipt');
-      container.innerHTML = `
-        <div style="text-align:center; margin-bottom:10px;">
-          <h2 style="font-size:1.1rem; margin-bottom:2px;">HÔTEL DES PINS</h2>
-          <p style="font-size:0.75rem;">Cap Ferret — France</p>
-          <p style="font-size:0.75rem;">SIRET : 849 204 192 00018</p>
-          <p style="font-size:0.75rem;">Date : ${new Date().toLocaleString('fr-FR')}</p>
-          <p style="font-size:0.85rem; font-weight:bold; margin-top:4px;">TABLE ${activeTable.numero}</p>
-        </div>
-        <hr style="border-top:1px dashed #000; margin:6px 0;">
-        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-top:8px; font-size:1rem;">
-          <span>TOTAL TTC :</span>
-          <span>${activeTable.total.toFixed(2)} €</span>
-        </div>
-        <p style="text-align:center; margin-top:14px; font-size:0.75rem;">Merci de votre visite et à bientôt ! 🌴</p>
-      `;
-      window.print();
+    // 🔀 DÉPLACEMENT / FUSION DE TABLE
+    function ouvrirModalTransfert() {
+      document.getElementById('transfer-source-num').innerText = currentTable;
+
+      const select = document.getElementById('transfer-target-select');
+      select.innerHTML = '';
+
+      let allTables = [];
+      dynamicPlan.forEach(z => z.tables.forEach(t => allTables.push(t.numero)));
+      allTables.sort((a, b) => a - b);
+
+      const otherTables = allTables.filter(t => t !== currentTable);
+
+      if (otherTables.length === 0) {
+        alert("Aucune autre table disponible sur le plan.");
+        return;
+      }
+
+      otherTables.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        const tableInfo = tableStatuses[t] || { statut: 'libre', serveur: null };
+        const st = (typeof tableInfo === 'string') ? tableInfo : (tableInfo.statut || 'libre');
+        const serv = (typeof tableInfo === 'object' && tableInfo.serveur) ? ` (${tableInfo.serveur})` : '';
+
+        let stLabel = ' (Libre)';
+        if (st === 'occupee') stLabel = ` (En cuisine${serv} - Fusionnera)`;
+        if (st === 'servi') stLabel = ` (À encaisser${serv} - Fusionnera)`;
+        
+        opt.innerText = `Table ${t}${stLabel}`;
+        select.appendChild(opt);
+      });
+
+      document.getElementById('transfer-modal').classList.add('open');
     }
 
-    // DÉPLACEMENT / FUSION
-    function ouvrirDeplacerModal() {
-      fermerDrawer();
-      const select = document.getElementById('select-destination-table');
-      select.innerHTML = tablesData
-        .filter(t => t.numero !== activeTable.numero)
-        .map(t => `<option value="${t.numero}">Table ${t.numero} ${t.total > 0 ? `(Fusion avec ${t.total.toFixed(2)} €)` : '(Libre)'}</option>`)
-        .join('');
-      document.getElementById('move-modal').style.display = 'flex';
-    }
+    function fermerModalTransfert() { document.getElementById('transfer-modal').classList.remove('open'); }
 
-    async function executerDeplacement() {
-      const dest = parseInt(document.getElementById('select-destination-table').value);
+    async function validerTransfertTable() {
+      const targetTable = document.getElementById('transfer-target-select').value;
+      if (!targetTable) return;
+
+      if (!confirm(`Confirmer le transfert de la Table ${currentTable} vers la Table ${targetTable} ?`)) return;
+
       try {
-        const res = await fetch('/api/tables/deplacer', {
+        const res = await fetch(`/api/tables/${currentTable}/transfer`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source_table: activeTable.numero, target_table: dest })
+          body: JSON.stringify({ target_table: targetTable, serveur_nom: currentServeur || 'Salle' })
         });
+
+        const data = await res.json();
         if (res.ok) {
-          fermerModal('move-modal');
-          chargerTables();
+          alert(`✅ Table ${currentTable} transférée avec succès vers la Table ${targetTable} !`);
+          fermerModalTransfert();
+          selectionnerTable(targetTable);
+          await chargerPlanSalle();
+        } else {
+          alert(`❌ ${data.error || "Erreur lors du transfert."}`);
         }
-      } catch (e) {}
-    }
-
-    // CODE PIN SERVEUR
-    let pinBuffer = '';
-    function ouvrirPinModal() {
-      pinBuffer = '';
-      document.getElementById('pin-input').value = '';
-      document.getElementById('pin-modal').style.display = 'flex';
-    }
-
-    function taperPin(chiffre) {
-      if (pinBuffer.length < 4) {
-        pinBuffer += chiffre;
-        document.getElementById('pin-input').value = pinBuffer;
-      }
-    }
-
-    function effacerPin() {
-      pinBuffer = pinBuffer.slice(0, -1);
-      document.getElementById('pin-input').value = pinBuffer;
-    }
-
-    function validerPin() {
-      if (SERVEURS[pinBuffer]) {
-        currentServer = SERVEURS[pinBuffer];
-        localStorage.setItem('pos_server_name', currentServer);
-        document.getElementById('current-server-name').innerText = currentServer;
-        fermerModal('pin-modal');
-      } else {
-        alert('Code PIN incorrect.');
-        effacerPin();
-      }
+      } catch (e) { alert("Erreur de connexion lors du transfert."); }
     }
 
     if (socket) {
-      socket.on('table_status_change', () => chargerTables());
+      socket.on('connect', () => updateNetworkBadge());
+      socket.on('disconnect', () => updateNetworkBadge());
+      socket.on('table_status_change', () => chargerPlanSalle());
+      socket.on('statut_mis_a_jour', () => chargerPlanSalle());
+      socket.on('plan_update', () => chargerPlanSalle());
+      socket.on('menu_update', () => chargerMenuDynamique());
       socket.on('stock_update', (data) => {
         indisponibles = data;
-        renderMenuItems(document.querySelector('.btn-cat.active')?.innerText || 'Autres');
+        afficherPlats();
       });
     }
 
+    setInterval(() => {
+      synchroniserCommandesHorsLigne();
+      chargerPlanSalle();
+    }, 6000);
+
     init();
-    setInterval(chargerTables, 8000);
+
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+      } catch (err) {}
+    }
+    requestWakeLock();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    });
   </script>
 </body>
 </html>
