@@ -25,7 +25,6 @@
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
     .container { max-width: 1200px; margin: 0 auto; }
 
-    /* ÉCRAN PIN DIRECTION / ÉDITEUR */
     .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 15px; }
     .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
     .pin-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; }
@@ -40,18 +39,15 @@
     .btn-key:active { background: #475569; }
     .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
 
-    /* BOUTON S.O.S D'URGENCE */
-    .btn-sos-trigger { background: #dc2626; color: #fff; border: 1px solid #ef4444; padding: 10px 14px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; transition: all 0.2s; }
+    .btn-sos-trigger { background: #dc2626; color: #fff; border: 1px solid #ef4444; padding: 10px 14px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
     .btn-sos-trigger:hover { background: #b91c1c; }
 
-    /* MODAL S.O.S CONTACT */
     .modal-sos-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999999; align-items: center; justify-content: center; padding: 15px; }
     .modal-sos-card { background: #1e293b; color: #fff; border: 2px solid #ef4444; width: 100%; max-width: 440px; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
     .sos-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-    .sos-channel-btn { display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; color: #fff; text-decoration: none; padding: 14px 16px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; transition: all 0.15s; }
+    .sos-channel-btn { display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; color: #fff; text-decoration: none; padding: 14px 16px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; }
     .sos-channel-btn:hover { background: #1e1b4b; border-color: #818cf8; }
 
-    /* BANDEAU INDICATEUR DE SESSION */
     .session-role-indicator { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem; font-weight: 800; }
     .session-client { background: #f1f5f9; color: #334155; border: 1.5px solid #cbd5e1; }
     .session-super { background: #f5f3ff; color: #6d28d9; border: 2px solid #8b5cf6; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); }
@@ -70,14 +66,12 @@
     .btn-print-z { background: var(--primary); color: #fff; border: 1px solid #475569; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
     .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
-    /* BANNIÈRE STATUT ABONNEMENT */
     .saas-license-banner { background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .saas-title { font-size: 1rem; font-weight: 800; color: #6d28d9; display: flex; align-items: center; gap: 8px; }
     .saas-info { font-size: 0.88rem; color: #5b21b6; }
     .saas-badge-valid { background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #86efac; }
     .saas-badge-warn { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #fca5a5; }
 
-    /* 👑 CONSOLE MASTER PLEIN POUVOIR */
     .master-admin-box { display: none; background: #1e1b4b; color: #fff; border: 2px solid #818cf8; border-radius: 14px; padding: 20px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(30, 27, 75, 0.4); }
     .master-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3730a3; padding-bottom: 12px; margin-bottom: 16px; }
     .master-head h2 { font-size: 1.15rem; font-weight: 800; color: #a5b4fc; display: flex; align-items: center; gap: 8px; }
@@ -150,10 +144,10 @@
     .stat-servi { background: #e0f2fe; color: #0369a1; }
     .stat-encaisse { background: #e2e8f0; color: #334155; }
 
-    /* ARDOISE MATINALE & ÉDITION MENU */
-    .ardoise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-bottom: 14px; }
-    .ardoise-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
-    .ardoise-title { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+    /* ARDOISE DU JOUR */
+    .ardoise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 14px; }
+    .ardoise-card { background: #fff; border: 1.5px solid #fed7aa; border-radius: 8px; padding: 12px; }
+    .ardoise-title { font-size: 0.82rem; font-weight: 800; text-transform: uppercase; color: #c2410c; margin-bottom: 6px; }
 
     #z-caisse-print, #chambre-ticket-print { display: none; }
     @media print {
@@ -202,7 +196,6 @@
         <button class="btn-key action" onclick="deleteAdminPin()">⌫</button>
       </div>
 
-      <!-- BOUTONS ACTION BAS DU CLAVIER -->
       <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
         <button class="btn-sos-trigger" onclick="ouvrirModalSOS()">
           🆘 S.O.S Support Développeur
@@ -225,7 +218,7 @@
       </div>
       
       <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.4; margin-bottom:16px;">
-        Un problème technique ou besoin d'assistance urgente ? Contactez directement votre développeur et éditeur logiciel :
+        Un problème technique ou besoin d'assistance urgente ? Contactez directement votre développeur :
       </p>
 
       <a id="sos-link-phone" href="tel:0600000000" class="sos-channel-btn" style="border-left:4px solid #22c55e;">
@@ -251,7 +244,7 @@
 
   <div class="container" id="admin-main-container" style="display:none;">
     
-    <!-- BANDEAU INDICATEUR DE SESSION -->
+    <!-- BANDEAU SESSION -->
     <div class="session-role-indicator" id="session-role-badge">
       <span id="session-role-text">👤 Session : Direction du Restaurant (Mode Client)</span>
       <span id="session-role-tag" style="font-size:0.75rem; text-transform:uppercase;">LECTURE SEULE</span>
@@ -282,7 +275,6 @@
 
       <div class="master-grid">
         
-        <!-- 1. GESTION CONTRAT & LICENCE -->
         <div class="master-card">
           <div class="master-card-title">📝 Paramètres Contrat & Échéance</div>
           <div class="master-field-row">
@@ -304,7 +296,6 @@
           </div>
         </div>
 
-        <!-- 2. COORDONNÉES S.O.S & SÉCURITÉ -->
         <div class="master-card">
           <div class="master-card-title">📞 Vos Coordonnées S.O.S Développeur</div>
           <div class="master-field-row">
@@ -325,7 +316,6 @@
           </div>
         </div>
 
-        <!-- 3. ACTIONS DE DÉPANNAGE D'URGENCE -->
         <div class="master-card">
           <div class="master-card-title">🚨 Outils de Dépannage & Réparation</div>
           <p style="font-size:0.75rem; color:#c7d2fe; margin-bottom:10px; line-height:1.4;">
@@ -348,44 +338,70 @@
       </div>
     </div>
 
-    <!-- 🍲 MODULE 1 : ARDOISE DU JOUR (GESTION CLIENT QUOTIDIENNE AVEC PRIX À LA CARTE) -->
+    <!-- 🍲 MODULE 1 : ARDOISE DU JOUR (GESTION CLIENT TOTALEMENT SÉPARÉE) -->
     <div class="panel-card" style="border:1.5px solid #fed7aa; background:#fffaf5;">
       <div class="panel-title" style="color:#ea580c;">
-        <span>🍲 Ardoise du Jour & Suggestions du Chef (Mise à jour directe)</span>
-        <span style="font-size:0.75rem; color:#c2410c; font-weight:700;">Synchronisation immédiate sur toutes les tablettes</span>
+        <span>🍲 Ardoise du Jour & Suggestions du Chef (Catégorie Indépendante)</span>
+        <span style="font-size:0.75rem; color:#c2410c; font-weight:700;">Apparaît dans l'onglet « 🍲 Ardoise du Jour » en salle</span>
       </div>
+      
       <div class="ardoise-grid">
+        
+        <!-- FORMULE DU JOUR -->
+        <div class="ardoise-card" style="grid-column: 1 / -1; background:#fff7ed;">
+          <div class="ardoise-title">⭐ Formule du Jour (Complète ou E+P / P+D) :</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="input-ardoise-formule" class="form-input" style="flex:3;" placeholder="Intitulé formule (ex: Formule du Jour : Entrée + Plat ou Plat + Dessert)">
+            <div style="display:flex; align-items:center; gap:4px;">
+              <input type="number" step="0.5" id="input-ardoise-formule-prix" class="form-input-short" value="22.00">
+              <strong>€</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENTRÉE DU JOUR -->
         <div class="ardoise-card">
           <div class="ardoise-title">🥗 Entrée du Jour :</div>
           <input type="text" id="input-ardoise-entree" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Gaspacho de tomates & burrata">
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Prix à la carte :</span>
-            <input type="number" step="0.5" id="input-ardoise-entree-prix" class="form-input-short" value="14.00">
-            <span style="font-weight:700; font-size:0.85rem;">€</span>
+            <input type="number" step="0.5" id="input-ardoise-entree-prix" class="form-input-short" value="8.50">
+            <strong>€</strong>
           </div>
         </div>
+
+        <!-- PLAT DU JOUR -->
         <div class="ardoise-card">
           <div class="ardoise-title">🍽️ Plat du Jour :</div>
-          <input type="text" id="input-ardoise-plat" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Filet de dorade royale rôtie">
+          <input type="text" id="input-ardoise-plat" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Dos de cabillaud rôti aux agrumes">
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Prix à la carte :</span>
-            <input type="number" step="0.5" id="input-ardoise-plat-prix" class="form-input-short" value="19.50">
-            <span style="font-weight:700; font-size:0.85rem;">€</span>
+            <input type="number" step="0.5" id="input-ardoise-plat-prix" class="form-input-short" value="17.50">
+            <strong>€</strong>
           </div>
         </div>
+
+        <!-- DESSERT DU JOUR -->
         <div class="ardoise-card">
           <div class="ardoise-title">🍰 Dessert du Jour :</div>
           <input type="text" id="input-ardoise-dessert" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Tartelette fraises du pays">
           <div style="display:flex; align-items:center; gap:6px;">
             <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Prix à la carte :</span>
-            <input type="number" step="0.5" id="input-ardoise-dessert-prix" class="form-input-short" value="8.50">
-            <span style="font-weight:700; font-size:0.85rem;">€</span>
+            <input type="number" step="0.5" id="input-ardoise-dessert-prix" class="form-input-short" value="7.50">
+            <strong>€</strong>
           </div>
         </div>
+
       </div>
-      <div style="display:flex; justify-content:flex-end;">
+
+      <!-- OPTION : PROPOSER AUSSI DANS LE MENU 40€ -->
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #fed7aa; padding-top:12px; flex-wrap:wrap; gap:10px;">
+        <label style="font-size:0.82rem; font-weight:700; color:#c2410c; display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" id="check-inclure-menu40">
+          Proposer également ces suggestions du jour comme choix dans le Menu à 40 € (inclus)
+        </label>
         <button class="btn-action-primary" style="background:#ea580c; padding:10px 18px; font-size:0.9rem;" onclick="enregistrerArdoiseDuJour()">
-          ✨ Mettre à jour l'Ardoise & les Prix en Salle
+          ✨ Mettre à jour l'Ardoise en Salle
         </button>
       </div>
     </div>
@@ -413,10 +429,10 @@
         </table>
       </div>
 
-      <!-- FORMULAIRE AJOUT DE PLAT -->
       <div class="inline-form" style="border-top:1px dashed var(--border); padding-top:14px; flex-wrap:wrap;">
         <input type="text" id="new-dish-name" class="form-input" placeholder="Nom du nouveau plat">
         <select id="new-dish-cat" class="form-input" style="flex:1;">
+          <option value="🍲 Ardoise du Jour">🍲 Ardoise du Jour</option>
           <option value="Entrées (15 €)">Entrées</option>
           <option value="Poissons (25 €)">Poissons</option>
           <option value="Viandes (25 €)">Viandes</option>
@@ -520,7 +536,7 @@
       </table>
     </div>
 
-    <!-- CONFIGURATION & MODES DE PAIEMENT -->
+    <!-- CONFIGURATION PLAN DE SALLE & MODES DE PAIEMENT -->
     <div class="dashboard-split">
       
       <div class="panel-card" style="grid-column: 1 / -1;">
@@ -832,15 +848,45 @@
       checkAdminAuth();
     }
 
-    // --- GESTION DU MENU & PLATS DU JOUR ---
+    // --- GESTION DU MENU & DE L'ARDOISE ---
     async function chargerMenuAdmin() {
       try {
         const res = await fetch('/api/admin/menu/all');
         if (res.ok) {
           allMenuItems = await res.json();
           renderMenuAdminTable();
+          preRemplirArdoise();
         }
       } catch (e) {}
+    }
+
+    function preRemplirArdoise() {
+      const f = allMenuItems.find(m => m.id === 'ard_formule');
+      const e = allMenuItems.find(m => m.id === 'ard_entree');
+      const p = allMenuItems.find(m => m.id === 'ard_plat');
+      const d = allMenuItems.find(m => m.id === 'ard_dessert');
+
+      if (f) {
+        document.getElementById('input-ardoise-formule').value = f.nom;
+        document.getElementById('input-ardoise-formule-prix').value = f.prix;
+      }
+      if (e) {
+        document.getElementById('input-ardoise-entree').value = e.nom.replace(/^Entrée du jour\s*:\s*/i, '');
+        document.getElementById('input-ardoise-entree-prix').value = e.prix;
+      }
+      if (p) {
+        document.getElementById('input-ardoise-plat').value = p.nom.replace(/^Plat du jour\s*:\s*/i, '');
+        document.getElementById('input-ardoise-plat-prix').value = p.prix;
+      }
+      if (d) {
+        document.getElementById('input-ardoise-dessert').value = d.nom.replace(/^Dessert du jour\s*:\s*/i, '');
+        document.getElementById('input-ardoise-dessert-prix').value = d.prix;
+      }
+
+      const optE = allMenuItems.find(m => m.id === 'm40_opt_e');
+      if (optE && optE.actif === 1) {
+        document.getElementById('check-inclure-menu40').checked = true;
+      }
     }
 
     function renderMenuAdminTable() {
@@ -871,31 +917,35 @@
     }
 
     async function enregistrerArdoiseDuJour() {
+      const formuleNom = document.getElementById('input-ardoise-formule').value.trim();
+      const formulePrix = parseFloat(document.getElementById('input-ardoise-formule-prix').value);
       const entree = document.getElementById('input-ardoise-entree').value.trim();
       const entreePrix = parseFloat(document.getElementById('input-ardoise-entree-prix').value);
       const plat = document.getElementById('input-ardoise-plat').value.trim();
       const platPrix = parseFloat(document.getElementById('input-ardoise-plat-prix').value);
       const dessert = document.getElementById('input-ardoise-dessert').value.trim();
       const dessertPrix = parseFloat(document.getElementById('input-ardoise-dessert-prix').value);
-
-      if (!entree && !plat && !dessert) return alert("Veuillez renseigner au moins une suggestion.");
+      const inclure40 = document.getElementById('check-inclure-menu40').checked;
 
       try {
         const res = await fetch('/api/admin/menu/plat-du-jour', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
+            formule_nom: formuleNom,
+            formule_prix: isNaN(formulePrix) ? 22.0 : formulePrix,
             entree_jour: entree, 
-            entree_prix: isNaN(entreePrix) ? 14.0 : entreePrix,
+            entree_prix: isNaN(entreePrix) ? 8.5 : entreePrix,
             plat_jour: plat, 
-            plat_prix: isNaN(platPrix) ? 19.5 : platPrix,
+            plat_prix: isNaN(platPrix) ? 17.5 : platPrix,
             dessert_jour: dessert,
-            dessert_prix: isNaN(dessertPrix) ? 8.5 : dessertPrix
+            dessert_prix: isNaN(dessertPrix) ? 7.5 : dessertPrix,
+            inclure_dans_menu_40: inclure40
           })
         });
         const data = await res.json();
         if (res.ok) {
-          alert("✨ L'Ardoise et les prix ont été mis à jour en direct sur toutes les tablettes !");
+          alert("✨ L'Ardoise du Jour et ses tarifs ont été mis à jour en direct dans l'onglet « 🍲 Ardoise du Jour » !");
           chargerMenuAdmin();
         }
       } catch (e) { alert("Erreur de connexion."); }
