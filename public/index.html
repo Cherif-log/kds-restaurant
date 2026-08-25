@@ -130,7 +130,7 @@
     .btn-mod-choice.active { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
     .btn-mod-choice.active-side { background: #dbeafe; border-color: var(--accent); color: #1e40af; }
 
-    /* MODALS GENERIQUES & ÉCRAN LICENCE */
+    /* MODALS GENERIQUES */
     .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 15px; }
     .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
     .pin-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
@@ -142,9 +142,6 @@
     .btn-key { background: #334155; color: #fff; border: none; border-radius: 12px; height: 58px; font-size: 1.4rem; font-weight: 800; cursor: pointer; }
     .btn-key:active { background: #475569; }
     .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
-
-    .license-block-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 999999; display: none; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #fff; }
-    .license-block-card { background: #1e293b; border: 1.5px solid #ef4444; border-radius: 16px; padding: 32px 24px; max-width: 440px; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
 
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
     .modal-overlay.open { display: flex; }
@@ -220,24 +217,6 @@
   </style>
 </head>
 <body>
-
-  <!-- ÉCRAN DE BLOCAGE SI LICENCE EXPIRÉE -->
-  <div class="license-block-overlay" id="licence-expired-modal">
-    <div class="license-block-card">
-      <div style="font-size:2.8rem; margin-bottom:12px;">🔒</div>
-      <h2 style="font-size:1.35rem; font-weight:800; color:#ef4444; margin-bottom:8px;">Abonnement en attente de renouvellement</h2>
-      <p style="font-size:0.9rem; color:#94a3b8; line-height:1.5; margin-bottom:20px;">
-        La licence d'exploitation logicielle pour <strong>Hôtel des Pins</strong> est arrivée à échéance.
-        Pour réactiver l'accès immédiatement, veuillez contacter le support technique.
-      </p>
-      <div style="background:#0f172a; border:1px solid #334155; padding:12px; border-radius:8px; font-size:0.85rem; font-weight:700; color:#38bdf8; margin-bottom:20px;">
-        📞 Assistance Éditeur / Support Client
-      </div>
-      <button style="background:#475569; color:#fff; border:none; padding:10px 16px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer;" onclick="ouvrirSuperUnlock()">
-        🔓 Déverrouillage Support Technique (Super-PIN)
-      </button>
-    </div>
-  </div>
 
   <!-- VERROUILLAGE PIN SERVEUR -->
   <div class="lock-overlay" id="pin-lock-overlay">
@@ -581,6 +560,7 @@
     let currentTable = 1;
     let currentTab = "Menu 40 €";
     
+    let menuData = []; // Chargé dynamiquement depuis SQLite
     let cart = []; 
     let tableStatuses = {};
     let dynamicPlan = [];
@@ -601,68 +581,46 @@
     let selectedCuisson = 'Saignant';
     let selectedGarnitures = ['Frites'];
 
-    const menuData = [
-      { id: "m40_formule", slug: "formule_40", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00, hasOptions: false },
-      { id: "m40_e1", slug: "entree_jour", nom: "Entrée du jour (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_e2", slug: "saumon_fume", nom: "Saumon fumé maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_e3", slug: "foie_gras", nom: "Foie gras de canard maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_e4", slug: "soupe_poissons", nom: "Soupe de poissons du Bassin (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_e5", slug: "calamars", nom: "Friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_e6", slug: "charcuterie", nom: "Assiette de charcuterie (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_e7", slug: "asperges", nom: "Asperges blanches & jambon (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, hasOptions: false },
+    async function chargerMenuDynamique() {
+      try {
+        const res = await fetch('/api/menu');
+        if (res.ok) {
+          menuData = await res.json();
+          // Mettre en forme les propriétés pour le front
+          menuData = menuData.map(m => ({
+            ...m,
+            hasOptions: m.has_options === 1,
+            hasCuisson: m.has_cuisson === 1
+          }));
+          localStorage.setItem('hdp_cached_menu', JSON.stringify(menuData));
+        }
+      } catch (e) {
+        menuData = JSON.parse(localStorage.getItem('hdp_cached_menu') || '[]');
+      }
+      construireOngletsCategories();
+      afficherPlats();
+    }
 
-      { id: "m40_p1", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_p2", slug: "cabillaud", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_p3", slug: "bar", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_p4", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_p5", slug: "carpaccio", nom: "Carpaccio de bœuf & Parmesan (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_p6", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, hasOptions: true, hasCuisson: true },
-      { id: "m40_p7", slug: "magret", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, hasOptions: true, hasCuisson: true },
+    function construireOngletsCategories() {
+      if (!menuData || menuData.length === 0) return;
+      const categories = [...new Set(menuData.map(d => d.cat))];
+      if (!categories.includes(currentTab)) currentTab = categories[0];
 
-      { id: "m40_d1", slug: "dessert_jour", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_d2", slug: "fromages", nom: "Assiette de fromages (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_d3", slug: "creme_brulee", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_d4", slug: "tiramisu", nom: "Tiramisu au café (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_d5", slug: "cafe_gourmand", nom: "Café gourmand (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_d6", slug: "fromage_blanc", nom: "Fromage blanc fermier & coulis (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_d7", slug: "mousse_chocolat", nom: "Mousse au chocolat noir (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_d8", slug: "cheesecake", nom: "Cheesecake au citron (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, hasOptions: false },
-      { id: "m40_d9", slug: "glace", nom: "Coupe glacée 2 boules (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, hasOptions: false },
-
-      { id: "c_e1", slug: "foie_gras", nom: "Terrine de foie de canard maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, hasOptions: false },
-      { id: "c_e2", slug: "soupe_poissons", nom: "Soupe de poissons et accompagnement", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, hasOptions: false },
-      { id: "c_e3", slug: "saumon_fume", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, hasOptions: false },
-      { id: "c_e4", slug: "calamars", nom: "Friture de calamars, tartare", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, hasOptions: false },
-      { id: "c_e5", slug: "charcuterie", nom: "Assiette de charcuterie", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, hasOptions: false },
-      { id: "c_e6", slug: "asperges", nom: "Asperges blanches, jambon & vierge", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, hasOptions: false },
-
-      { id: "c_p1", slug: "bar", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, hasOptions: false },
-      { id: "c_p2", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, hasOptions: false },
-      { id: "c_p3", slug: "cabillaud", nom: "Pavé de cabillaud rôti, légumes", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, hasOptions: false },
-      { id: "c_p4", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, hasOptions: false },
-
-      { id: "c_v1", slug: "carpaccio", nom: "Carpaccio de bœuf maison Parmesan", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, hasOptions: false },
-      { id: "c_v2", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, hasOptions: true, hasCuisson: true },
-      { id: "c_v3", slug: "magret", nom: "Magret de canard, sauce au poivre", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, hasOptions: true, hasCuisson: true },
-
-      { id: "c_d1", slug: "dessert_jour", nom: "Dessert du jour", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, hasOptions: false },
-      { id: "c_d2", slug: "cafe_gourmand", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00, hasOptions: false },
-      { id: "c_d3", slug: "fromage_blanc", nom: "Fromage blanc fermier & fruits", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, hasOptions: false },
-      { id: "c_d4", slug: "mousse_chocolat", nom: "Mousse au chocolat", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, hasOptions: false },
-      { id: "c_d5", slug: "fromages", nom: "Assiette de fromages", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, hasOptions: false },
-      { id: "c_d6", slug: "creme_brulee", nom: "Crème brûlée à la vanille", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, hasOptions: false },
-      { id: "c_d7", slug: "cheesecake", nom: "Cheesecake au citron", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, hasOptions: false },
-      { id: "c_d8", slug: "tiramisu", nom: "Tiramisu au café", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, hasOptions: false },
-      { id: "c_d9", slug: "glace", nom: "Coupe de glaces 2 boules", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, hasOptions: false },
-
-      { id: "enf_p1", slug: "tenders_enf", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, hasOptions: false },
-      { id: "enf_p2", slug: "steak_enf", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, hasOptions: true, hasCuisson: true },
-      { id: "enf_p3", slug: "poisson_enf", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, hasOptions: false },
-      { id: "enf_g1", slug: "garn_salade", nom: "Garniture : Salade du jardin", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, hasOptions: false },
-      { id: "enf_g2", slug: "garn_frites", nom: "Garniture : Frites maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, hasOptions: false },
-      { id: "enf_g3", slug: "garn_puree", nom: "Garniture : Purée maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, hasOptions: false },
-      { id: "enf_g4", slug: "garn_legumes", nom: "Garniture : Légumes sautés", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, hasOptions: false }
-    ];
+      const catContainer = document.getElementById('cat-tabs-container');
+      catContainer.innerHTML = '';
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `btn-cat-tab ${cat === currentTab ? 'active' : ''}`;
+        btn.innerText = cat;
+        btn.onclick = () => {
+          document.querySelectorAll('.btn-cat-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentTab = cat;
+          afficherPlats();
+        };
+        catContainer.appendChild(btn);
+      });
+    }
 
     function getOfflineQueue() { return JSON.parse(localStorage.getItem('hdp_offline_orders') || '[]'); }
     function saveOfflineQueue(queue) { localStorage.setItem('hdp_offline_orders', JSON.stringify(queue)); updateNetworkBadge(); }
@@ -703,31 +661,6 @@
 
     window.addEventListener('online', () => { updateNetworkBadge(); synchroniserCommandesHorsLigne(); });
     window.addEventListener('offline', () => { updateNetworkBadge(); });
-
-    // VÉRIFICATION DE LA LICENCE
-    async function verifierValiditeLicence() {
-      try {
-        const res = await fetch('/api/licence/status');
-        if (res.ok) {
-          const lic = await res.json();
-          if (!lic.est_valide) {
-            document.getElementById('licence-expired-modal').style.display = 'flex';
-          } else {
-            document.getElementById('licence-expired-modal').style.display = 'none';
-          }
-        }
-      } catch (e) {}
-    }
-
-    function ouvrirSuperUnlock() {
-      const sPin = prompt("Saisissez le Super-PIN Support Technique :");
-      if (sPin === '7777') {
-        document.getElementById('licence-expired-modal').style.display = 'none';
-        window.location.href = '/admin.html';
-      } else {
-        alert("Super-PIN incorrect.");
-      }
-    }
 
     function checkAuth() {
       if (!currentServeur) {
@@ -876,26 +809,9 @@
     }
 
     function init() {
-      verifierValiditeLicence();
       checkAuth();
       updateNetworkBadge();
-      const categories = ["Menu 40 €", "Entrées (15 €)", "Poissons (25 €)", "Viandes (25 €)", "Desserts", "Menu Enfant (15 €)"];
-      const catContainer = document.getElementById('cat-tabs-container');
-      catContainer.innerHTML = '';
-      categories.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = `btn-cat-tab ${cat === currentTab ? 'active' : ''}`;
-        btn.innerText = cat;
-        btn.onclick = () => {
-          document.querySelectorAll('.btn-cat-tab').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          currentTab = cat;
-          afficherPlats();
-        };
-        catContainer.appendChild(btn);
-      });
-
-      afficherPlats();
+      chargerMenuDynamique();
       mettreAJourTicket();
       chargerPlanSalle();
       chargerStock();
@@ -1553,7 +1469,7 @@
       socket.on('table_status_change', () => chargerPlanSalle());
       socket.on('statut_mis_a_jour', () => chargerPlanSalle());
       socket.on('plan_update', () => chargerPlanSalle());
-      socket.on('licence_update', () => verifierValiditeLicence());
+      socket.on('menu_update', () => chargerMenuDynamique());
       socket.on('stock_update', (data) => {
         indisponibles = data;
         afficherPlats();
@@ -1563,7 +1479,6 @@
     setInterval(() => {
       synchroniserCommandesHorsLigne();
       chargerPlanSalle();
-      verifierValiditeLicence();
     }, 6000);
 
     init();

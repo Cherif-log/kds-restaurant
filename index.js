@@ -33,6 +33,18 @@ db.exec(`
     FOREIGN KEY(zone_id) REFERENCES zones(id) ON DELETE CASCADE
   );
 
+  CREATE TABLE IF NOT EXISTS menu_articles (
+    id TEXT PRIMARY KEY,
+    slug TEXT NOT NULL,
+    nom TEXT NOT NULL,
+    cat TEXT NOT NULL,
+    section TEXT NOT NULL,
+    prix REAL DEFAULT 0,
+    has_options INTEGER DEFAULT 0,
+    has_cuisson INTEGER DEFAULT 0,
+    actif INTEGER DEFAULT 1
+  );
+
   CREATE TABLE IF NOT EXISTS commandes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     table_num INTEGER NOT NULL,
@@ -129,6 +141,71 @@ if (!licenceExists) {
   `).run(safePin);
 }
 
+// Initialisation de la Carte par défaut si vide
+const countMenu = db.prepare(`SELECT count(*) as count FROM menu_articles`).get();
+if (countMenu.count === 0) {
+  const defaultMenu = [
+    { id: "m40_formule", slug: "formule_40", nom: "Formule : Menu Hôtel des Pins (E+P+D)", cat: "Menu 40 €", section: "1. Facturation Formule", prix: 40.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e1", slug: "entree_jour", nom: "Entrée du jour (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e2", slug: "saumon_fume", nom: "Saumon fumé maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e3", slug: "foie_gras", nom: "Foie gras de canard maison (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e4", slug: "soupe_poissons", nom: "Soupe de poissons du Bassin (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e5", slug: "calamars", nom: "Friture de calamars (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e6", slug: "charcuterie", nom: "Assiette de charcuterie (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_e7", slug: "asperges", nom: "Asperges blanches & jambon (Menu 40€)", cat: "Menu 40 €", section: "2. Entrées du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p1", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p2", slug: "cabillaud", nom: "Pavé de cabillaud rôti (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p3", slug: "bar", nom: "Pavé de bar, risotto riz noir (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p4", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p5", slug: "carpaccio", nom: "Carpaccio de bœuf & Parmesan (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_p6", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 1, has_cuisson: 1 },
+    { id: "m40_p7", slug: "magret", nom: "Magret de canard, poivre (Menu 40€)", cat: "Menu 40 €", section: "3. Plats du Menu", prix: 0.00, has_options: 1, has_cuisson: 1 },
+    { id: "m40_d1", slug: "dessert_jour", nom: "Dessert du jour (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d2", slug: "fromages", nom: "Assiette de fromages (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d3", slug: "creme_brulee", nom: "Crème brûlée à la vanille (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d4", slug: "tiramisu", nom: "Tiramisu au café (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d5", slug: "cafe_gourmand", nom: "Café gourmand (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d6", slug: "fromage_blanc", nom: "Fromage blanc fermier & coulis (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d7", slug: "mousse_chocolat", nom: "Mousse au chocolat noir (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d8", slug: "cheesecake", nom: "Cheesecake au citron (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "m40_d9", slug: "glace", nom: "Coupe glacée 2 boules (Menu 40€)", cat: "Menu 40 €", section: "4. Desserts du Menu", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_e1", slug: "foie_gras", nom: "Terrine de foie de canard maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_e2", slug: "soupe_poissons", nom: "Soupe de poissons et accompagnement", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_e3", slug: "saumon_fume", nom: "Saumon fumé maison", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_e4", slug: "calamars", nom: "Friture de calamars, tartare", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_e5", slug: "charcuterie", nom: "Assiette de charcuterie", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_e6", slug: "asperges", nom: "Asperges blanches, jambon & vierge", cat: "Entrées (15 €)", section: "Entrées à la carte", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_p1", slug: "bar", nom: "Pavé de bar, huile d’olive de Nice", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_p2", slug: "dos_maigre", nom: "Dos de maigre, sauce vierge", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_p3", slug: "cabillaud", nom: "Pavé de cabillaud rôti, légumes", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_p4", slug: "blanquette_seiche", nom: "Blanquette de seiche safranée", cat: "Poissons (25 €)", section: "Poissons à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_v1", slug: "carpaccio", nom: "Carpaccio de bœuf maison Parmesan", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_v2", slug: "entrecote", nom: "Entrecôte de bœuf, échalotes", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 1, has_cuisson: 1 },
+    { id: "c_v3", slug: "magret", nom: "Magret de canard, sauce au poivre", cat: "Viandes (25 €)", section: "Viandes à la carte", prix: 25.00, has_options: 1, has_cuisson: 1 },
+    { id: "c_d1", slug: "dessert_jour", nom: "Dessert du jour", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_d2", slug: "cafe_gourmand", nom: "Café gourmand", cat: "Desserts", section: "Desserts à la carte", prix: 10.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_d3", slug: "fromage_blanc", nom: "Fromage blanc fermier & fruits", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_d4", slug: "mousse_chocolat", nom: "Mousse au chocolat", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_d5", slug: "fromages", nom: "Assiette de fromages", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_d6", slug: "creme_brulee", nom: "Crème brûlée à la vanille", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_d7", slug: "cheesecake", nom: "Cheesecake au citron", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_d8", slug: "tiramisu", nom: "Tiramisu au café", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
+    { id: "c_d9", slug: "glace", nom: "Coupe de glaces 2 boules", cat: "Desserts", section: "Desserts à la carte", prix: 8.00, has_options: 0, has_cuisson: 0 },
+    { id: "enf_p1", slug: "tenders_enf", nom: "Menu Enfant : Chicken tenders", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "enf_p2", slug: "steak_enf", nom: "Menu Enfant : Steak haché", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 1, has_cuisson: 1 },
+    { id: "enf_p3", slug: "poisson_enf", nom: "Menu Enfant : Filet de poisson", cat: "Menu Enfant (15 €)", section: "1. Plats Enfant (15 €)", prix: 15.00, has_options: 0, has_cuisson: 0 },
+    { id: "enf_g1", slug: "garn_salade", nom: "Garniture : Salade du jardin", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "enf_g2", slug: "garn_frites", nom: "Garniture : Frites maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "enf_g3", slug: "garn_puree", nom: "Garniture : Purée maison", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, has_options: 0, has_cuisson: 0 },
+    { id: "enf_g4", slug: "garn_legumes", nom: "Garniture : Légumes sautés", cat: "Menu Enfant (15 €)", section: "2. Garnitures (Incluses)", prix: 0.00, has_options: 0, has_cuisson: 0 }
+  ];
+
+  const insertStmt = db.prepare(`INSERT INTO menu_articles (id, slug, nom, cat, section, prix, has_options, has_cuisson, actif) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`);
+  defaultMenu.forEach(item => {
+    insertStmt.run(item.id, item.slug, item.nom, item.cat, item.section, item.prix, item.has_options, item.has_cuisson);
+  });
+}
+
 // Initialisation Serveurs
 const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
 if (countServeurs.count === 0) {
@@ -169,9 +246,95 @@ function isSuperPinValid(pin) {
   return (p === '7777' || p === '8492');
 }
 
-// --- ROUTES API SUPER-ADMIN & LICENCE ---
+// --- GESTION DYNAMIQUE DE LA CARTE ---
 
-// 1. Statut licence et coordonnées de contact support
+// 1. Récupération de toute la carte
+app.get('/api/menu', (req, res) => {
+  try {
+    const articles = db.prepare(`SELECT * FROM menu_articles WHERE actif = 1 ORDER BY rowid ASC`).all();
+    res.json(articles);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur menu' });
+  }
+});
+
+// 1bis. Récupération administration
+app.get('/api/admin/menu/all', (req, res) => {
+  try {
+    const articles = db.prepare(`SELECT * FROM menu_articles ORDER BY rowid ASC`).all();
+    res.json(articles);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur menu admin' });
+  }
+});
+
+// 2. Mise à jour rapide des Plats du Jour (Ardoise matinale)
+app.put('/api/admin/menu/plat-du-jour', (req, res) => {
+  try {
+    const { entree_jour, plat_jour, dessert_jour } = req.body;
+    
+    if (entree_jour) {
+      db.prepare(`UPDATE menu_articles SET nom = ? WHERE id = 'm40_e1'`).run(`Entrée du jour : ${entree_jour.trim()} (Menu 40€)`);
+    }
+    if (plat_jour) {
+      db.prepare(`UPDATE menu_articles SET nom = ? WHERE id = 'm40_p1' OR id = 'c_p1'`).run(`Plat du jour : ${plat_jour.trim()}`);
+    }
+    if (dessert_jour) {
+      db.prepare(`UPDATE menu_articles SET nom = ? WHERE id = 'm40_d1' OR id = 'c_d1'`).run(`Dessert du jour : ${dessert_jour.trim()}`);
+    }
+
+    io.emit('menu_update');
+    res.json({ success: true, message: 'Ardoise du jour mise à jour en direct !' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur mise à jour plat du jour' });
+  }
+});
+
+// 3. Modifier un article spécifique (Prix, Nom, Actif)
+app.put('/api/admin/menu/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nom, prix, actif } = req.body;
+    
+    const current = db.prepare(`SELECT * FROM menu_articles WHERE id = ?`).get(id);
+    if (!current) return res.status(404).json({ error: 'Article introuvable' });
+
+    const newNom = nom !== undefined ? String(nom).trim() : current.nom;
+    const newPrix = prix !== undefined && !isNaN(parseFloat(prix)) ? parseFloat(prix) : current.prix;
+    const newActif = actif !== undefined ? (actif ? 1 : 0) : current.actif;
+
+    db.prepare(`UPDATE menu_articles SET nom = ?, prix = ?, actif = ? WHERE id = ?`).run(newNom, newPrix, newActif, id);
+
+    io.emit('menu_update');
+    res.json({ success: true, message: 'Article mis à jour' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur article' });
+  }
+});
+
+// 4. Ajouter un nouvel article à la carte
+app.post('/api/admin/menu', (req, res) => {
+  try {
+    const { nom, cat, section, prix, has_options, has_cuisson } = req.body;
+    if (!nom || !cat) return res.status(400).json({ error: 'Nom et catégorie requis' });
+
+    const newId = 'custom_' + Date.now();
+    const slug = nom.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const itemPrice = parseFloat(prix) || 0;
+
+    db.prepare(`
+      INSERT INTO menu_articles (id, slug, nom, cat, section, prix, has_options, has_cuisson, actif) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `).run(newId, slug, nom.trim(), cat.trim(), section ? section.trim() : cat.trim(), itemPrice, has_options ? 1 : 0, has_cuisson ? 1 : 0);
+
+    io.emit('menu_update');
+    res.status(201).json({ success: true, id: newId });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur création article' });
+  }
+});
+
+// --- ROUTES LICENCE & SUPER-ADMIN ---
 app.get('/api/licence/status', (req, res) => {
   try {
     const lic = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
@@ -195,7 +358,6 @@ app.get('/api/licence/status', (req, res) => {
   }
 });
 
-// 2. Configuration Master avec coordonnées S.O.S (Plein Pouvoir)
 app.put('/api/admin/master/config', (req, res) => {
   try {
     const { etablissement, tarif_mensuel, date_expiration, statut, support_tel, support_email, super_pin } = req.body;
@@ -224,12 +386,11 @@ app.put('/api/admin/master/config', (req, res) => {
   }
 });
 
-// 3. Prolonger licence
 app.post('/api/licence/prolonger', (req, res) => {
   try {
     const { jours, super_pin } = req.body;
     if (!isSuperPinValid(super_pin)) {
-      return res.status(403).json({ error: 'Super-PIN invalide.' });
+      return res.status(403).json({ error: 'Super-PIN invalide. Action réservée à l\'éditeur.' });
     }
 
     const lic = db.prepare(`SELECT date_expiration FROM licence_config WHERE id = 1`).get() || {};
@@ -247,7 +408,6 @@ app.post('/api/licence/prolonger', (req, res) => {
   }
 });
 
-// 4. Modifier Super-PIN
 app.put('/api/licence/super-pin', (req, res) => {
   try {
     const { old_pin, new_pin } = req.body;
@@ -266,7 +426,6 @@ app.put('/api/licence/super-pin', (req, res) => {
   }
 });
 
-// 5. Débloquer toutes les tables
 app.post('/api/admin/master/reset-all-tables', (req, res) => {
   try {
     const { super_pin } = req.body;
@@ -282,7 +441,6 @@ app.post('/api/admin/master/reset-all-tables', (req, res) => {
   }
 });
 
-// 6. Purge historique
 app.post('/api/admin/master/purge-history', (req, res) => {
   try {
     const { super_pin } = req.body;
@@ -299,7 +457,6 @@ app.post('/api/admin/master/purge-history', (req, res) => {
   }
 });
 
-// 7. Supprimer commande
 app.delete('/api/admin/commandes/:id', (req, res) => {
   try {
     const { id } = req.params;
@@ -313,7 +470,7 @@ app.delete('/api/admin/commandes/:id', (req, res) => {
   }
 });
 
-// --- AUTHENTIFICATION PIN AVEC RÔLE EXPLICITE ---
+// Authentification PIN
 app.post('/api/auth/pin', (req, res) => {
   try {
     const rawPin = req.body.pin ? String(req.body.pin).trim() : '';
@@ -344,7 +501,7 @@ app.post('/api/auth/pin', (req, res) => {
   }
 });
 
-// Gestion équipe
+// Équipe
 app.get('/api/admin/serveurs', (req, res) => {
   try {
     res.json(db.prepare(`SELECT * FROM serveurs ORDER BY id ASC`).all());
@@ -389,7 +546,7 @@ app.put('/api/admin/serveurs/:id/pin', (req, res) => {
     db.prepare(`UPDATE serveurs SET pin = ? WHERE id = ?`).run(pin.trim(), id);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de la modification du code PIN.' });
+    res.status(500).json({ error: 'Erreur modification PIN' });
   }
 });
 
