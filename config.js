@@ -9,7 +9,7 @@ module.exports = {
 
   // Monitoring UptimeRobot & Statut public
   monitoring: {
-    serviceName: "SmartView Cloud",
+    serviceName: "SmartView FAST",
     statusPageUrl: process.env.UPTIMEROBOT_STATUS_URL || "https://stats.uptimerobot.com/rnzYHtVN0v"
   },
 
