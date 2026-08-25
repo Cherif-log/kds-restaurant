@@ -58,6 +58,25 @@
     .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
     .panel-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
 
+    /* STATISTIQUES & RUSH */
+    .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    
+    .top-item-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+    .top-item-row:last-child { border-bottom: none; }
+    .top-item-rank { width: 26px; height: 26px; border-radius: 50%; background: #eff6ff; color: var(--accent); font-weight: 800; font-size: 0.82rem; display: flex; align-items: center; justify-content: center; margin-right: 10px; }
+    .top-item-rank.gold { background: #fef3c7; color: #b45309; }
+    .top-item-info { flex: 1; padding-right: 10px; }
+    .top-item-name { font-weight: 700; font-size: 0.88rem; color: var(--text); }
+    .top-item-bar-bg { background: #f1f5f9; height: 5px; border-radius: 3px; margin-top: 4px; overflow: hidden; width: 100%; }
+    .top-item-bar-fill { background: var(--accent); height: 100%; border-radius: 3px; }
+
+    .rush-bars-container { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+    .rush-bar-row { display: flex; align-items: center; font-size: 0.82rem; font-weight: 700; gap: 10px; }
+    .rush-time-label { width: 85px; color: var(--text-muted); }
+    .rush-bar-track { flex: 1; background: #f1f5f9; height: 22px; border-radius: 6px; overflow: hidden; position: relative; }
+    .rush-bar-fill { background: linear-gradient(90deg, #38bdf8, #2563eb); height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+    .rush-count-label { width: 60px; text-align: right; color: var(--primary); font-weight: 800; }
+
     .audit-table { width: 100%; border-collapse: collapse; text-align: left; }
     .audit-table th { background: #f8fafc; padding: 12px 14px; font-size: 0.78rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
     .audit-table td { padding: 12px 14px; font-size: 0.88rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
@@ -186,6 +205,33 @@
         <div class="kpi-value blue" id="kpi-encaissees">0</div>
         <div class="kpi-sub">Panier moyen : <span id="kpi-panier-moyen">0,00 €</span></div>
       </div>
+    </div>
+
+    <!-- 📊 NOUVELLE SECTION : ANALYTICS, PALMARÈS & HEURES DE RUSH -->
+    <div class="analytics-grid">
+      
+      <!-- PALMARÈS DES VENTES -->
+      <div class="panel-card" style="margin-bottom:0;">
+        <div class="panel-title">
+          <span>🏆 Top des Ventes (Plats Stars)</span>
+          <span style="font-size:0.75rem; color:var(--text-muted);">Quantités & Recettes</span>
+        </div>
+        <div id="top-dishes-container">
+          <div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Calcul du palmarès...</div>
+        </div>
+      </div>
+
+      <!-- FRÉQUENTATION & RUSH HORAIRE -->
+      <div class="panel-card" style="margin-bottom:0;">
+        <div class="panel-title">
+          <span>🕒 Analyse des Heures de Rush</span>
+          <span style="font-size:0.75rem; color:var(--text-muted);">Activité horaire</span>
+        </div>
+        <div class="rush-bars-container" id="rush-bars-container">
+          <div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Calcul du rush...</div>
+        </div>
+      </div>
+
     </div>
 
     <!-- 🏨 MODULE : NOTES DE CHAMBRES POUR LA RÉCEPTION HÔTEL -->
@@ -448,7 +494,7 @@
       checkAdminAuth();
     }
 
-    // --- CHARGEMENT GLOBAL AVEC PROTECTIONS ---
+    // --- CHARGEMENT GLOBAL ---
     async function chargerDonneesAdmin() {
       try {
         const [resCmds, resServs, resPaiements, resChambres] = await Promise.all([
@@ -463,12 +509,97 @@
         if (resPaiements.ok) allPaiements = await resPaiements.json();
         if (resChambres.ok) allChambres = await resChambres.json();
 
-        try { calculerKPIsEtAfficher(allOrders, allPaiements, allChambres); } catch(e) { console.error("Erreur KPIs:", e); }
-        try { calculerAuditServeurs(allOrders, allServeurs); } catch(e) { console.error("Erreur Audit:", e); }
-        try { renderNotesChambres(allChambres); } catch(e) { console.error("Erreur Chambres:", e); }
+        try { calculerKPIsEtAfficher(allOrders, allPaiements, allChambres); } catch(e) { console.error(e); }
+        try { calculerAuditServeurs(allOrders, allServeurs); } catch(e) { console.error(e); }
+        try { renderNotesChambres(allChambres); } catch(e) { console.error(e); }
+        try { calculerStatistiquesAnalytics(allOrders); } catch(e) { console.error(e); }
       } catch (err) {
         console.error("Erreur chargement:", err);
       }
+    }
+
+    // --- 📊 CALCUL DES STATISTIQUES (TOP PLATS & HEURES DE RUSH) ---
+    function calculerStatistiquesAnalytics(commandes) {
+      const topContainer = document.getElementById('top-dishes-container');
+      const rushContainer = document.getElementById('rush-bars-container');
+      if (!topContainer || !rushContainer) return;
+
+      const dishesMap = {};
+      const hoursMap = {
+        '11h-12h': 0, '12h-13h': 0, '13h-14h': 0, '14h-15h': 0,
+        '18h-19h': 0, '19h-20h': 0, '20h-21h': 0, '21h-22h': 0, '22h+': 0
+      };
+
+      (commandes || []).forEach(cmd => {
+        // 1. Agrégation des plats
+        (cmd.items || []).forEach(it => {
+          const nom = it.article_nom || 'Article';
+          const qte = it.quantite || 1;
+          const prix = (it.prix || 0) * qte;
+          if (!dishesMap[nom]) {
+            dishesMap[nom] = { nom, qte: 0, ca: 0 };
+          }
+          dishesMap[nom].qte += qte;
+          dishesMap[nom].ca += prix;
+        });
+
+        // 2. Agrégation par heure de création
+        const d = parseSqliteDate(cmd.date_creation);
+        if (d) {
+          const h = d.getHours();
+          if (h >= 11 && h < 12) hoursMap['11h-12h']++;
+          else if (h >= 12 && h < 13) hoursMap['12h-13h']++;
+          else if (h >= 13 && h < 14) hoursMap['13h-14h']++;
+          else if (h >= 14 && h < 16) hoursMap['14h-15h']++;
+          else if (h >= 18 && h < 19) hoursMap['18h-19h']++;
+          else if (h >= 19 && h < 20) hoursMap['19h-20h']++;
+          else if (h >= 20 && h < 21) hoursMap['20h-21h']++;
+          else if (h >= 21 && h < 22) hoursMap['21h-22h']++;
+          else if (h >= 22) hoursMap['22h+']++;
+        }
+      });
+
+      // Rendu Top Plats
+      const sortedDishes = Object.values(dishesMap).sort((a, b) => b.qte - a.qte).slice(0, 5);
+      const maxQte = sortedDishes.length > 0 ? sortedDishes[0].qte : 1;
+
+      if (sortedDishes.length === 0) {
+        topContainer.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Aucune vente enregistrée.</div>';
+      } else {
+        topContainer.innerHTML = sortedDishes.map((dish, i) => {
+          const pct = Math.round((dish.qte / maxQte) * 100);
+          const isGold = (i === 0);
+          return `
+            <div class="top-item-row">
+              <div class="top-item-rank ${isGold ? 'gold' : ''}">${i + 1}</div>
+              <div class="top-item-info">
+                <div style="display:flex; justify-content:space-between; font-size:0.88rem;">
+                  <span class="top-item-name">${dish.nom}</span>
+                  <strong>${dish.qte} vendus (${dish.ca.toFixed(2)} €)</strong>
+                </div>
+                <div class="top-item-bar-bg">
+                  <div class="top-item-bar-fill" style="width:${pct}%;"></div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Rendu Rush Horaires
+      const maxRush = Math.max(1, ...Object.values(hoursMap));
+      rushContainer.innerHTML = Object.entries(hoursMap).map(([slot, count]) => {
+        const pct = Math.round((count / maxRush) * 100);
+        return `
+          <div class="rush-bar-row">
+            <span class="rush-time-label">${slot}</span>
+            <div class="rush-bar-track">
+              <div class="rush-bar-fill" style="width:${pct}%;"></div>
+            </div>
+            <span class="rush-count-label">${count} cmd${count > 1 ? 's' : ''}</span>
+          </div>
+        `;
+      }).join('');
     }
 
     function renderNotesChambres(chambres) {
