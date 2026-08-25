@@ -46,6 +46,9 @@
     .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .btn-nav-link { background: #334155; border: 1px solid #475569; color: #fff; text-decoration: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
     .btn-nav-link:hover { background: #475569; }
+    .btn-elevate-super { background: #6366f1; border: 1px solid #818cf8; color: #fff; padding: 9px 12px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+    .btn-elevate-super:hover { background: #4f46e5; }
+    
     .btn-export { background: #047857; color: #fff; border: none; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     .btn-print-z { background: var(--primary); color: #fff; border: 1px solid #475569; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
     .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
@@ -57,7 +60,7 @@
     .saas-badge-valid { background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #86efac; }
     .saas-badge-warn { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #fca5a5; }
 
-    /* 👑 CONSOLE MASTER PLEIN POUVOIR (RÉSERVÉE AU SUPER-ADMIN) */
+    /* 👑 CONSOLE MASTER PLEIN POUVOIR */
     .master-admin-box { display: none; background: #1e1b4b; color: #fff; border: 2px solid #818cf8; border-radius: 14px; padding: 20px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(30, 27, 75, 0.4); }
     .master-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3730a3; padding-bottom: 12px; margin-bottom: 16px; }
     .master-head h2 { font-size: 1.15rem; font-weight: 800; color: #a5b4fc; display: flex; align-items: center; gap: 8px; }
@@ -257,7 +260,7 @@
           <div class="master-card-title">🔑 Sécurité & Super-PIN</div>
           <div class="master-field-row">
             <span class="master-label">Nouveau Super-PIN (4 chiffres) :</span>
-            <input type="text" id="master-input-new-superpin" class="master-input" maxlength="6" placeholder="Ex: 8492">
+            <input type="text" id="master-input-new-superpin" class="master-input" maxlength="6" placeholder="Ex: 7777">
           </div>
           <button class="btn-master-action" style="width:100%; margin-top:4px;" onclick="changerMonSuperPin()">
             🔒 Mettre à jour le Super-PIN
@@ -299,6 +302,7 @@
       <div class="header-actions">
         <a href="/index.html" class="btn-nav-link">📱 Salle & Caisse</a>
         <a href="/cuisine.html" class="btn-nav-link">👨‍🍳 Cuisine</a>
+        <button class="btn-elevate-super" id="btn-elevate-bar" onclick="passerEnModeSuperAdmin()">🔑 Mode Éditeur</button>
         <a href="/api/admin/backup-db" class="btn-export" style="background:#4338ca; text-decoration:none;">💾 Sauvegarder</a>
         <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter CSV</button>
         <button class="btn-print-z" onclick="imprimerZCaisse()">🖨️ Imprimer Z</button>
@@ -568,6 +572,9 @@
         const masterPanel = document.getElementById('master-admin-panel');
         if (masterPanel) masterPanel.style.display = isSuper ? 'block' : 'none';
 
+        const btnElevate = document.getElementById('btn-elevate-bar');
+        if (btnElevate) btnElevate.style.display = isSuper ? 'none' : 'inline-flex';
+
         const thMaster = document.getElementById('th-master-action');
         if (thMaster) thMaster.style.display = isSuper ? 'table-cell' : 'none';
 
@@ -616,7 +623,6 @@
           clearAdminPin();
           checkAdminAuth();
         } else if (enteredAdminPin.length >= 4 && !data.success) {
-          // Si 4 chiffres tapés et faux
           alert("⛔ Code PIN incorrect !");
           clearAdminPin();
         }
@@ -624,6 +630,30 @@
         alert("Erreur de connexion.");
         clearAdminPin();
       }
+    }
+
+    function passerEnModeSuperAdmin() {
+      const sPin = prompt("Saisissez votre Super-PIN Support Technique (Plein Pouvoir) :");
+      if (!sPin) return;
+
+      fetch('/api/auth/pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sPin.trim() })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.isSuperAdmin) {
+          sessionStorage.setItem('hdp_admin_auth', 'true');
+          sessionStorage.setItem('hdp_is_super', 'true');
+          sessionStorage.setItem('hdp_super_pin_cache', sPin.trim());
+          alert("👑 Mode Super-Admin activé ! La console Master est maintenant ouverte.");
+          checkAdminAuth();
+        } else {
+          alert("❌ Super-PIN invalide.");
+        }
+      })
+      .catch(() => alert("Erreur réseau."));
     }
 
     function verrouillerAdmin() {
@@ -639,26 +669,26 @@
         const res = await fetch('/api/licence/status');
         if (res.ok) {
           const lic = await res.json();
-          safeSetText('saas-client-name', lic.etablissement);
-          safeSetText('page-restaurant-title', `${lic.etablissement} — Espace Direction & Audit`);
+          safeSetText('saas-client-name', lic.etablissement || 'Hôtel des Pins');
+          safeSetText('page-restaurant-title', `${lic.etablissement || 'Hôtel des Pins'} — Espace Direction & Audit`);
           
           const dExp = new Date(lic.date_expiration);
-          safeSetText('saas-exp-date', dExp.toLocaleDateString('fr-FR'));
-          safeSetText('saas-days-left', lic.jours_restants);
+          safeSetText('saas-exp-date', isNaN(dExp.getTime()) ? '--/--/----' : dExp.toLocaleDateString('fr-FR'));
+          safeSetText('saas-days-left', lic.jours_restants !== undefined ? lic.jours_restants : '--');
 
           const badge = document.getElementById('saas-status-badge');
           if (badge) {
+            const tarifStr = typeof lic.tarif_mensuel === 'number' ? lic.tarif_mensuel.toFixed(2) : '49.99';
             badge.className = lic.est_valide ? 'saas-badge-valid' : 'saas-badge-warn';
-            badge.innerText = lic.est_valide ? `🟢 Abonnement à jour (${lic.tarif_mensuel.toFixed(2)} € / mois)` : `🔴 Échu (${lic.jours_restants} j)`;
+            badge.innerText = lic.est_valide ? `🟢 Abonnement à jour (${tarifStr} € / mois)` : `🔴 Échu (${lic.jours_restants} j)`;
           }
 
-          // Pré-remplir les champs de la console Master
           const inEtab = document.getElementById('master-input-etab');
           const inTarif = document.getElementById('master-input-tarif');
           const inDate = document.getElementById('master-input-date');
-          if (inEtab) inEtab.value = lic.etablissement;
-          if (inTarif) inTarif.value = lic.tarif_mensuel;
-          if (inDate) inDate.value = dExp.toISOString().slice(0, 10);
+          if (inEtab) inEtab.value = lic.etablissement || 'Hôtel des Pins';
+          if (inTarif) inTarif.value = lic.tarif_mensuel || 49.99;
+          if (inDate && !isNaN(dExp.getTime())) inDate.value = dExp.toISOString().slice(0, 10);
         }
       } catch (e) {}
     }
@@ -681,7 +711,7 @@
         });
         const data = await res.json();
         if (res.ok) {
-          alert("✅ Paramètres contractuels enregistrés !");
+          alert("✅ Paramètres enregistrés avec succès !");
           chargerLicenceStatus();
         } else {
           alert(`❌ ${data.error || "Erreur"}`);
@@ -797,7 +827,7 @@
       }
     }
 
-    // --- CHARGEMENT GLOBAL & STATISTIQUES ---
+    // --- CHARGEMENT GLOBAL ---
     async function chargerDonneesAdmin() {
       try {
         const [resCmds, resServs, resPaiements, resChambres] = await Promise.all([

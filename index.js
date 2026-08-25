@@ -99,15 +99,26 @@ try { db.exec(`ALTER TABLE commandes ADD COLUMN numero_chambre TEXT`); } catch (
 try { db.exec(`ALTER TABLE commandes ADD COLUMN nom_client_chambre TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE paiements ADD COLUMN numero_chambre TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE paiements ADD COLUMN nom_client_chambre TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE licence_config ADD COLUMN super_pin TEXT DEFAULT '7777'`); } catch (e) {}
+try { db.exec(`ALTER TABLE licence_config ADD COLUMN tarif_mensuel REAL DEFAULT 49.99`); } catch (e) {}
+try { db.exec(`ALTER TABLE licence_config ADD COLUMN etablissement TEXT DEFAULT 'Hôtel des Pins'`); } catch (e) {}
+try { db.exec(`ALTER TABLE licence_config ADD COLUMN statut TEXT DEFAULT 'actif'`); } catch (e) {}
+try { db.exec(`ALTER TABLE licence_config ADD COLUMN date_expiration DATETIME`); } catch (e) {}
 
 // Initialisation Licence
 const licenceExists = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
 if (!licenceExists) {
   const dExp = new Date();
   dExp.setDate(dExp.getDate() + 30);
-  db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel) VALUES (1, ?, ?, ?, 'actif', 49.99)`).run(
-    'Hôtel des Pins', process.env.SUPER_PIN || '7777', dExp.toISOString()
-  );
+  db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel) VALUES (1, 'Hôtel des Pins', '7777', ?, 'actif', 49.99)`).run(dExp.toISOString());
+} else {
+  db.prepare(`UPDATE licence_config SET 
+    etablissement = COALESCE(etablissement, 'Hôtel des Pins'),
+    super_pin = COALESCE(super_pin, '7777'),
+    statut = COALESCE(statut, 'actif'),
+    tarif_mensuel = COALESCE(tarif_mensuel, 49.99)
+    WHERE id = 1
+  `).run();
 }
 
 // Initialisation Serveurs par défaut
@@ -137,14 +148,14 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
-// Vérification Super-PIN
+// Fonction de validation du Super-PIN
 function isSuperPinValid(pin) {
   if (!pin) return false;
   const p = String(pin).trim();
   if (process.env.SUPER_PIN && p === process.env.SUPER_PIN.trim()) return true;
   const lic = db.prepare(`SELECT super_pin FROM licence_config WHERE id = 1`).get();
   if (lic && lic.super_pin && p === lic.super_pin.trim()) return true;
-  return (p === '7777' || p === '8492'); // Codes de secours par défaut
+  return (p === '7777' || p === '8492');
 }
 
 // --- ROUTES API SUPER-ADMIN MASTER & LICENCE ---
@@ -152,26 +163,26 @@ function isSuperPinValid(pin) {
 // 1. Statut public de la licence
 app.get('/api/licence/status', (req, res) => {
   try {
-    const lic = db.prepare(`SELECT etablissement, date_expiration, statut, tarif_mensuel FROM licence_config WHERE id = 1`).get();
+    const lic = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
     const now = new Date();
-    const exp = new Date(lic.date_expiration);
+    const exp = lic.date_expiration ? new Date(lic.date_expiration) : new Date(Date.now() + 30 * 86400000);
     const diffDays = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
-    const estValide = (lic.statut === 'actif' && diffDays >= 0);
+    const estValide = ((lic.statut || 'actif') === 'actif' && diffDays >= 0);
 
     res.json({
-      etablissement: lic.etablissement,
-      date_expiration: lic.date_expiration,
+      etablissement: lic.etablissement || 'Hôtel des Pins',
+      date_expiration: exp.toISOString(),
       jours_restants: diffDays,
-      statut: lic.statut,
+      statut: lic.statut || 'actif',
       est_valide: estValide,
-      tarif_mensuel: lic.tarif_mensuel
+      tarif_mensuel: typeof lic.tarif_mensuel === 'number' ? lic.tarif_mensuel : 49.99
     });
   } catch (err) {
     res.status(500).json({ error: 'Erreur licence' });
   }
 });
 
-// 2. MODIFICATION GLOBALE DES PARAMÈTRES (PLEIN POUVOIR)
+// 2. Configuration Master (Plein Pouvoir)
 app.put('/api/admin/master/config', (req, res) => {
   try {
     const { etablissement, tarif_mensuel, date_expiration, statut, super_pin } = req.body;
@@ -179,11 +190,11 @@ app.put('/api/admin/master/config', (req, res) => {
       return res.status(403).json({ error: 'Super-PIN invalide. Action réservée à l\'administrateur.' });
     }
 
-    const current = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
-    const newEtab = (etablissement !== undefined && etablissement !== null) ? etablissement.trim() : current.etablissement;
-    const newTarif = (tarif_mensuel !== undefined && !isNaN(parseFloat(tarif_mensuel))) ? parseFloat(tarif_mensuel) : current.tarif_mensuel;
-    const newExp = date_expiration ? new Date(date_expiration).toISOString() : current.date_expiration;
-    const newStatut = statut || current.statut;
+    const current = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get() || {};
+    const newEtab = (etablissement !== undefined && etablissement !== null) ? String(etablissement).trim() : (current.etablissement || 'Hôtel des Pins');
+    const newTarif = (tarif_mensuel !== undefined && !isNaN(parseFloat(tarif_mensuel))) ? parseFloat(tarif_mensuel) : (current.tarif_mensuel || 49.99);
+    const newExp = date_expiration ? new Date(date_expiration).toISOString() : (current.date_expiration || new Date().toISOString());
+    const newStatut = statut || current.statut || 'actif';
 
     db.prepare(`
       UPDATE licence_config 
@@ -198,7 +209,7 @@ app.put('/api/admin/master/config', (req, res) => {
   }
 });
 
-// 3. Prolonger la licence (+X jours)
+// 3. Prolonger la licence
 app.post('/api/licence/prolonger', (req, res) => {
   try {
     const { jours, super_pin } = req.body;
@@ -206,8 +217,8 @@ app.post('/api/licence/prolonger', (req, res) => {
       return res.status(403).json({ error: 'Super-PIN invalide.' });
     }
 
-    const lic = db.prepare(`SELECT date_expiration FROM licence_config WHERE id = 1`).get();
-    let baseDate = new Date(lic.date_expiration);
+    const lic = db.prepare(`SELECT date_expiration FROM licence_config WHERE id = 1`).get() || {};
+    let baseDate = lic.date_expiration ? new Date(lic.date_expiration) : new Date();
     const now = new Date();
     if (baseDate < now) baseDate = now;
 
@@ -239,7 +250,7 @@ app.put('/api/licence/super-pin', (req, res) => {
   }
 });
 
-// 5. Action d'urgence : Débloquer TOUTES les tables du restaurant
+// 5. Débloquer TOUTES les tables
 app.post('/api/admin/master/reset-all-tables', (req, res) => {
   try {
     const { super_pin } = req.body;
@@ -255,7 +266,7 @@ app.post('/api/admin/master/reset-all-tables', (req, res) => {
   }
 });
 
-// 6. Action d'urgence : Purge complète des données de test
+// 6. Purge complète de l'historique
 app.post('/api/admin/master/purge-history', (req, res) => {
   try {
     const { super_pin } = req.body;
@@ -266,13 +277,13 @@ app.post('/api/admin/master/purge-history', (req, res) => {
     db.prepare(`DELETE FROM paiements`).run();
     io.emit('table_status_change');
     io.emit('statut_mis_a_jour');
-    res.json({ success: true, message: 'Base de données réinitialisée à zéro (commandes et encaissements effacés).' });
+    res.json({ success: true, message: 'Données purgées avec succès.' });
   } catch (err) {
     res.status(500).json({ error: 'Erreur purge' });
   }
 });
 
-// 7. Supprimer une commande spécifique (Dépannage d'un ticket bloqué)
+// 7. Supprimer une commande
 app.delete('/api/admin/commandes/:id', (req, res) => {
   try {
     const { id } = req.params;
@@ -282,17 +293,16 @@ app.delete('/api/admin/commandes/:id', (req, res) => {
     io.emit('statut_mis_a_jour');
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur suppression commande' });
+    res.status(500).json({ error: 'Erreur suppression' });
   }
 });
 
-// --- AUTHENTIFICATION ---
+// --- AUTHENTIFICATION PIN ---
 app.post('/api/auth/pin', (req, res) => {
   try {
-    const { pin } = req.body;
+    const rawPin = req.body.pin ? String(req.body.pin).trim() : '';
 
-    // Reconnaissance immédiate du Super-Admin
-    if (isSuperPinValid(pin)) {
+    if (isSuperPinValid(rawPin)) {
       return res.json({ 
         success: true, 
         isSuperAdmin: true,
@@ -300,7 +310,7 @@ app.post('/api/auth/pin', (req, res) => {
       });
     }
 
-    const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(pin ? String(pin).trim() : '');
+    const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(rawPin);
     if (serveur) {
       res.json({ success: true, isSuperAdmin: false, serveur });
     } else {
@@ -311,7 +321,7 @@ app.post('/api/auth/pin', (req, res) => {
   }
 });
 
-// Gestion de l'équipe
+// Gestion équipe
 app.get('/api/admin/serveurs', (req, res) => {
   try {
     res.json(db.prepare(`SELECT * FROM serveurs ORDER BY id ASC`).all());
@@ -426,7 +436,7 @@ app.delete('/api/admin/tables/:id', (req, res) => {
   }
 });
 
-// Statut tables
+// Statuts tables
 app.get('/api/tables/statuts', (req, res) => {
   try {
     const allTables = db.prepare(`SELECT numero FROM tables_plan`).all();
@@ -455,7 +465,7 @@ app.get('/api/tables/statuts', (req, res) => {
   }
 });
 
-// Ruptures de Stock
+// Ruptures stock
 app.get('/api/stock/indisponibles', (req, res) => {
   try {
     const rows = db.prepare(`SELECT article_id FROM articles_indisponibles`).all();
@@ -486,7 +496,7 @@ app.post('/api/stock/toggle', (req, res) => {
   }
 });
 
-// Commandes actives Cuisine
+// Commandes cuisine
 app.get('/api/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes WHERE statut NOT IN ('servi', 'encaisse', 'annule') ORDER BY id DESC`).all();
@@ -497,7 +507,7 @@ app.get('/api/commandes', (req, res) => {
   }
 });
 
-// Addition Table
+// Addition
 app.get('/api/tables/:table_num/addition', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
