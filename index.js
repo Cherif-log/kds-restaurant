@@ -388,7 +388,7 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 9. ENCAISSER TABLE (AVEC MULTI-RÈGLEMENTS, POURBOIRES & NOTES DE CHAMBRE)
+// 9. ENCAISSER TABLE
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
@@ -571,6 +571,7 @@ app.get('/api/admin/notes-chambres', (req, res) => {
       WHERE statut = 'encaisse' AND (
         (numero_chambre IS NOT NULL AND numero_chambre != '') 
         OR mode_paiement LIKE '%Chambre%'
+        OR paiements_details LIKE '%Chambre%'
       )
       ORDER BY id DESC
     `).all();

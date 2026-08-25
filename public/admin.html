@@ -24,7 +24,6 @@
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
     .container { max-width: 1200px; margin: 0 auto; }
 
-    /* VERROUILLAGE DIRECTION */
     .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 15px; }
     .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
     .pin-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; }
@@ -47,7 +46,6 @@
     .btn-print-z { background: var(--primary); color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
     .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
-    /* Grille KPI */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
     .kpi-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; }
@@ -57,7 +55,6 @@
     .kpi-value.purple { color: var(--hotel); }
     .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* Panneaux */
     .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
     .panel-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
 
@@ -103,7 +100,6 @@
     .stat-servi { background: #e0f2fe; color: #0369a1; }
     .stat-encaisse { background: #e2e8f0; color: #334155; }
 
-    /* IMPRESSION */
     #z-caisse-print, #chambre-ticket-print { display: none; }
     @media print {
       body { background: #fff !important; color: #000 !important; padding: 0 !important; }
@@ -386,6 +382,11 @@
       return new Date(dateStr.replace(' ', 'T') + 'Z');
     }
 
+    function safeSetText(id, txt) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = txt;
+    }
+
     function checkAdminAuth() {
       const isAuth = sessionStorage.getItem('hdp_admin_auth');
       if (isAuth === 'true') {
@@ -447,7 +448,7 @@
       checkAdminAuth();
     }
 
-    // --- CHARGEMENT GLOBAL ---
+    // --- CHARGEMENT GLOBAL AVEC PROTECTIONS ---
     async function chargerDonneesAdmin() {
       try {
         const [resCmds, resServs, resPaiements, resChambres] = await Promise.all([
@@ -462,16 +463,18 @@
         if (resPaiements.ok) allPaiements = await resPaiements.json();
         if (resChambres.ok) allChambres = await resChambres.json();
 
-        calculerKPIsEtAfficher(allOrders, allPaiements, allChambres);
-        calculerAuditServeurs(allOrders, allServeurs);
-        renderNotesChambres(allChambres);
+        try { calculerKPIsEtAfficher(allOrders, allPaiements, allChambres); } catch(e) { console.error("Erreur KPIs:", e); }
+        try { calculerAuditServeurs(allOrders, allServeurs); } catch(e) { console.error("Erreur Audit:", e); }
+        try { renderNotesChambres(allChambres); } catch(e) { console.error("Erreur Chambres:", e); }
       } catch (err) {
-        console.error("Erreur chargement admin:", err);
+        console.error("Erreur chargement:", err);
       }
     }
 
     function renderNotesChambres(chambres) {
       const tbody = document.getElementById('chambres-tbody');
+      if (!tbody) return;
+      
       if (!chambres || chambres.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">Aucune note de chambre enregistrée aujourd\'hui.</td></tr>';
         return;
@@ -503,24 +506,26 @@
       const cmd = allChambres.find(c => c.id === commandeId);
       if (!cmd) return;
 
-      document.getElementById('print-ch-date').innerText = new Date().toLocaleString('fr-FR');
-      document.getElementById('print-ch-num').innerText = cmd.numero_chambre || '-';
-      document.getElementById('print-ch-nom').innerText = cmd.nom_client_chambre || 'Client Résident';
-      document.getElementById('print-ch-table').innerText = `Table ${cmd.table_num} (${cmd.serveur_nom || 'Salle'})`;
-      document.getElementById('print-ch-total').innerText = `${(cmd.total_paye || 0).toFixed(2)} €`;
+      safeSetText('print-ch-date', new Date().toLocaleString('fr-FR'));
+      safeSetText('print-ch-num', cmd.numero_chambre || '-');
+      safeSetText('print-ch-nom', cmd.nom_client_chambre || 'Client Résident');
+      safeSetText('print-ch-table', `Table ${cmd.table_num} (${cmd.serveur_nom || 'Salle'})`);
+      safeSetText('print-ch-total', `${(cmd.total_paye || 0).toFixed(2)} €`);
 
       const itemsContainer = document.getElementById('print-ch-items');
-      itemsContainer.innerHTML = (cmd.items || []).map(it => `
-        <div style="display:flex; justify-content:space-between; font-size:11px; padding:2px 0;">
-          <span>${it.quantite}x ${it.article_nom}</span>
-          <strong>${((it.prix || 0) * (it.quantite || 1)).toFixed(2)} €</strong>
-        </div>
-      `).join('');
+      if (itemsContainer) {
+        itemsContainer.innerHTML = (cmd.items || []).map(it => `
+          <div style="display:flex; justify-content:space-between; font-size:11px; padding:2px 0;">
+            <span>${it.quantite}x ${it.article_nom}</span>
+            <strong>${((it.prix || 0) * (it.quantite || 1)).toFixed(2)} €</strong>
+          </div>
+        `).join('');
+      }
 
       const zBox = document.getElementById('z-caisse-print');
       const chBox = document.getElementById('chambre-ticket-print');
-      zBox.className = '';
-      chBox.className = 'print-visible';
+      if (zBox) zBox.className = '';
+      if (chBox) chBox.className = 'print-visible';
       window.print();
     }
 
@@ -563,22 +568,24 @@
       const totalTVA = totalCA - totalHT;
       const panierMoyen = encaissees.length > 0 ? (totalCA / encaissees.length) : 0;
 
-      document.getElementById('kpi-ca').innerText = `${totalCA.toFixed(2)} €`;
-      document.getElementById('kpi-tva').innerText = `${totalTVA.toFixed(2)} €`;
-      document.getElementById('kpi-chambres-total').innerText = `${totalChambresMontant.toFixed(2)} €`;
-      document.getElementById('kpi-chambres-count').innerText = (chambres || []).length;
-      document.getElementById('kpi-pourboires').innerText = `+${totalPourboires.toFixed(2)} €`;
-      document.getElementById('kpi-encaissees').innerText = encaissees.length;
-      document.getElementById('kpi-panier-moyen').innerText = `${panierMoyen.toFixed(2)} €`;
-      document.getElementById('kpi-actives').innerText = actives.length;
+      safeSetText('kpi-ca', `${totalCA.toFixed(2)} €`);
+      safeSetText('kpi-tva', `${totalTVA.toFixed(2)} €`);
+      safeSetText('kpi-chambres-total', `${totalChambresMontant.toFixed(2)} €`);
+      safeSetText('kpi-chambres-count', (chambres || []).length);
+      safeSetText('kpi-pourboires', `+${totalPourboires.toFixed(2)} €`);
+      safeSetText('kpi-encaissees', encaissees.length);
+      safeSetText('kpi-panier-moyen', `${panierMoyen.toFixed(2)} €`);
+      safeSetText('kpi-actives', actives.length);
 
-      document.getElementById('pay-total-cb').innerText = `${totalCB.toFixed(2)} €`;
-      document.getElementById('pay-total-esp').innerText = `${totalEsp.toFixed(2)} €`;
-      document.getElementById('pay-total-tr').innerText = `${totalTR.toFixed(2)} €`;
-      document.getElementById('pay-total-chambre').innerText = `${totalChambrePay.toFixed(2)} €`;
-      document.getElementById('pay-total-tips').innerText = `+${totalPourboires.toFixed(2)} €`;
+      safeSetText('pay-total-cb', `${totalCB.toFixed(2)} €`);
+      safeSetText('pay-total-esp', `${totalEsp.toFixed(2)} €`);
+      safeSetText('pay-total-tr', `${totalTR.toFixed(2)} €`);
+      safeSetText('pay-total-chambre', `${totalChambrePay.toFixed(2)} €`);
+      safeSetText('pay-total-tips', `+${totalPourboires.toFixed(2)} €`);
 
       const tbody = document.getElementById('orders-table-body');
+      if (!tbody) return;
+
       if (!commandes || commandes.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
         return;
@@ -623,6 +630,8 @@
 
     function calculerAuditServeurs(commandes, serveurs) {
       const tbody = document.getElementById('servers-audit-tbody');
+      if (!tbody) return;
+
       if (!serveurs || serveurs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px;">Aucun serveur configuré</td></tr>';
         return;
@@ -630,7 +639,8 @@
 
       const now = new Date();
       tbody.innerHTML = serveurs.map(serv => {
-        const cmdsServeur = (commandes || []).filter(c => (c.serveur_nom || 'Salle').toLowerCase() === serv.nom.toLowerCase());
+        const sNom = serv.nom || 'Salle';
+        const cmdsServeur = (commandes || []).filter(c => (c.serveur_nom || 'Salle').toLowerCase() === sNom.toLowerCase());
         const encaissees = cmdsServeur.filter(c => c.statut === 'encaisse');
         const enCours = cmdsServeur.filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
 
@@ -681,7 +691,7 @@
 
         return `
           <tr>
-            <td><strong>👤 ${serv.nom}</strong></td>
+            <td><strong>👤 ${sNom}</strong></td>
             <td>${statutBadge}</td>
             <td><strong>${derniereHeureStr}</strong></td>
             <td>${cmdsServeur.length}</td>
@@ -707,6 +717,7 @@
 
     function renderPlanAdmin() {
       const container = document.getElementById('plan-zones-management');
+      if (!container) return;
       if (!planData || planData.length === 0) {
         container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">Aucune zone définie.</div>';
         return;
@@ -793,8 +804,9 @@
     function renderServeursList() {
       const container = document.getElementById('servers-list-container');
       const badge = document.getElementById('server-count-badge');
-      badge.innerText = `${allServeurs.length} membre${allServeurs.length > 1 ? 's' : ''}`;
+      if (badge) badge.innerText = `${allServeurs.length} membre${allServeurs.length > 1 ? 's' : ''}`;
 
+      if (!container) return;
       container.innerHTML = allServeurs.map(s => `
         <div class="breakdown-row">
           <span class="tag-bold">👤 ${s.nom} <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b;">PIN: <strong>${s.pin}</strong></span></span>
@@ -896,21 +908,21 @@
         });
       }
 
-      document.getElementById('print-z-date').innerText = new Date().toLocaleString('fr-FR');
-      document.getElementById('print-z-ca').innerText = `${totalCA.toFixed(2)} €`;
-      document.getElementById('print-z-ht').innerText = `${(totalCA / 1.10).toFixed(2)} €`;
-      document.getElementById('print-z-tva').innerText = `${(totalCA - (totalCA / 1.10)).toFixed(2)} €`;
-      document.getElementById('print-z-tips').innerText = `+${totalTips.toFixed(2)} €`;
-      document.getElementById('print-z-tables').innerText = `${encaissees.length}`;
-      document.getElementById('print-z-cb').innerText = `${totalCB.toFixed(2)} €`;
-      document.getElementById('print-z-esp').innerText = `${totalEsp.toFixed(2)} €`;
-      document.getElementById('print-z-tr').innerText = `${totalTR.toFixed(2)} €`;
-      document.getElementById('print-z-chambre').innerText = `${totalChambre.toFixed(2)} €`;
+      safeSetText('print-z-date', new Date().toLocaleString('fr-FR'));
+      safeSetText('print-z-ca', `${totalCA.toFixed(2)} €`);
+      safeSetText('print-z-ht', `${(totalCA / 1.10).toFixed(2)} €`);
+      safeSetText('print-z-tva', `${(totalCA - (totalCA / 1.10)).toFixed(2)} €`);
+      safeSetText('print-z-tips', `+${totalTips.toFixed(2)} €`);
+      safeSetText('print-z-tables', `${encaissees.length}`);
+      safeSetText('print-z-cb', `${totalCB.toFixed(2)} €`);
+      safeSetText('print-z-esp', `${totalEsp.toFixed(2)} €`);
+      safeSetText('print-z-tr', `${totalTR.toFixed(2)} €`);
+      safeSetText('print-z-chambre', `${totalChambre.toFixed(2)} €`);
 
       const zBox = document.getElementById('z-caisse-print');
       const chBox = document.getElementById('chambre-ticket-print');
-      chBox.className = '';
-      zBox.className = 'print-visible';
+      if (chBox) chBox.className = '';
+      if (zBox) zBox.className = 'print-visible';
       window.print();
     }
 
