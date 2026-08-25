@@ -130,7 +130,7 @@
     .btn-mod-choice.active { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
     .btn-mod-choice.active-side { background: #dbeafe; border-color: var(--accent); color: #1e40af; }
 
-    /* MODALS GENERIQUES */
+    /* MODALS GENERIQUES & ÉCRAN LICENCE */
     .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 15px; }
     .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
     .pin-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
@@ -142,6 +142,9 @@
     .btn-key { background: #334155; color: #fff; border: none; border-radius: 12px; height: 58px; font-size: 1.4rem; font-weight: 800; cursor: pointer; }
     .btn-key:active { background: #475569; }
     .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
+
+    .license-block-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 999999; display: none; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #fff; }
+    .license-block-card { background: #1e293b; border: 1.5px solid #ef4444; border-radius: 16px; padding: 32px 24px; max-width: 440px; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
 
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; padding: 15px; }
     .modal-overlay.open { display: flex; }
@@ -218,7 +221,25 @@
 </head>
 <body>
 
-  <!-- VERROUILLAGE PIN -->
+  <!-- ÉCRAN DE BLOCAGE SI LICENCE EXPIRÉE -->
+  <div class="license-block-overlay" id="licence-expired-modal">
+    <div class="license-block-card">
+      <div style="font-size:2.8rem; margin-bottom:12px;">🔒</div>
+      <h2 style="font-size:1.35rem; font-weight:800; color:#ef4444; margin-bottom:8px;">Abonnement en attente de renouvellement</h2>
+      <p style="font-size:0.9rem; color:#94a3b8; line-height:1.5; margin-bottom:20px;">
+        La licence d'exploitation logicielle pour <strong>Hôtel des Pins</strong> est arrivée à échéance.
+        Pour réactiver l'accès immédiatement, veuillez contacter le support technique.
+      </p>
+      <div style="background:#0f172a; border:1px solid #334155; padding:12px; border-radius:8px; font-size:0.85rem; font-weight:700; color:#38bdf8; margin-bottom:20px;">
+        📞 Assistance Éditeur / Support Client
+      </div>
+      <button style="background:#475569; color:#fff; border:none; padding:10px 16px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer;" onclick="ouvrirSuperUnlock()">
+        🔓 Déverrouillage Support Technique (Super-PIN)
+      </button>
+    </div>
+  </div>
+
+  <!-- VERROUILLAGE PIN SERVEUR -->
   <div class="lock-overlay" id="pin-lock-overlay">
     <div class="pin-card">
       <div class="pin-title">Hôtel des Pins</div>
@@ -253,7 +274,6 @@
       <div class="user-badge" onclick="deconnecterServeur()">
         👤 <span id="active-server-name">Serveur</span> (Changer)
       </div>
-      <!-- NAVIGATION FLUIDE DANS LA MÊME FENÊTRE -->
       <a href="/cuisine.html" class="btn-nav-link">👨‍🍳 Cuisine</a>
       <a href="/admin.html" class="btn-nav-link">📊 Admin</a>
     </div>
@@ -368,7 +388,7 @@
             <button class="btn-mod-choice" onclick="toggleGarniture('Purée', this)">Purée maison</button>
             <button class="btn-mod-choice" onclick="toggleGarniture('Salade', this)">Salade verte</button>
             <button class="btn-mod-choice" onclick="toggleGarniture('Légumes', this)">Légumes sautés</button>
-            <button class="btn-mod-choice" onclick="toggleGarniture('Sauce主体', this)">Sauce Poivre</button>
+            <button class="btn-mod-choice" onclick="toggleGarniture('Sauce Poivre', this)">Sauce Poivre</button>
             <button class="btn-mod-choice" onclick="toggleGarniture('Sauce Échalote', this)">Sauce Échalote</button>
           </div>
         </div>
@@ -412,7 +432,7 @@
     </div>
   </div>
 
-  <!-- MODAL ADDITION & ENCAISSEMENT MULTI-RÈGLEMENTS + NOTE DE CHAMBRE -->
+  <!-- MODAL ADDITION & ENCAISSEMENT -->
   <div class="modal-overlay" id="addition-modal">
     <div class="modal-card">
       <div class="modal-head">
@@ -684,6 +704,31 @@
     window.addEventListener('online', () => { updateNetworkBadge(); synchroniserCommandesHorsLigne(); });
     window.addEventListener('offline', () => { updateNetworkBadge(); });
 
+    // VÉRIFICATION DE LA LICENCE
+    async function verifierValiditeLicence() {
+      try {
+        const res = await fetch('/api/licence/status');
+        if (res.ok) {
+          const lic = await res.json();
+          if (!lic.est_valide) {
+            document.getElementById('licence-expired-modal').style.display = 'flex';
+          } else {
+            document.getElementById('licence-expired-modal').style.display = 'none';
+          }
+        }
+      } catch (e) {}
+    }
+
+    function ouvrirSuperUnlock() {
+      const sPin = prompt("Saisissez le Super-PIN Support Technique :");
+      if (sPin === '7777') {
+        document.getElementById('licence-expired-modal').style.display = 'none';
+        window.location.href = '/admin.html';
+      } else {
+        alert("Super-PIN incorrect.");
+      }
+    }
+
     function checkAuth() {
       if (!currentServeur) {
         document.getElementById('pin-lock-overlay').style.display = 'flex';
@@ -831,6 +876,7 @@
     }
 
     function init() {
+      verifierValiditeLicence();
       checkAuth();
       updateNetworkBadge();
       const categories = ["Menu 40 €", "Entrées (15 €)", "Poissons (25 €)", "Viandes (25 €)", "Desserts", "Menu Enfant (15 €)"];
@@ -1507,6 +1553,7 @@
       socket.on('table_status_change', () => chargerPlanSalle());
       socket.on('statut_mis_a_jour', () => chargerPlanSalle());
       socket.on('plan_update', () => chargerPlanSalle());
+      socket.on('licence_update', () => verifierValiditeLicence());
       socket.on('stock_update', (data) => {
         indisponibles = data;
         afficherPlats();
@@ -1516,6 +1563,7 @@
     setInterval(() => {
       synchroniserCommandesHorsLigne();
       chargerPlanSalle();
+      verifierValiditeLicence();
     }, 6000);
 
     init();

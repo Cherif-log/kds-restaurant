@@ -76,6 +76,15 @@ db.exec(`
     nom_client_chambre TEXT,
     date_paiement DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS licence_config (
+    id INTEGER PRIMARY KEY,
+    etablissement TEXT DEFAULT 'Hôtel des Pins',
+    super_pin TEXT DEFAULT '7777',
+    date_expiration DATETIME,
+    statut TEXT DEFAULT 'actif',
+    tarif_mensuel REAL DEFAULT 49.99
+  );
 `);
 
 // Migrations automatiques
@@ -91,6 +100,16 @@ try { db.exec(`ALTER TABLE commandes ADD COLUMN nom_client_chambre TEXT`); } cat
 try { db.exec(`ALTER TABLE paiements ADD COLUMN numero_chambre TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE paiements ADD COLUMN nom_client_chambre TEXT`); } catch (e) {}
 
+// Initialisation Licence (30 jours de validité par défaut)
+const licenceExists = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
+if (!licenceExists) {
+  const dExp = new Date();
+  dExp.setDate(dExp.getDate() + 30);
+  db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel) VALUES (1, ?, ?, ?, 'actif', 49.99)`).run(
+    'Hôtel des Pins', '7777', dExp.toISOString()
+  );
+}
+
 // Initialisation Serveurs par défaut
 const countServeurs = db.prepare(`SELECT count(*) as count FROM serveurs`).get();
 if (countServeurs.count === 0) {
@@ -101,7 +120,7 @@ if (countServeurs.count === 0) {
   insertServ.run('Direction', '9999');
 }
 
-// Initialisation Plan de Salle par défaut si vide
+// Initialisation Plan de Salle par défaut
 const countZones = db.prepare(`SELECT count(*) as count FROM zones`).get();
 if (countZones.count === 0) {
   const z1 = db.prepare(`INSERT INTO zones (nom) VALUES (?)`).run('🌲 Terrasse & Pinède').lastInsertRowid;
@@ -118,14 +137,91 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
-// --- ROUTES API ---
+// --- ROUTES API GESTION LICENCE & SUPER-ADMIN ---
 
-// 1. Authentification Serveur par PIN
+// Statut public de la licence
+app.get('/api/licence/status', (req, res) => {
+  try {
+    const lic = db.prepare(`SELECT etablissement, date_expiration, statut, tarif_mensuel FROM licence_config WHERE id = 1`).get();
+    const now = new Date();
+    const exp = new Date(lic.date_expiration);
+    const diffDays = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+    const estValide = (lic.statut === 'actif' && diffDays >= 0);
+
+    res.json({
+      etablissement: lic.etablissement,
+      date_expiration: lic.date_expiration,
+      jours_restants: diffDays,
+      statut: lic.statut,
+      est_valide: estValide,
+      tarif_mensuel: lic.tarif_mensuel
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur licence' });
+  }
+});
+
+// Renouveler / Prolonger la licence (Super-Admin)
+app.post('/api/licence/prolonger', (req, res) => {
+  try {
+    const { jours, super_pin } = req.body;
+    const lic = db.prepare(`SELECT super_pin, date_expiration FROM licence_config WHERE id = 1`).get();
+
+    if (super_pin !== lic.super_pin && super_pin !== '7777') {
+      return res.status(403).json({ error: 'Super-PIN incorrect.' });
+    }
+
+    let baseDate = new Date(lic.date_expiration);
+    const now = new Date();
+    if (baseDate < now) baseDate = now; // Si déjà expirée, on repart d'aujourd'hui
+
+    baseDate.setDate(baseDate.getDate() + (parseInt(jours, 10) || 30));
+    db.prepare(`UPDATE licence_config SET date_expiration = ?, statut = 'actif' WHERE id = 1`).run(baseDate.toISOString());
+
+    io.emit('licence_update');
+    res.json({ success: true, nouvelle_date: baseDate.toISOString() });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur mise à jour licence' });
+  }
+});
+
+// Changer le Super-PIN
+app.put('/api/licence/super-pin', (req, res) => {
+  try {
+    const { old_pin, new_pin } = req.body;
+    const lic = db.prepare(`SELECT super_pin FROM licence_config WHERE id = 1`).get();
+
+    if (old_pin !== lic.super_pin && old_pin !== '7777') {
+      return res.status(403).json({ error: 'Ancien Super-PIN incorrect.' });
+    }
+    if (!new_pin || new_pin.length !== 4 || !/^\d{4}$/.test(new_pin)) {
+      return res.status(400).json({ error: 'Le nouveau Super-PIN doit contenir 4 chiffres.' });
+    }
+
+    db.prepare(`UPDATE licence_config SET super_pin = ? WHERE id = 1`).run(new_pin.trim());
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur modification Super-PIN' });
+  }
+});
+
+// --- AUTHENTIFICATION AVEC SUPPORT SUPER-PIN ---
 app.post('/api/auth/pin', (req, res) => {
   try {
     const { pin } = req.body;
+    const lic = db.prepare(`SELECT super_pin FROM licence_config WHERE id = 1`).get();
+
+    // Vérification Super-PIN Support
+    if (pin === lic.super_pin || pin === '7777') {
+      return res.json({ 
+        success: true, 
+        isSuperAdmin: true,
+        serveur: { id: 99999, nom: 'Support Éditeur (Super-Admin)' } 
+      });
+    }
+
     const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(pin);
-    if (serveur) res.json({ success: true, serveur });
+    if (serveur) res.json({ success: true, isSuperAdmin: false, serveur });
     else res.status(401).json({ success: false, error: 'Code PIN incorrect' });
   } catch (err) {
     res.status(500).json({ error: 'Erreur auth' });

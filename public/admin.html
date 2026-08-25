@@ -18,6 +18,7 @@
       --warning: #f59e0b;
       --danger: #ef4444;
       --hotel: #6366f1;
+      --saas: #8b5cf6;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -47,6 +48,16 @@
     .btn-export { background: #047857; color: #fff; border: none; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
     .btn-print-z { background: var(--primary); color: #fff; border: 1px solid #475569; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
     .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+
+    /* BANNIÈRE LICENCE SAAS / SUPPORT */
+    .saas-license-banner { background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .saas-title { font-size: 0.95rem; font-weight: 800; color: #6d28d9; display: flex; align-items: center; gap: 8px; }
+    .saas-info { font-size: 0.85rem; color: #5b21b6; }
+    .saas-badge-valid { background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #86efac; }
+    .saas-badge-warn { background: #fef3c7; color: #b45309; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #fde68a; }
+
+    .btn-renew-saas { background: var(--saas); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-renew-saas:hover { background: #7c3aed; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
@@ -139,11 +150,11 @@
 </head>
 <body>
 
-  <!-- ÉCRAN DE VERROUILLAGE DIRECTION AVEC BOUTON DE SORTIE DE SECOURS -->
+  <!-- ÉCRAN DE VERROUILLAGE DIRECTION -->
   <div class="lock-overlay" id="admin-lock-overlay">
     <div class="pin-card">
-      <div class="pin-title">Accès Direction</div>
-      <div class="pin-subtitle">Saisissez le code PIN Direction</div>
+      <div class="pin-title">Accès Direction & Éditeur</div>
+      <div class="pin-subtitle">Saisissez le PIN Direction ou Super-PIN</div>
 
       <div class="pin-dots">
         <div class="pin-dot" id="dot-0"></div>
@@ -167,24 +178,40 @@
         <button class="btn-key action" onclick="deleteAdminPin()">⌫</button>
       </div>
 
-      <!-- BOUTON RETOUR DIRECT SALLE & CAISSE -->
       <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
         <button style="background:#334155; color:#38bdf8; border:1px solid #475569; padding:10px; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer;" onclick="window.location.href='/index.html'">
           ⬅️ Retour à la Salle & Caisse
         </button>
-        <div style="font-size:0.75rem; color:#64748b;">Code Direction par défaut : 9999</div>
+        <div style="font-size:0.75rem; color:#64748b;">Support Technique : 7777 | Direction : 9999</div>
       </div>
     </div>
   </div>
 
   <div class="container" id="admin-main-container" style="display:none;">
+    
+    <!-- BANNIÈRE SAAS / ABONNEMENT ÉDITEUR (49,99 €/MOIS) -->
+    <div class="saas-license-banner" id="saas-banner">
+      <div>
+        <div class="saas-title">
+          <span>💼 Abonnement SaaS & Maintenance Logicielle</span>
+          <span class="saas-badge-valid" id="saas-status-badge">🟢 Actif (49,99 € / mois)</span>
+        </div>
+        <div class="saas-info" style="margin-top:4px;">
+          Établissement : <strong id="saas-client-name">Hôtel des Pins</strong> — Échéance : <strong id="saas-exp-date">--/--/----</strong> (<span id="saas-days-left">--</span> jours restants)
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-renew-saas" onclick="prolongerAbonnementClient(30)">➕ Renouveler 30 Jours (+49,99 €)</button>
+        <button class="btn-renew-saas" style="background:#475569;" onclick="prolongerAbonnementClient(365)">📅 +1 An</button>
+      </div>
+    </div>
+
     <header>
       <div>
         <h1>Hôtel des Pins — Espace Direction & Audit</h1>
         <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Surveillance de l'activité du personnel et pilotage financier</p>
       </div>
       <div class="header-actions">
-        <!-- NAVIGATION RAPIDE VERS SALLE & CUISINE -->
         <a href="/index.html" class="btn-nav-link">📱 Salle & Caisse</a>
         <a href="/cuisine.html" class="btn-nav-link">👨‍🍳 Cuisine</a>
         <a href="/api/admin/backup-db" class="btn-export" style="background:#4338ca; text-decoration:none;">💾 Sauvegarder</a>
@@ -447,6 +474,7 @@
         chargerDonneesAdmin();
         chargerServeurs();
         chargerPlanAdmin();
+        chargerLicenceStatus();
       } else {
         document.getElementById('admin-lock-overlay').style.display = 'flex';
         document.getElementById('admin-main-container').style.display = 'none';
@@ -481,12 +509,13 @@
         });
         const data = await res.json();
         
-        if (res.ok && data.success && (data.serveur.nom.toLowerCase().includes('direction') || enteredAdminPin === '9999')) {
+        if (res.ok && data.success && (data.isSuperAdmin || data.serveur.nom.toLowerCase().includes('direction') || enteredAdminPin === '9999' || enteredAdminPin === '7777')) {
           sessionStorage.setItem('hdp_admin_auth', 'true');
+          sessionStorage.setItem('hdp_is_super', data.isSuperAdmin ? 'true' : 'false');
           clearAdminPin();
           checkAdminAuth();
         } else {
-          alert("⛔ Accès refusé : Code Direction requis !");
+          alert("⛔ Accès refusé : Code Direction ou Super-PIN requis !");
           clearAdminPin();
         }
       } catch (e) {
@@ -497,9 +526,58 @@
 
     function verrouillerAdmin() {
       sessionStorage.removeItem('hdp_admin_auth');
+      sessionStorage.removeItem('hdp_is_super');
       checkAdminAuth();
     }
 
+    // --- GESTION LICENCE SAAS ---
+    async function chargerLicenceStatus() {
+      try {
+        const res = await fetch('/api/licence/status');
+        if (res.ok) {
+          const lic = await res.json();
+          safeSetText('saas-client-name', lic.etablissement);
+          const dExp = new Date(lic.date_expiration);
+          safeSetText('saas-exp-date', dExp.toLocaleDateString('fr-FR'));
+          safeSetText('saas-days-left', lic.jours_restants);
+
+          const badge = document.getElementById('saas-status-badge');
+          if (badge) {
+            if (lic.est_valide) {
+              badge.className = 'saas-badge-valid';
+              badge.innerText = `🟢 Abonnement Actif (${lic.tarif_mensuel.toFixed(2)} € / mois)`;
+            } else {
+              badge.className = 'saas-badge-warn';
+              badge.innerText = `🔴 Échu (${lic.jours_restants} j)`;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function prolongerAbonnementClient(jours) {
+      const superPin = prompt("Saisissez votre Super-PIN Support pour valider le renouvellement :", "7777");
+      if (!superPin) return;
+
+      try {
+        const res = await fetch('/api/licence/prolonger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jours, super_pin: superPin })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Abonnement renouvelé avec succès (+${jours} jours) !`);
+          chargerLicenceStatus();
+        } else {
+          alert(`❌ ${data.error || "Erreur de renouvellement"}`);
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    // --- CHARGEMENT GLOBAL ---
     async function chargerDonneesAdmin() {
       try {
         const [resCmds, resServs, resPaiements, resChambres] = await Promise.all([
@@ -1059,6 +1137,7 @@
       socket.on('statut_mis_a_jour', () => chargerDonneesAdmin());
       socket.on('table_status_change', () => chargerDonneesAdmin());
       socket.on('plan_update', () => chargerPlanAdmin());
+      socket.on('licence_update', () => chargerLicenceStatus());
     }
 
     setInterval(chargerDonneesAdmin, 5000);
