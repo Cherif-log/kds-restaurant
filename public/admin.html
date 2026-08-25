@@ -57,7 +57,7 @@
     .kpi-value.purple { color: var(--hotel); }
     .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* Surveillance & Audit Serveurs */
+    /* Panneaux */
     .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
     .panel-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
 
@@ -72,7 +72,6 @@
     .perf-inactif { background: #fef3c7; color: #b45309; }
     .perf-neutre { background: #f1f5f9; color: #64748b; }
 
-    /* Configuration */
     .dashboard-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 28px; }
     .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
     .breakdown-row:last-child { border-bottom: none; }
@@ -104,7 +103,7 @@
     .stat-servi { background: #e0f2fe; color: #0369a1; }
     .stat-encaisse { background: #e2e8f0; color: #334155; }
 
-    /* IMPRESSION Z */
+    /* IMPRESSION */
     #z-caisse-print, #chambre-ticket-print { display: none; }
     @media print {
       body { background: #fff !important; color: #000 !important; padding: 0 !important; }
@@ -193,7 +192,7 @@
       </div>
     </div>
 
-    <!-- 🏨 NOUVEAU MODULE : NOTES DE CHAMBRES POUR LA RÉCEPTION HÔTEL -->
+    <!-- 🏨 MODULE : NOTES DE CHAMBRES POUR LA RÉCEPTION HÔTEL -->
     <div class="panel-card" style="border:1.5px solid #c7d2fe;">
       <div class="panel-title" style="color:#4338ca;">
         <span>🏨 Notes de Chambres Transférées (Réception Hôtel)</span>
@@ -457,21 +456,23 @@
           fetch('/api/admin/paiements'),
           fetch('/api/admin/notes-chambres')
         ]);
-        if (resCmds.ok && resServs.ok && resPaiements.ok && resChambres.ok) {
-          allOrders = await resCmds.json();
-          allServeurs = await resServs.json();
-          allPaiements = await resPaiements.json();
-          allChambres = await resChambres.json();
-          calculerKPIsEtAfficher(allOrders, allPaiements, allChambres);
-          calculerAuditServeurs(allOrders, allServeurs);
-          renderNotesChambres(allChambres);
-        }
-      } catch (err) {}
+        
+        if (resCmds.ok) allOrders = await resCmds.json();
+        if (resServs.ok) allServeurs = await resServs.json();
+        if (resPaiements.ok) allPaiements = await resPaiements.json();
+        if (resChambres.ok) allChambres = await resChambres.json();
+
+        calculerKPIsEtAfficher(allOrders, allPaiements, allChambres);
+        calculerAuditServeurs(allOrders, allServeurs);
+        renderNotesChambres(allChambres);
+      } catch (err) {
+        console.error("Erreur chargement admin:", err);
+      }
     }
 
     function renderNotesChambres(chambres) {
       const tbody = document.getElementById('chambres-tbody');
-      if (chambres.length === 0) {
+      if (!chambres || chambres.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">Aucune note de chambre enregistrée aujourd\'hui.</td></tr>';
         return;
       }
@@ -489,7 +490,7 @@
             <td>Table ${c.table_num}</td>
             <td>👤 ${c.serveur_nom || 'Salle'}</td>
             <td><strong style="color:var(--hotel); font-size:1rem;">${(c.total_paye || 0).toFixed(2)} €</strong></td>
-            <td><div style="font-size:0.8rem; color:#475569; max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${itemsTxt}">${itemsTxt}</div></td>
+            <td><div style="font-size:0.8rem; color:#475569; max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${itemsTxt}">${itemsTxt || '-'}</div></td>
             <td>
               <button class="btn-print-reception" onclick="imprimerJustificatifChambre(${c.id})">🖨️ Bon Réception</button>
             </td>
@@ -524,8 +525,8 @@
     }
 
     function calculerKPIsEtAfficher(commandes, paiements, chambres) {
-      const actives = commandes.filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
-      const encaissees = commandes.filter(c => c.statut === 'encaisse');
+      const actives = (commandes || []).filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
+      const encaissees = (commandes || []).filter(c => c.statut === 'encaisse');
 
       let totalCA = 0;
       let totalPourboires = 0;
@@ -539,7 +540,7 @@
         totalPourboires += (c.pourboire || 0);
       });
 
-      chambres.forEach(ch => {
+      (chambres || []).forEach(ch => {
         totalChambresMontant += (ch.total_paye || 0);
       });
 
@@ -550,10 +551,11 @@
 
       if (paiements && paiements.length > 0) {
         paiements.forEach(p => {
-          if (p.mode_paiement === 'CB') totalCB += p.montant;
-          else if (p.mode_paiement === 'Espèces') totalEsp += p.montant;
-          else if (p.mode_paiement === 'Titre Resto') totalTR += p.montant;
-          else if (p.mode_paiement.includes('Chambre') || p.numero_chambre) totalChambrePay += p.montant;
+          const mode = p.mode_paiement || '';
+          if (mode === 'CB') totalCB += (p.montant || 0);
+          else if (mode === 'Espèces') totalEsp += (p.montant || 0);
+          else if (mode === 'Titre Resto') totalTR += (p.montant || 0);
+          else if (mode.includes('Chambre') || p.numero_chambre) totalChambrePay += (p.montant || 0);
         });
       }
 
@@ -564,7 +566,7 @@
       document.getElementById('kpi-ca').innerText = `${totalCA.toFixed(2)} €`;
       document.getElementById('kpi-tva').innerText = `${totalTVA.toFixed(2)} €`;
       document.getElementById('kpi-chambres-total').innerText = `${totalChambresMontant.toFixed(2)} €`;
-      document.getElementById('kpi-chambres-count').innerText = chambres.length;
+      document.getElementById('kpi-chambres-count').innerText = (chambres || []).length;
       document.getElementById('kpi-pourboires').innerText = `+${totalPourboires.toFixed(2)} €`;
       document.getElementById('kpi-encaissees').innerText = encaissees.length;
       document.getElementById('kpi-panier-moyen').innerText = `${panierMoyen.toFixed(2)} €`;
@@ -577,7 +579,7 @@
       document.getElementById('pay-total-tips').innerText = `+${totalPourboires.toFixed(2)} €`;
 
       const tbody = document.getElementById('orders-table-body');
-      if (commandes.length === 0) {
+      if (!commandes || commandes.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
         return;
       }
@@ -628,7 +630,7 @@
 
       const now = new Date();
       tbody.innerHTML = serveurs.map(serv => {
-        const cmdsServeur = commandes.filter(c => (c.serveur_nom || 'Salle').toLowerCase() === serv.nom.toLowerCase());
+        const cmdsServeur = (commandes || []).filter(c => (c.serveur_nom || 'Salle').toLowerCase() === serv.nom.toLowerCase());
         const encaissees = cmdsServeur.filter(c => c.statut === 'encaisse');
         const enCours = cmdsServeur.filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
 
@@ -705,7 +707,7 @@
 
     function renderPlanAdmin() {
       const container = document.getElementById('plan-zones-management');
-      if (planData.length === 0) {
+      if (!planData || planData.length === 0) {
         container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">Aucune zone définie.</div>';
         return;
       }
@@ -850,7 +852,7 @@
 
     // --- EXPORT CSV & IMPRESSION Z ---
     function exporterExcelCSV() {
-      if (allOrders.length === 0) return alert("Aucune donnée.");
+      if (!allOrders || allOrders.length === 0) return alert("Aucune donnée.");
       let csv = "\uFEFFID;Table;Serveur;Chambre;Nom_Client;Date_Creation;Date_Cloture;Statut;Paiement;Pourboire_EUR;Remise_EUR;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
       allOrders.forEach(c => {
         let brut = 0;
@@ -868,7 +870,7 @@
     }
 
     function imprimerZCaisse() {
-      const encaissees = allOrders.filter(c => c.statut === 'encaisse');
+      const encaissees = (allOrders || []).filter(c => c.statut === 'encaisse');
       let totalCA = 0;
       let totalTips = 0;
       let totalCB = 0;
@@ -886,10 +888,11 @@
 
       if (allPaiements && allPaiements.length > 0) {
         allPaiements.forEach(p => {
-          if (p.mode_paiement === 'CB') totalCB += p.montant;
-          else if (p.mode_paiement === 'Espèces') totalEsp += p.montant;
-          else if (p.mode_paiement === 'Titre Resto') totalTR += p.montant;
-          else if (p.mode_paiement.includes('Chambre') || p.numero_chambre) totalChambre += p.montant;
+          const mode = p.mode_paiement || '';
+          if (mode === 'CB') totalCB += (p.montant || 0);
+          else if (mode === 'Espèces') totalEsp += (p.montant || 0);
+          else if (mode === 'Titre Resto') totalTR += (p.montant || 0);
+          else if (mode.includes('Chambre') || p.numero_chambre) totalChambre += (p.montant || 0);
         });
       }
 

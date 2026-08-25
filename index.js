@@ -406,8 +406,7 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
     let paiementsList = [];
     if (paiements && Array.isArray(paiements) && paiements.length > 0) {
       paiementsList = paiements;
-      // Récupérer le numéro de chambre s'il est spécifié dans l'un des versements
-      const chPay = paiementsList.find(p => p.mode.includes('Chambre') || p.numero_chambre);
+      const chPay = paiementsList.find(p => (p.mode && p.mode.includes('Chambre')) || p.numero_chambre);
       if (chPay) {
         if (!numChambre && chPay.numero_chambre) numChambre = String(chPay.numero_chambre).trim();
         if (!nomClient && chPay.nom_client) nomClient = String(chPay.nom_client).trim();
@@ -427,7 +426,6 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
 
     const paiementsJson = JSON.stringify(paiementsList);
 
-    // Enregistrer chaque transaction dans la table paiements
     const insertPaiement = db.prepare(`
       INSERT INTO paiements (table_num, serveur_nom, mode_paiement, montant, pourboire, numero_chambre, nom_client_chambre, date_paiement) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -437,10 +435,9 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
       const pTip = (index === 0) ? tipAmount : 0;
       const pChambre = p.numero_chambre || numChambre;
       const pNom = p.nom_client || nomClient;
-      insertPaiement.run(table_num, sNom, p.mode, p.montant, pTip, pChambre, pNom, nowIso);
+      insertPaiement.run(table_num, sNom, p.mode || 'CB', p.montant || 0, pTip, pChambre, pNom, nowIso);
     });
 
-    // Mettre à jour les commandes de la table
     const update = db.prepare(`
       UPDATE commandes 
       SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, pourboire = ?, total_paye = ?, numero_chambre = ?, nom_client_chambre = ?, paiements_details = ?, serveur_nom = COALESCE(?, serveur_nom), date_fin = ? 
@@ -567,25 +564,19 @@ app.get('/api/admin/paiements', (req, res) => {
   }
 });
 
-// 👉 11bis. NOUVEAU : API NOTES DE CHAMBRES POUR LA RÉCEPTION
 app.get('/api/admin/notes-chambres', (req, res) => {
   try {
-    const rows = db.prepare(`
-      SELECT c.*, (
-        SELECT json_group_array(json_object('article_nom', ci.article_nom, 'quantite', ci.quantite, 'prix', ci.prix))
-        FROM commande_items ci WHERE ci.commande_id = c.id
-      ) as items_json
-      FROM commandes c 
-      WHERE c.statut = 'encaisse' AND (c.numero_chambre IS NOT NULL AND c.numero_chambre != '' OR c.mode_paiement LIKE '%Chambre%')
-      ORDER BY c.id DESC
+    const commandes = db.prepare(`
+      SELECT * FROM commandes 
+      WHERE statut = 'encaisse' AND (
+        (numero_chambre IS NOT NULL AND numero_chambre != '') 
+        OR mode_paiement LIKE '%Chambre%'
+      )
+      ORDER BY id DESC
     `).all();
 
-    const formatted = rows.map(r => ({
-      ...r,
-      items: r.items_json ? JSON.parse(r.items_json) : []
-    }));
-
-    res.json(formatted);
+    const getItems = db.prepare(`SELECT * FROM commande_items WHERE commande_id = ?`);
+    res.json(commandes.map(cmd => ({ ...cmd, items: getItems.all(cmd.id) })));
   } catch (err) {
     res.status(500).json({ error: 'Erreur notes de chambres' });
   }
