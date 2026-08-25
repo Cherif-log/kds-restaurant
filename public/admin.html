@@ -3,550 +3,1649 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Administration & Pilotage — SmartView POS</title>
+  <title>Espace Direction & Audit</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
-      --bg: #0b0f19;
-      --card: #151e2e;
-      --card-hover: #1e293b;
-      --border: #243046;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #1e293b;
       --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --success: #10b981;
+      --success: #16a34a;
       --warning: #f59e0b;
       --danger: #ef4444;
-      --purple: #8b5cf6;
+      --hotel: #6366f1;
+      --saas: #8b5cf6;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
+    .container { max-width: 1200px; margin: 0 auto; }
 
-    /* BANDEAU HEADER */
-    header {
-      background: #151e2e;
-      border-bottom: 2px solid var(--border);
-      padding: 12px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    h1 { font-size: 1.25rem; font-weight: 900; letter-spacing: -0.5px; }
+    .lock-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 15px; }
+    .pin-card { background: #1e293b; color: #fff; width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155; }
+    .pin-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; }
+    .pin-subtitle { font-size: 0.8rem; color: #94a3b8; margin-bottom: 20px; }
+    
+    .pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
+    .pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #38bdf8; }
+    .pin-dot.filled { background: #38bdf8; }
 
-    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .btn-nav {
-      background: #243046;
-      color: #fff;
-      border: 1px solid #334155;
-      padding: 7px 14px;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 0.85rem;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.2s;
-    }
-    .btn-nav:hover { background: #334155; }
+    .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+    .btn-key { background: #334155; color: #fff; border: none; border-radius: 12px; height: 58px; font-size: 1.4rem; font-weight: 800; cursor: pointer; }
+    .btn-key:active { background: #475569; }
+    .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
 
-    /* BADGE STATUT SMARTVIEW CLOUD */
-    .btn-status-cloud {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #064e3b;
-      border: 1px solid #059669;
-      color: #6ee7b7;
-      padding: 7px 14px;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      text-decoration: none;
-      font-weight: 700;
-      transition: all 0.2s;
-    }
-    .btn-status-cloud:hover {
-      background: #047857;
-      color: #ffffff;
-      border-color: #10b981;
-    }
-    .status-dot-pulse {
-      width: 8px;
-      height: 8px;
-      background-color: #34d399;
-      border-radius: 50%;
-      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
-      animation: pulse-green 1.8s infinite;
-    }
-    @keyframes pulse-green {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
-    }
+    .btn-sos-trigger { background: #dc2626; color: #fff; border: 1px solid #ef4444; padding: 10px 14px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+    .btn-sos-trigger:hover { background: #b91c1c; }
 
-    /* NAVIGATION PAR ONGLETS */
-    .admin-nav-tabs {
-      display: flex;
-      gap: 8px;
-      padding: 12px 20px;
-      background: #0f172a;
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
-    }
-    .tab-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      color: var(--text-muted);
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 0.9rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
-    .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
-    .tab-btn.active {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }
+    .modal-sos-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999999; align-items: center; justify-content: center; padding: 15px; }
+    .modal-sos-card { background: #1e293b; color: #fff; border: 2px solid #ef4444; width: 100%; max-width: 440px; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
+    .sos-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+    .sos-channel-btn { display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; color: #fff; text-decoration: none; padding: 14px 16px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; }
+    .sos-channel-btn:hover { background: #1e1b4b; border-color: #818cf8; }
 
-    /* CONTENU PRINCIPAL */
-    main {
-      padding: 24px 20px;
-      flex: 1;
-      max-width: 1300px;
-      margin: 0 auto;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
+    .session-role-indicator { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem; font-weight: 800; }
+    .session-client { background: #f1f5f9; color: #334155; border: 1.5px solid #cbd5e1; }
+    .session-super { background: #f5f3ff; color: #6d28d9; border: 2px solid #8b5cf6; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); }
 
-    .tab-pane { display: none; flex-direction: column; gap: 20px; }
-    .tab-pane.active { display: flex; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    h1 { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
 
-    /* CARTES KPIS */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-    .kpi-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .kpi-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 700; }
-    .kpi-val { font-size: 1.85rem; font-weight: 900; color: #fff; }
+    .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .btn-nav-link { background: #334155; border: 1px solid #475569; color: #fff; text-decoration: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
+    .btn-nav-link:hover { background: #475569; }
+    .btn-elevate-super { background: #6366f1; border: 1px solid #818cf8; color: #fff; padding: 9px 12px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+    .btn-elevate-super:hover { background: #4f46e5; }
+    .btn-header-sos { background: #dc2626; border: 1px solid #ef4444; color: #fff; padding: 9px 12px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+    
+    .btn-export { background: #047857; color: #fff; border: none; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-print-z { background: var(--primary); color: #fff; border: 1px solid #475569; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+    .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
-    /* SECTIONS & TABLEAUX */
-    .admin-section {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .section-title {
-      font-size: 1.15rem;
-      font-weight: 800;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
+    .saas-license-banner { background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .saas-title { font-size: 1rem; font-weight: 800; color: #6d28d9; display: flex; align-items: center; gap: 8px; }
+    .saas-info { font-size: 0.88rem; color: #5b21b6; }
+    .saas-badge-valid { background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #86efac; }
+    .saas-badge-warn { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #fca5a5; }
 
-    .table-responsive { width: 100%; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-    th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
-    th { color: var(--text-muted); font-weight: 700; background: rgba(0,0,0,0.2); }
-    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .master-admin-box { display: none; background: #1e1b4b; color: #fff; border: 2px solid #818cf8; border-radius: 14px; padding: 20px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(30, 27, 75, 0.4); }
+    .master-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3730a3; padding-bottom: 12px; margin-bottom: 16px; }
+    .master-head h2 { font-size: 1.15rem; font-weight: 800; color: #a5b4fc; display: flex; align-items: center; gap: 8px; }
+    .master-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .master-card { background: #312e81; border: 1px solid #4338ca; border-radius: 10px; padding: 14px; }
+    .master-card-title { font-size: 0.82rem; font-weight: 800; text-transform: uppercase; color: #c7d2fe; margin-bottom: 10px; letter-spacing: 0.5px; }
 
-    /* BOUTONS D'ACTION */
-    .btn-action {
-      padding: 10px 16px;
-      border-radius: 8px;
-      border: none;
-      font-weight: 800;
-      font-size: 0.85rem;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: opacity 0.2s;
-    }
-    .btn-action:hover { opacity: 0.9; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-success { background: var(--success); color: #fff; }
-    .btn-danger { background: var(--danger); color: #fff; }
-    .btn-dark { background: #243046; color: #fff; border: 1px solid #334155; }
+    .master-field-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .master-label { font-size: 0.75rem; color: #a5b4fc; font-weight: 700; }
+    .master-input { background: #1e1b4b; border: 1px solid #6366f1; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; outline: none; }
 
-    /* GESTION DE LA CARTE */
-    .menu-editor-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 12px;
-    }
-    .menu-editor-card {
-      background: #0f172a;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .menu-editor-card.out { border-color: var(--danger); opacity: 0.7; }
+    .btn-master-action { background: #4f46e5; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+    .btn-master-action:hover { background: #4338ca; }
+    .btn-master-danger { background: #b91c1c; }
+    .btn-master-danger:hover { background: #991b1b; }
+    .btn-master-success { background: #16a34a; }
+    .btn-master-success:hover { background: #15803d; }
 
-    /* IMPRESSION CLÔTURE Z (80mm) */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+    .kpi-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; }
+    .kpi-value { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+    .kpi-value.green { color: var(--success); }
+    .kpi-value.blue { color: var(--accent); }
+    .kpi-value.purple { color: var(--hotel); }
+    .kpi-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+    .panel-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+    .panel-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 14px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
+
+    .audit-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .audit-table th { background: #f8fafc; padding: 12px 14px; font-size: 0.78rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    .audit-table td { padding: 12px 14px; font-size: 0.88rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .audit-table tr:last-child td { border-bottom: none; }
+    .audit-table tr:hover { background: #f8fafc; }
+
+    .badge-perf { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; }
+    .perf-actif { background: #dcfce7; color: #15803d; }
+    .perf-inactif { background: #fef3c7; color: #b45309; }
+    .perf-neutre { background: #f1f5f9; color: #64748b; }
+
+    .dashboard-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+    .breakdown-row:last-child { border-bottom: none; }
+    .tag-bold { font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+    .action-icons-group { display: flex; align-items: center; gap: 4px; }
+    .btn-edit-pin { background: #eff6ff; border: 1px solid #bfdbfe; color: var(--accent); font-weight: 700; font-size: 0.75rem; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+    .btn-edit-pin:hover { background: #dbeafe; }
+
+    .btn-print-reception { background: #e0e7ff; border: 1px solid #c7d2fe; color: #4338ca; font-weight: 800; font-size: 0.75rem; cursor: pointer; padding: 4px 10px; border-radius: 6px; }
+    .btn-print-reception:hover { background: #c7d2fe; }
+
+    .inline-form { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+    .form-input { flex: 2; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; outline: none; }
+    .form-input-short { flex: 1; max-width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; text-align: center; font-weight: 700; outline: none; }
+    .btn-action-primary { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+    .btn-del { background: none; border: none; color: #94a3b8; font-weight: 800; font-size: 1rem; cursor: pointer; padding: 2px 8px; border-radius: 4px; }
+    .btn-del:hover { color: var(--danger); background: #fee2e2; }
+
+    .plan-zone-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .plan-zone-header { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 0.9rem; margin-bottom: 8px; }
+    .plan-tables-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .table-chip { background: #fff; border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+    .badge-stat { padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+    .stat-en_attente { background: #fef9c3; color: #854d0e; }
+    .stat-en_cours, .stat-en_preparation { background: #ffedd5; color: #9a3412; }
+    .stat-pret { background: #dcfce7; color: #166534; }
+    .stat-servi { background: #e0f2fe; color: #0369a1; }
+    .stat-encaisse { background: #e2e8f0; color: #334155; }
+
+    .ardoise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 14px; }
+    .ardoise-card { background: #fff; border: 1.5px solid #fed7aa; border-radius: 8px; padding: 12px; }
+    .ardoise-title { font-size: 0.82rem; font-weight: 800; text-transform: uppercase; color: #c2410c; margin-bottom: 6px; }
+
+    #z-caisse-print, #chambre-ticket-print { display: none; }
     @media print {
-      body * { visibility: hidden; }
-      #printable-z, #printable-z * { visibility: visible; }
-      #printable-z {
-        position: absolute;
-        left: 0;
-        top: 0;
+      body { background: #fff !important; color: #000 !important; padding: 0 !important; }
+      .container { display: none !important; }
+      .print-visible {
+        display: block !important;
+        visibility: visible !important;
         width: 80mm;
-        color: #000;
-        background: #fff;
+        margin: 0 auto;
         padding: 5mm;
-        font-family: "Courier New", monospace;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 12px;
       }
+      .print-visible * { visibility: visible !important; }
     }
   </style>
 </head>
 <body>
 
-  <!-- EN-TÊTE PRINCIPAL AVEC BADGE SMARTVIEW CLOUD -->
-  <header>
-    <div class="header-left">
-      <h1 id="admin-header-title">📊 Pilotage & Direction — SmartView</h1>
+  <div class="lock-overlay" id="admin-lock-overlay">
+    <div class="pin-card">
+      <div class="pin-title">Accès Direction</div>
+      <div class="pin-subtitle">Saisissez votre code PIN</div>
+
+      <div class="pin-dots">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
+
+      <div class="keypad-grid">
+        <button class="btn-key" onclick="pressAdminPin('1')">1</button>
+        <button class="btn-key" onclick="pressAdminPin('2')">2</button>
+        <button class="btn-key" onclick="pressAdminPin('3')">3</button>
+        <button class="btn-key" onclick="pressAdminPin('4')">4</button>
+        <button class="btn-key" onclick="pressAdminPin('5')">5</button>
+        <button class="btn-key" onclick="pressAdminPin('6')">6</button>
+        <button class="btn-key" onclick="pressAdminPin('7')">7</button>
+        <button class="btn-key" onclick="pressAdminPin('8')">8</button>
+        <button class="btn-key" onclick="pressAdminPin('9')">9</button>
+        <button class="btn-key action" onclick="clearAdminPin()">C</button>
+        <button class="btn-key" onclick="pressAdminPin('0')">0</button>
+        <button class="btn-key action" onclick="deleteAdminPin()">⌫</button>
+      </div>
+
+      <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+        <button class="btn-sos-trigger" onclick="ouvrirModalSOS()">
+          🆘 S.O.S Support Développeur
+        </button>
+        <button style="background:#334155; color:#38bdf8; border:1px solid #475569; padding:10px 14px; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer;" onclick="window.location.href='/index.html'">
+          ⬅️ Retour à la Salle & Caisse
+        </button>
+      </div>
     </div>
-    <div class="header-right">
-      <a href="https://stats.uptimerobot.com/rnzYHtVN0v" target="_blank" class="btn-status-cloud">
-        <span class="status-dot-pulse"></span>
-        <span>SmartView Cloud : <strong>100 % Opérationnel</strong></span>
+  </div>
+
+  <div class="modal-sos-overlay" id="modal-sos">
+    <div class="modal-sos-card">
+      <div class="sos-head">
+        <h2 style="font-size:1.15rem; font-weight:800; color:#ef4444; display:flex; align-items:center; gap:8px;">
+          🆘 Assistance Développeur & Support
+        </h2>
+        <button style="background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer;" onclick="fermerModalSOS()">✕</button>
+      </div>
+      
+      <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.4; margin-bottom:16px;">
+        Un problème technique ou besoin d'assistance urgente ? Contactez directement votre développeur :
+      </p>
+
+      <a id="sos-link-phone" href="tel:0600000000" class="sos-channel-btn" style="border-left:4px solid #22c55e;">
+        <span>📞 <strong>Appel direct prioritaire</strong></span>
+        <span id="sos-display-tel" style="font-size:0.85rem; color:#4ade80;">06 00 00 00 00</span>
       </a>
-      <a href="/index.html" class="btn-nav">📱 Salle & Caisse</a>
-      <a href="/cuisine.html" class="btn-nav">👨‍🍳 Cuisine KDS</a>
+
+      <a id="sos-link-whatsapp" href="https://wa.me/33600000000" target="_blank" class="sos-channel-btn" style="border-left:4px solid #25D366;">
+        <span>💬 <strong>Discussion WhatsApp</strong></span>
+        <span style="font-size:0.85rem; color:#86efac;">Message direct</span>
+      </a>
+
+      <a id="sos-link-email" href="mailto:support@pos-hoteldespins.fr?subject=Urgence%20POS" class="sos-channel-btn" style="border-left:4px solid #38bdf8;">
+        <span>✉️ <strong>Envoyer un E-mail</strong></span>
+        <span id="sos-display-email" style="font-size:0.8rem; color:#7dd3fc;">support@...</span>
+      </a>
+
+      <div style="background:#0f172a; border:1px solid #334155; padding:10px; border-radius:8px; font-size:0.75rem; color:#94a3b8; text-align:center; margin-top:10px;">
+        ⏱️ Support & maintenance 7j/7 pendant vos heures de service.
+      </div>
     </div>
-  </header>
+  </div>
 
-  <!-- ONGLETS DE NAVIGATION ADMIN -->
-  <nav class="admin-nav-tabs">
-    <button class="tab-btn active" onclick="basculerOnglet('tab-dashboard', this)">📊 Chiffres & KPIs</button>
-    <button class="tab-btn" onclick="basculerOnglet('tab-chambres', this)">🏨 Notes de Chambres</button>
-    <button class="tab-btn" onclick="basculerOnglet('tab-paiements', this)">💳 Historique Paiements</button>
-    <button class="tab-btn" onclick="basculerOnglet('tab-menu', this)">🍽️ Carte & Tarifs</button>
-    <button class="tab-btn" onclick="basculerOnglet('tab-cloture', this)">🔒 Clôture & Sauvegarde</button>
-  </nav>
+  <div class="container" id="admin-main-container" style="display:none;">
+    
+    <div class="session-role-indicator" id="session-role-badge">
+      <span id="session-role-text">👤 Session : Direction du Restaurant (Mode Client)</span>
+      <span id="session-role-tag" style="font-size:0.75rem; text-transform:uppercase;">LECTURE SEULE</span>
+    </div>
 
-  <main>
-    <!-- ONGLET 1 : TABLEAU DE BORD & KPIS -->
-    <div class="tab-pane active" id="tab-dashboard">
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <span class="kpi-label">Chiffre d'Affaires du Jour (TTC)</span>
-          <span class="kpi-val" style="color:var(--success);" id="kpi-ca">0.00 €</span>
+    <div class="saas-license-banner" id="saas-banner">
+      <div>
+        <div class="saas-title">
+          <span>💼 Abonnement Logiciel & Maintenance</span>
+          <span class="saas-badge-valid" id="saas-status-badge">🟢 Abonnement à jour</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Règlements Carte Bancaire</span>
-          <span class="kpi-val" id="kpi-cb">0.00 €</span>
+        <div class="saas-info" style="margin-top:4px;">
+          Établissement : <strong id="saas-client-name">Restaurant</strong> — Prochaine échéance : <strong id="saas-exp-date">--/--/----</strong> (<span id="saas-days-left">--</span> jours restants)
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Règlements Espèces</span>
-          <span class="kpi-val" id="kpi-esp">0.00 €</span>
+      </div>
+      <div style="display:flex; align-items:center; font-size:0.82rem; color:#6d28d9; font-weight:700;">
+        <span>ℹ️ Mises à jour & assistance technique incluses</span>
+      </div>
+    </div>
+
+    <div class="master-admin-box" id="master-admin-panel">
+      <div class="master-head">
+        <h2>🛠️ Console Master Éditeur (Plein Pouvoir Support)</h2>
+        <span style="background:#4338ca; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:800;">ADMINISTRATEUR LOGICIEL</span>
+      </div>
+
+      <div class="master-grid">
+        <div class="master-card">
+          <div class="master-card-title">📝 Paramètres Contrat & Échéance</div>
+          <div class="master-field-row">
+            <span class="master-label">Nom de l'établissement :</span>
+            <input type="text" id="master-input-etab" class="master-input" value="Restaurant">
+          </div>
+          <div class="master-field-row">
+            <span class="master-label">Tarif mensuel (€) :</span>
+            <input type="number" step="0.01" id="master-input-tarif" class="master-input" value="49.99">
+          </div>
+          <div class="master-field-row">
+            <span class="master-label">Date d'échéance exacte :</span>
+            <input type="date" id="master-input-date" class="master-input">
+          </div>
+          <div style="display:flex; gap:6px; margin-top:10px;">
+            <button class="btn-master-action btn-master-success" style="flex:1;" onclick="enregistrerConfigMaster()">💾 Enregistrer</button>
+            <button class="btn-master-action" style="background:#6366f1;" onclick="prolongerAbonnementDirect(30)">+30j</button>
+            <button class="btn-master-action" style="background:#475569;" onclick="prolongerAbonnementDirect(365)">+1 An</button>
+          </div>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Notes transférées en Chambre</span>
-          <span class="kpi-val" style="color:#38bdf8;" id="kpi-chambres">0.00 €</span>
+
+        <div class="master-card">
+          <div class="master-card-title">📞 Vos Coordonnées S.O.S Développeur</div>
+          <div class="master-field-row">
+            <span class="master-label">Votre Numéro de Mobile (Support) :</span>
+            <input type="text" id="master-input-tel" class="master-input" placeholder="06 12 34 56 78">
+          </div>
+          <div class="master-field-row">
+            <span class="master-label">Votre E-mail de Contact :</span>
+            <input type="email" id="master-input-email" class="master-input" placeholder="contact@mon-entreprise.fr">
+          </div>
+          <div class="master-field-row">
+            <span class="master-label">Changer votre Super-PIN :</span>
+            <input type="text" id="master-input-new-superpin" class="master-input" maxlength="6" placeholder="Ex: 7777">
+          </div>
+          <div style="display:flex; gap:6px; margin-top:10px;">
+            <button class="btn-master-action btn-master-success" style="flex:1;" onclick="enregistrerConfigMaster()">💾 Enregistrer Coordonnées</button>
+            <button class="btn-master-action" style="background:#475569;" onclick="changerMonSuperPin()">🔒 PIN</button>
+          </div>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Pourboires Encaissés</span>
-          <span class="kpi-val" style="color:var(--warning);" id="kpi-tips">0.00 €</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Nombre d'Additions Clôturées</span>
-          <span class="kpi-val" id="kpi-count">0</span>
+
+        <div class="master-card">
+          <div class="master-card-title">🚨 Outils de Dépannage & Réparation</div>
+          <p style="font-size:0.75rem; color:#c7d2fe; margin-bottom:10px; line-height:1.4;">
+            Actions immédiates pour corriger les blocages sur place ou à distance :
+          </p>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button class="btn-master-action" style="background:#d97706;" onclick="forcerDeblocageToutesTables()">
+              🔓 Débloquer TOUTES les tables bloquées
+            </button>
+            <button class="btn-master-action btn-master-danger" onclick="purgerToutesDonneesTest()">
+              🧹 Purge complète des données de test
+            </button>
+            <div style="display:flex; gap:6px; margin-top:4px;">
+              <button class="btn-master-action btn-master-success" style="flex:1;" onclick="basculerStatutLogiciel('actif')">🟢 Activer</button>
+              <button class="btn-master-action btn-master-danger" style="flex:1;" onclick="basculerStatutLogiciel('suspendu')">🔴 Suspendre</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ONGLET 2 : GESTION DES NOTES DE CHAMBRES -->
-    <div class="tab-pane" id="tab-chambres">
-      <div class="admin-section">
-        <div class="section-title">
-          <span>🏨 Notes de Chambres à imputer sur les séjours hôtel</span>
+    <!-- ARDOISE DU JOUR DÉDIÉE -->
+    <div class="panel-card" style="border:1.5px solid #fed7aa; background:#fffaf5;">
+      <div class="panel-title" style="color:#ea580c;">
+        <span>🍲 Ardoise du Jour & Suggestions du Chef (Catégorie Indépendante)</span>
+        <span style="font-size:0.75rem; color:#c2410c; font-weight:700;">Apparaît dans l'onglet « 🍲 Ardoise du Jour » en salle</span>
+      </div>
+      
+      <div class="ardoise-grid">
+        <div class="ardoise-card" style="grid-column: 1 / -1; background:#fff7ed;">
+          <div class="ardoise-title">⭐ Formule du Jour (Complète ou E+P / P+D) :</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input type="text" id="input-ardoise-formule" class="form-input" style="flex:3;" placeholder="Intitulé formule">
+            <div style="display:flex; align-items:center; gap:4px;">
+              <input type="number" step="0.5" id="input-ardoise-formule-prix" class="form-input-short" value="22.00">
+              <strong>€</strong>
+            </div>
+          </div>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>Chambre</th>
-                <th>Nom du Résident</th>
-                <th>Montant TTC</th>
-                <th>Date / Heure</th>
-                <th>Serveur Référent</th>
-              </tr>
-            </thead>
-            <tbody id="chambres-tbody">
-              <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">Aucune note de chambre enregistrée aujourd'hui.</td></tr>
-            </tbody>
-          </table>
+
+        <div class="ardoise-card">
+          <div class="ardoise-title">🥗 Entrée du Jour :</div>
+          <input type="text" id="input-ardoise-entree" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Gaspacho de tomates & burrata">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Prix à la carte :</span>
+            <input type="number" step="0.5" id="input-ardoise-entree-prix" class="form-input-short" value="8.50">
+            <strong>€</strong>
+          </div>
+        </div>
+
+        <div class="ardoise-card">
+          <div class="ardoise-title">🍽️ Plat du Jour :</div>
+          <input type="text" id="input-ardoise-plat" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Dos de cabillaud rôti aux agrumes">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Prix à la carte :</span>
+            <input type="number" step="0.5" id="input-ardoise-plat-prix" class="form-input-short" value="17.50">
+            <strong>€</strong>
+          </div>
+        </div>
+
+        <div class="ardoise-card">
+          <div class="ardoise-title">🍰 Dessert du Jour :</div>
+          <input type="text" id="input-ardoise-dessert" class="form-input" style="width:100%; margin-bottom:6px;" placeholder="Ex: Tartelette fraises du pays">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Prix à la carte :</span>
+            <input type="number" step="0.5" id="input-ardoise-dessert-prix" class="form-input-short" value="7.50">
+            <strong>€</strong>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #fed7aa; padding-top:12px; flex-wrap:wrap; gap:10px;">
+        <label style="font-size:0.82rem; font-weight:700; color:#c2410c; display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" id="check-inclure-menu40">
+          Proposer également ces suggestions du jour comme choix dans le Menu à 40 € (inclus)
+        </label>
+        <button class="btn-action-primary" style="background:#ea580c; padding:10px 18px; font-size:0.9rem;" onclick="enregistrerArdoiseDuJour()">
+          ✨ Mettre à jour l'Ardoise en Salle
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-title">
+        <span>📖 Édition des Tarifs & Gestion de la Carte</span>
+        <span id="menu-items-count-badge" style="font-size:0.75rem; background:#eff6ff; color:var(--accent); padding:2px 8px; border-radius:12px;">0 plats</span>
+      </div>
+      <div style="max-height:280px; overflow-y:auto; margin-bottom:14px;">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Plat / Article</th>
+              <th>Catégorie</th>
+              <th>Tarif TTC</th>
+              <th>Statut</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="menu-management-tbody">
+            <tr><td colspan="5" style="text-align:center; padding:15px;">Chargement de la carte...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="inline-form" style="border-top:1px dashed var(--border); padding-top:14px; flex-wrap:wrap;">
+        <input type="text" id="new-dish-name" class="form-input" placeholder="Nom du nouveau plat">
+        <select id="new-dish-cat" class="form-input" style="flex:1;">
+          <option value="🍲 Ardoise du Jour">🍲 Ardoise du Jour</option>
+          <option value="Entrées (15 €)">Entrées</option>
+          <option value="Poissons (25 €)">Poissons</option>
+          <option value="Viandes (25 €)">Viandes</option>
+          <option value="Desserts">Desserts</option>
+          <option value="Menu 40 €">Menu 40 €</option>
+          <option value="Menu Enfant (15 €)">Menu Enfant</option>
+        </select>
+        <input type="number" step="0.5" id="new-dish-price" class="form-input-short" placeholder="Prix €">
+        <button class="btn-action-primary" onclick="ajouterNouveauPlatCarte()">➕ Ajouter à la carte</button>
+      </div>
+    </div>
+
+    <header>
+      <div>
+        <h1 id="page-restaurant-title">Espace Direction & Audit</h1>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Surveillance de l'activité du personnel et pilotage financier</p>
+      </div>
+      <div class="header-actions">
+        <a href="/index.html" class="btn-nav-link">📱 Salle & Caisse</a>
+        <a href="/cuisine.html" class="btn-nav-link">👨‍🍳 Cuisine</a>
+        <a href="https://stats.uptimerobot.com/rnzYHtVN0v" target="_blank" style="display:inline-flex; align-items:center; gap:8px; background:#064e3b; border:1px solid #059669; color:#6ee7b7; padding:6px 12px; border-radius:8px; font-size:0.82rem; text-decoration:none; font-weight:700;">
+  <span style="width:8px; height:8px; background-color:#34d399; border-radius:50%;"></span>
+  <span>SmartView Cloud : <strong>100 %</strong></span>
+</a>
+        <button class="btn-header-sos" onclick="ouvrirModalSOS()">🆘 S.O.S Support</button>
+        <button class="btn-elevate-super" id="btn-elevate-bar" onclick="passerEnModeSuperAdmin()">🔑 Mode Éditeur</button>
+        <a href="/api/admin/backup-db" class="btn-export" style="background:#4338ca; text-decoration:none;">💾 Sauvegarder</a>
+        <button class="btn-export" onclick="exporterExcelCSV()">📥 Exporter CSV</button>
+        <button class="btn-print-z" onclick="imprimerZCaisse()">🖨️ Imprimer Z</button>
+        <button class="btn-logout" onclick="verrouillerAdmin()">🔒 Verrouiller</button>
+      </div>
+    </header>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-title">Chiffre d'Affaires Net</div>
+        <div class="kpi-value green" id="kpi-ca">0,00 €</div>
+        <div class="kpi-sub">Dont TVA (10%) : <span id="kpi-tva">0,00 €</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Notes sur Chambres</div>
+        <div class="kpi-value purple" id="kpi-chambres-total">0,00 €</div>
+        <div class="kpi-sub"><span id="kpi-chambres-count">0</span> facture(s) transférée(s)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Pourboires Collectés</div>
+        <div class="kpi-value" id="kpi-pourboires" style="color:#059669;">0,00 €</div>
+        <div class="kpi-sub">Attribués au personnel</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Tables Encaissées</div>
+        <div class="kpi-value blue" id="kpi-encaissees">0</div>
+        <div class="kpi-sub">Panier moyen : <span id="kpi-panier-moyen">0,00 €</span></div>
+      </div>
+    </div>
+
+    <div class="panel-card" style="border:1.5px solid #c7d2fe;">
+      <div class="panel-title" style="color:#4338ca;">
+        <span>🏨 Notes de Chambres Transférées (Réception Hôtel)</span>
+        <span style="font-size:0.75rem; color:#6366f1; font-weight:700;">Justificatifs restaurant à reporter au Check-out</span>
+      </div>
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>N° Chambre</th>
+            <th>Nom Client</th>
+            <th>Heure Clôture</th>
+            <th>Table</th>
+            <th>Serveur</th>
+            <th>Montant Resto</th>
+            <th>Détail des plats</th>
+            <th>Action Réception</th>
+          </tr>
+        </thead>
+        <tbody id="chambres-tbody">
+          <tr><td colspan="8" style="text-align:center; padding:20px;">Chargement des transferts chambres...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-title">
+        <span>🕵️ Tableau d'Audit & Surveillance des Serveurs</span>
+        <span style="font-size:0.75rem; color:var(--text-muted);">Suivi des performances et des pourboires individuels</span>
+      </div>
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Serveur</th>
+            <th>Statut en direct</th>
+            <th>Dernière commande</th>
+            <th>Commandes</th>
+            <th>Tables</th>
+            <th>CA Net Généré</th>
+            <th>Pourboires</th>
+            <th>Temps moyen</th>
+          </tr>
+        </thead>
+        <tbody id="servers-audit-tbody">
+          <tr><td colspan="8" style="text-align:center; padding:20px;">Chargement de l'audit...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="dashboard-split">
+      <div class="panel-card" style="grid-column: 1 / -1;">
+        <div class="panel-title">
+          <span>📐 Configuration du Plan de Salle (Zones & Tables)</span>
+        </div>
+        <div id="plan-zones-management" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:12px; margin-bottom:14px;"></div>
+        <div class="inline-form" style="border-top:1px solid var(--border); padding-top:14px;">
+          <input type="text" id="new-zone-name" class="form-input" placeholder="Nouvelle zone">
+          <button class="btn-action-primary" onclick="ajouterNouvelleZone()">➕ Créer la zone</button>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">
+          <span>👥 Équipe & Codes PIN</span>
+          <span id="server-count-badge" style="font-size:0.75rem; background:#eff6ff; color:var(--accent); padding:2px 8px; border-radius:12px;">0</span>
+        </div>
+        <div id="servers-list-container" style="max-height:240px; overflow-y:auto;"></div>
+        <div class="inline-form">
+          <input type="text" id="new-server-name" class="form-input" placeholder="Nom serveur">
+          <input type="text" id="new-server-pin" class="form-input-short" maxlength="4" placeholder="PIN (4 ch.)">
+          <button class="btn-action-primary" onclick="ajouterNouveauServeur()">➕ Ajouter</button>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">💳 Encaissements réels par mode</div>
+        <div class="breakdown-row">
+          <span class="tag-bold">💳 Cartes Bancaires</span>
+          <strong id="pay-total-cb">0,00 €</strong>
+        </div>
+        <div class="breakdown-row">
+          <span class="tag-bold">💵 Espèces</span>
+          <strong id="pay-total-esp">0,00 €</strong>
+        </div>
+        <div class="breakdown-row">
+          <span class="tag-bold">🎫 Titres Restaurant</span>
+          <strong id="pay-total-tr">0,00 €</strong>
+        </div>
+        <div class="breakdown-row" style="background:#e0e7ff; padding:9px 10px; border-radius:6px; margin-top:4px;">
+          <span class="tag-bold" style="color:#4338ca;">🏨 Notes de Chambre</span>
+          <strong id="pay-total-chambre" style="color:#4338ca;">0,00 €</strong>
+        </div>
+        <div class="breakdown-row" style="background:#ecfdf5; padding:9px 10px; border-radius:6px; margin-top:4px;">
+          <span class="tag-bold" style="color:#059669;">💚 Total Pourboires (Tips)</span>
+          <strong id="pay-total-tips" style="color:#059669;">0,00 €</strong>
         </div>
       </div>
     </div>
 
-    <!-- ONGLET 3 : HISTORIQUE DES PAIEMENTS -->
-    <div class="tab-pane" id="tab-paiements">
-      <div class="admin-section">
-        <div class="section-title">
-          <span>💳 Journal des Encaissements du Jour</span>
-        </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>Heure</th>
-                <th>Table</th>
-                <th>Mode de Règlement</th>
-                <th>Montant TTC</th>
-                <th>Pourboire</th>
-                <th>Serveur</th>
-              </tr>
-            </thead>
-            <tbody id="paiements-tbody">
-              <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">Aucun encaissement pour le moment.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div class="panel-card">
+      <div class="panel-title">📋 Journal détaillé des commandes & encaissements</div>
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Table</th>
+            <th>Serveur</th>
+            <th>Heure</th>
+            <th>Statut</th>
+            <th>Paiement</th>
+            <th>Chambre</th>
+            <th>Pourboire</th>
+            <th>Total TTC</th>
+            <th>Détail</th>
+            <th id="th-master-action" style="display:none;">Action Master</th>
+          </tr>
+        </thead>
+        <tbody id="orders-table-body">
+          <tr><td colspan="10" style="text-align:center; padding:30px;">Chargement...</td></tr>
+        </tbody>
+      </table>
     </div>
+  </div>
 
-    <!-- ONGLET 4 : GESTION DU MENU & TARIFS -->
-    <div class="tab-pane" id="tab-menu">
-      <div class="admin-section">
-        <div class="section-title">
-          <span>🍽️ Carte du Restaurant & Disponibilités</span>
-        </div>
-        <div class="menu-editor-grid" id="menu-editor-container">
-          <!-- Injection de la carte -->
-        </div>
-      </div>
+  <div id="z-caisse-print">
+    <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+      <h2 style="font-size:15px; font-weight:800;" id="print-z-etablissement">RESTAURANT</h2>
+      <p style="font-size:11px;">RAPPORT Z DE FIN DE SERVICE</p>
+      <p style="font-size:11px;" id="print-z-date"></p>
     </div>
-
-    <!-- ONGLET 5 : CLÔTURE Z & SAUVEGARDE BDD -->
-    <div class="tab-pane" id="tab-cloture">
-      <div class="admin-section">
-        <div class="section-title">
-          <span>🔒 Clôture Journalière (Rapport Z) & Sauvegarde Cloud</span>
-        </div>
-        <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.5;">
-          Le rapport de Clôture Z récapitule l'ensemble du chiffre d'affaires certifié, la ventilation par mode de paiement et les pourboires perçus avant la fermeture définitive de la caisse.
-        </p>
-        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
-          <button class="btn-action btn-success" onclick="imprimerClotureZ()">🖨️ Imprimer le Rapport Z du Jour</button>
-          <a href="/api/admin/backup-db" class="btn-action btn-primary">💾 Télécharger la Sauvegarde (.db)</a>
-        </div>
-      </div>
+    <div style="margin-bottom:8px; line-height:1.5;">
+      <div style="display:flex; justify-content:space-between;"><span>Total CA Net TTC :</span><strong id="print-z-ca">0,00 €</strong></div>
+      <div style="display:flex; justify-content:space-between;"><span>Total HT :</span><span id="print-z-ht">0,00 €</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>TVA (10%) :</span><span id="print-z-tva">0,00 €</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>Pourboires collectés :</span><strong id="print-z-tips">0,00 €</strong></div>
+      <div style="display:flex; justify-content:space-between;"><span>Tables Encaissées :</span><span id="print-z-tables">0</span></div>
     </div>
-  </main>
+    <div style="border-top:1px dashed #000; padding-top:6px; margin-bottom:8px; line-height:1.4;">
+      <div style="font-weight:700; margin-bottom:4px;">VENTILATION DES RÈGLEMENTS :</div>
+      <div style="display:flex; justify-content:space-between;"><span>- Cartes Bancaires :</span><span id="print-z-cb">0,00 €</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>- Espèces :</span><span id="print-z-esp">0,00 €</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>- Titres Restaurant :</span><span id="print-z-tr">0,00 €</span></div>
+      <div style="display:flex; justify-content:space-between;"><span>- Notes de Chambre :</span><span id="print-z-chambre">0,00 €</span></div>
+    </div>
+    <div style="text-align:center; border-top:1px dashed #000; padding-top:6px; font-size:10px;">
+      *** Clôture Journalière de Caisse ***
+    </div>
+  </div>
 
-  <!-- CONTENEUR IMPRESSION DU RAPPORT Z (MASQUÉ À L'ÉCRAN) -->
-  <div id="printable-z" style="display:none;"></div>
+  <div id="chambre-ticket-print">
+    <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:8px;">
+      <h2 style="font-size:15px; font-weight:800;" id="print-ch-etablissement">RESTAURANT</h2>
+      <p style="font-size:11px;">JUSTIFICATIF RESTAURANT — RÉCEPTION</p>
+      <p style="font-size:11px;" id="print-ch-date"></p>
+    </div>
+    <div style="margin-bottom:8px; line-height:1.5;">
+      <div style="display:flex; justify-content:space-between;"><span>CHAMBRE :</span><strong id="print-ch-num" style="font-size:14px;">104</strong></div>
+      <div style="display:flex; justify-content:space-between;"><span>CLIENT :</span><strong id="print-ch-nom">M. Dupont</strong></div>
+      <div style="display:flex; justify-content:space-between;"><span>TABLE / SERVEUR :</span><span id="print-ch-table">T1</span></div>
+    </div>
+    <div style="border-top:1px dashed #000; border-bottom:1px dashed #000; padding:6px 0; margin-bottom:8px;" id="print-ch-items"></div>
+    <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:800; margin-bottom:10px;">
+      <span>TOTAL À REPORTER</span>
+      <span id="print-ch-total">0,00 €</span>
+    </div>
+    <div style="border-top:1px dashed #000; padding-top:12px; font-size:10px; text-align:center;">
+      <div style="border-bottom:1px solid #000; height:20px; margin-bottom:4px;"></div>
+      <span>Signature client au check-out</span>
+    </div>
+  </div>
 
   <script>
     const socket = typeof io !== 'undefined' ? io() : null;
-    let statsData = { ca: 0, cb: 0, esp: 0, chambres: 0, tips: 0, count: 0, paiements: [] };
-    let menuItems = [];
-    let indisponibles = [];
+    let allOrders = [];
+    let allPaiements = [];
+    let allChambres = [];
+    let allServeurs = [];
+    let allMenuItems = [];
+    let planData = [];
+    let enteredAdminPin = '';
+    let supportInfo = { tel: '06 00 00 00 00', email: 'support@mon-entreprise.fr' };
 
-    function basculerOnglet(tabId, btn) {
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      btn.classList.add('active');
+    function parseSqliteDate(dateStr) {
+      if (!dateStr) return null;
+      if (dateStr.includes('T')) return new Date(dateStr);
+      return new Date(dateStr.replace(' ', 'T') + 'Z');
+    }
+
+    function safeSetText(id, txt) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = txt;
+    }
+
+    function getSuperPinCache() {
+      return sessionStorage.getItem('hdp_super_pin_cache') || '7777';
+    }
+
+    function ouvrirModalSOS() {
+      document.getElementById('modal-sos').style.display = 'flex';
+    }
+
+    function fermerModalSOS() {
+      document.getElementById('modal-sos').style.display = 'none';
+    }
+
+    function updateSOSContactLinks(tel, email) {
+      supportInfo.tel = tel || '06 00 00 00 00';
+      supportInfo.email = email || 'support@mon-entreprise.fr';
+
+      const rawTel = supportInfo.tel.replace(/[^0-9]/g, '');
+      const intlTel = rawTel.startsWith('0') ? '33' + rawTel.slice(1) : rawTel;
+
+      const pLink = document.getElementById('sos-link-phone');
+      const wLink = document.getElementById('sos-link-whatsapp');
+      const eLink = document.getElementById('sos-link-email');
+
+      if (pLink) pLink.href = `tel:${supportInfo.tel.replace(/\s+/g, '')}`;
+      if (wLink) wLink.href = `https://wa.me/${intlTel}?text=Bonjour%20Support%2C%20nous%20avons%20besoin%20d'aide%20sur%20le%20logiciel%20de%20caisse.`;
+      if (eLink) eLink.href = `mailto:${supportInfo.email}?subject=Urgence%20POS`;
+
+      safeSetText('sos-display-tel', supportInfo.tel);
+      safeSetText('sos-display-email', supportInfo.email);
+    }
+
+    function checkAdminAuth() {
+      const isAuth = (sessionStorage.getItem('hdp_admin_auth') === 'true');
+      const activeRole = sessionStorage.getItem('hdp_active_role');
+      const isSuper = (activeRole === 'super_admin');
+
+      if (isAuth && (activeRole === 'direction' || activeRole === 'super_admin')) {
+        document.getElementById('admin-lock-overlay').style.display = 'none';
+        document.getElementById('admin-main-container').style.display = 'block';
+
+        const roleBadge = document.getElementById('session-role-badge');
+        const roleText = document.getElementById('session-role-text');
+        const roleTag = document.getElementById('session-role-tag');
+
+        if (isSuper) {
+          roleBadge.className = 'session-role-indicator session-super';
+          roleText.innerText = '👑 Session : Support Technique & Éditeur (SUPER-ADMIN - PLEIN POUVOIR)';
+          roleTag.innerText = 'CONTRÔLE TOTAL';
+        } else {
+          roleBadge.className = 'session-role-indicator session-client';
+          roleText.innerText = '👤 Session : Direction du Restaurant (Mode Client)';
+          roleTag.innerText = 'LECTURE SEULE';
+        }
+
+        const masterPanel = document.getElementById('master-admin-panel');
+        if (masterPanel) masterPanel.style.display = isSuper ? 'block' : 'none';
+
+        const btnElevate = document.getElementById('btn-elevate-bar');
+        if (btnElevate) btnElevate.style.display = isSuper ? 'none' : 'inline-flex';
+
+        const thMaster = document.getElementById('th-master-action');
+        if (thMaster) thMaster.style.display = isSuper ? 'table-cell' : 'none';
+
+        chargerDonneesAdmin();
+        chargerServeurs();
+        chargerPlanAdmin();
+        chargerLicenceStatus();
+        chargerMenuAdmin();
+      } else {
+        document.getElementById('admin-lock-overlay').style.display = 'flex';
+        document.getElementById('admin-main-container').style.display = 'none';
+        chargerLicenceStatus();
+      }
+    }
+
+    function pressAdminPin(num) {
+      if (enteredAdminPin.length < 6) {
+        enteredAdminPin += num;
+        updateAdminPinDots();
+        if (enteredAdminPin.length === 4 || enteredAdminPin.length === 6) verifierAdminPin();
+      }
+    }
+
+    function deleteAdminPin() { enteredAdminPin = enteredAdminPin.slice(0, -1); updateAdminPinDots(); }
+    function clearAdminPin() { enteredAdminPin = ''; updateAdminPinDots(); }
+
+    function updateAdminPinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < enteredAdminPin.length) dot.classList.add('filled');
+        else dot.classList.remove('filled');
+      }
+    }
+
+    async function verifierAdminPin() {
+      const pinToTest = enteredAdminPin;
+      try {
+        const res = await fetch('/api/auth/pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: pinToTest })
+        });
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+          sessionStorage.clear();
+
+          if (data.isSuperAdmin || data.role === 'super_admin') {
+            sessionStorage.setItem('hdp_admin_auth', 'true');
+            sessionStorage.setItem('hdp_active_role', 'super_admin');
+            sessionStorage.setItem('hdp_super_pin_cache', pinToTest);
+          } else if (data.role === 'direction' || pinToTest === '9999') {
+            sessionStorage.setItem('hdp_admin_auth', 'true');
+            sessionStorage.setItem('hdp_active_role', 'direction');
+          } else {
+            alert("⛔ Ce code serveur n'a pas accès à l'Espace Direction.");
+            clearAdminPin();
+            return;
+          }
+
+          clearAdminPin();
+          checkAdminAuth();
+        } else if (enteredAdminPin.length >= 4) {
+          alert("⛔ Code PIN incorrect !");
+          clearAdminPin();
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+        clearAdminPin();
+      }
+    }
+
+    function passerEnModeSuperAdmin() {
+      const sPin = prompt("Saisissez votre Super-PIN Support Technique (Plein Pouvoir) :");
+      if (!sPin) return;
+
+      fetch('/api/auth/pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: sPin.trim() })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && (data.isSuperAdmin || data.role === 'super_admin')) {
+          sessionStorage.clear();
+          sessionStorage.setItem('hdp_admin_auth', 'true');
+          sessionStorage.setItem('hdp_active_role', 'super_admin');
+          sessionStorage.setItem('hdp_super_pin_cache', sPin.trim());
+          alert("👑 Mode Super-Admin activé !");
+          checkAdminAuth();
+        } else {
+          alert("❌ Super-PIN invalide.");
+        }
+      })
+      .catch(() => alert("Erreur réseau."));
+    }
+
+    function verrouillerAdmin() {
+      sessionStorage.clear();
+      enteredAdminPin = '';
+      checkAdminAuth();
+    }
+
+    async function chargerMenuAdmin() {
+      try {
+        const res = await fetch('/api/admin/menu/all');
+        if (res.ok) {
+          allMenuItems = await res.json();
+          renderMenuAdminTable();
+          preRemplirArdoise();
+        }
+      } catch (e) {}
+    }
+
+    function preRemplirArdoise() {
+      const f = allMenuItems.find(m => m.id === 'ard_formule');
+      const e = allMenuItems.find(m => m.id === 'ard_entree');
+      const p = allMenuItems.find(m => m.id === 'ard_plat');
+      const d = allMenuItems.find(m => m.id === 'ard_dessert');
+
+      if (f) {
+        document.getElementById('input-ardoise-formule').value = f.nom;
+        document.getElementById('input-ardoise-formule-prix').value = f.prix;
+      }
+      if (e) {
+        document.getElementById('input-ardoise-entree').value = e.nom.replace(/^Entrée du jour\s*:\s*/i, '');
+        document.getElementById('input-ardoise-entree-prix').value = e.prix;
+      }
+      if (p) {
+        document.getElementById('input-ardoise-plat').value = p.nom.replace(/^Plat du jour\s*:\s*/i, '');
+        document.getElementById('input-ardoise-plat-prix').value = p.prix;
+      }
+      if (d) {
+        document.getElementById('input-ardoise-dessert').value = d.nom.replace(/^Dessert du jour\s*:\s*/i, '');
+        document.getElementById('input-ardoise-dessert-prix').value = d.prix;
+      }
+
+      const optE = allMenuItems.find(m => m.id === 'm40_opt_e');
+      if (optE && optE.actif === 1) {
+        document.getElementById('check-inclure-menu40').checked = true;
+      }
+    }
+
+    function renderMenuAdminTable() {
+      const tbody = document.getElementById('menu-management-tbody');
+      const badge = document.getElementById('menu-items-count-badge');
+      if (badge) badge.innerText = `${allMenuItems.length} plat${allMenuItems.length > 1 ? 's' : ''}`;
+
+      if (!tbody || allMenuItems.length === 0) return;
+
+      tbody.innerHTML = allMenuItems.map(item => `
+        <tr>
+          <td><strong>${item.nom}</strong></td>
+          <td><span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px;">${item.cat}</span></td>
+          <td><strong style="color:var(--accent);">${(item.prix || 0).toFixed(2)} €</strong></td>
+          <td>
+            <span style="color:${item.actif ? '#16a34a' : '#ef4444'}; font-weight:800; font-size:0.75rem;">
+              ${item.actif ? '🟢 En ligne' : '🔴 Masqué'}
+            </span>
+          </td>
+          <td>
+            <button class="btn-edit-pin" onclick="modifierPrixPlat('${item.id}', '${item.nom.replace(/'/g, "\\'")}', ${item.prix})">✏️ Prix</button>
+            <button class="btn-edit-pin" style="background:#fef2f2; border-color:#fecaca; color:#dc2626;" onclick="basculerActifPlat('${item.id}', ${item.actif ? 0 : 1})">
+              ${item.actif ? 'Masquer' : 'Activer'}
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function enregistrerArdoiseDuJour() {
+      const formuleNom = document.getElementById('input-ardoise-formule').value.trim();
+      const formulePrix = parseFloat(document.getElementById('input-ardoise-formule-prix').value);
+      const entree = document.getElementById('input-ardoise-entree').value.trim();
+      const entreePrix = parseFloat(document.getElementById('input-ardoise-entree-prix').value);
+      const plat = document.getElementById('input-ardoise-plat').value.trim();
+      const platPrix = parseFloat(document.getElementById('input-ardoise-plat-prix').value);
+      const dessert = document.getElementById('input-ardoise-dessert').value.trim();
+      const dessertPrix = parseFloat(document.getElementById('input-ardoise-dessert-prix').value);
+      const inclure40 = document.getElementById('check-inclure-menu40').checked;
+
+      try {
+        const res = await fetch('/api/admin/menu/plat-du-jour', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            formule_nom: formuleNom,
+            formule_prix: isNaN(formulePrix) ? 22.0 : formulePrix,
+            entree_jour: entree, 
+            entree_prix: isNaN(entreePrix) ? 8.5 : entreePrix,
+            plat_jour: plat, 
+            plat_prix: isNaN(platPrix) ? 17.5 : platPrix,
+            dessert_jour: dessert,
+            dessert_prix: isNaN(dessertPrix) ? 7.5 : dessertPrix,
+            inclure_dans_menu_40: inclure40
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("✨ L'Ardoise du Jour et ses tarifs ont été mis à jour en direct !");
+          chargerMenuAdmin();
+        }
+      } catch (e) { alert("Erreur de connexion."); }
+    }
+
+    async function modifierPrixPlat(id, nom, currentPrix) {
+      const newPrice = prompt(`Nouveau tarif TTC pour « ${nom} » :`, currentPrix);
+      if (newPrice === null || isNaN(parseFloat(newPrice))) return;
+
+      try {
+        const res = await fetch(`/api/admin/menu/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prix: parseFloat(newPrice) })
+        });
+        if (res.ok) {
+          chargerMenuAdmin();
+        }
+      } catch (e) {}
+    }
+
+    async function basculerActifPlat(id, newActifState) {
+      try {
+        await fetch(`/api/admin/menu/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ actif: newActifState })
+        });
+        chargerMenuAdmin();
+      } catch (e) {}
+    }
+
+    async function ajouterNouveauPlatCarte() {
+      const nom = document.getElementById('new-dish-name').value.trim();
+      const cat = document.getElementById('new-dish-cat').value;
+      const prix = parseFloat(document.getElementById('new-dish-price').value);
+
+      if (!nom || isNaN(prix)) return alert("Nom et prix requis.");
+
+      try {
+        const res = await fetch('/api/admin/menu', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nom, cat, prix, section: cat })
+        });
+        if (res.ok) {
+          document.getElementById('new-dish-name').value = '';
+          document.getElementById('new-dish-price').value = '';
+          chargerMenuAdmin();
+        }
+      } catch (e) {}
+    }
+
+    async function chargerLicenceStatus() {
+      try {
+        const res = await fetch('/api/licence/status');
+        if (res.ok) {
+          const lic = await res.json();
+          safeSetText('saas-client-name', lic.etablissement || 'Restaurant');
+          safeSetText('page-restaurant-title', `${lic.etablissement || 'Restaurant'} — Espace Direction & Audit`);
+          safeSetText('print-z-etablissement', (lic.etablissement || 'Restaurant').toUpperCase());
+          safeSetText('print-ch-etablissement', (lic.etablissement || 'Restaurant').toUpperCase());
+
+          const dExp = new Date(lic.date_expiration);
+          safeSetText('saas-exp-date', isNaN(dExp.getTime()) ? '--/--/----' : dExp.toLocaleDateString('fr-FR'));
+          safeSetText('saas-days-left', lic.jours_restants !== undefined ? lic.jours_restants : '--');
+
+          const badge = document.getElementById('saas-status-badge');
+          if (badge) {
+            const tarifStr = typeof lic.tarif_mensuel === 'number' ? lic.tarif_mensuel.toFixed(2) : '49.99';
+            badge.className = lic.est_valide ? 'saas-badge-valid' : 'saas-badge-warn';
+            badge.innerText = lic.est_valide ? `🟢 Abonnement à jour (${tarifStr} € / mois)` : `🔴 Échu (${lic.jours_restants} j)`;
+          }
+
+          updateSOSContactLinks(lic.support_tel, lic.support_email);
+
+          const inEtab = document.getElementById('master-input-etab');
+          const inTarif = document.getElementById('master-input-tarif');
+          const inDate = document.getElementById('master-input-date');
+          const inTel = document.getElementById('master-input-tel');
+          const inEmail = document.getElementById('master-input-email');
+
+          if (inEtab) inEtab.value = lic.etablissement || 'Restaurant';
+          if (inTarif) inTarif.value = lic.tarif_mensuel || 49.99;
+          if (inDate && !isNaN(dExp.getTime())) inDate.value = dExp.toISOString().slice(0, 10);
+          if (inTel) inTel.value = lic.support_tel || '06 00 00 00 00';
+          if (inEmail) inEmail.value = lic.support_email || 'support@mon-entreprise.fr';
+        }
+      } catch (e) {}
+    }
+
+    async function enregistrerConfigMaster() {
+      const etab = document.getElementById('master-input-etab').value.trim();
+      const tarif = parseFloat(document.getElementById('master-input-tarif').value);
+      const dateVal = document.getElementById('master-input-date').value;
+      const tel = document.getElementById('master-input-tel').value.trim();
+      const email = document.getElementById('master-input-email').value.trim();
+
+      try {
+        const res = await fetch('/api/admin/master/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            etablissement: etab,
+            tarif_mensuel: tarif,
+            date_expiration: dateVal ? new Date(dateVal).toISOString() : null,
+            support_tel: tel,
+            support_email: email,
+            super_pin: getSuperPinCache()
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Paramètres et coordonnées S.O.S enregistrés avec succès !");
+          chargerLicenceStatus();
+        } else {
+          alert(`❌ ${data.error || "Erreur"}`);
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    async function prolongerAbonnementDirect(jours) {
+      try {
+        const res = await fetch('/api/licence/prolonger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jours, super_pin: getSuperPinCache() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Licence prolongée de +${jours} jours !`);
+          chargerLicenceStatus();
+        } else {
+          alert(`❌ ${data.error || "Erreur"}`);
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    async function basculerStatutLogiciel(nouveauStatut) {
+      if (!confirm(`Confirmer le passage du logiciel en statut « ${nouveauStatut.toUpperCase()} » ?`)) return;
+      try {
+        const res = await fetch('/api/admin/master/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ statut: nouveauStatut, super_pin: getSuperPinCache() })
+        });
+        if (res.ok) {
+          alert(`✅ Statut logiciel mis à jour (${nouveauStatut}).`);
+          chargerLicenceStatus();
+        }
+      } catch (e) {}
+    }
+
+    async function changerMonSuperPin() {
+      const newPin = document.getElementById('master-input-new-superpin').value.trim();
+      if (!newPin || newPin.length < 4) return alert("Le nouveau Super-PIN doit comporter au moins 4 caractères.");
+
+      try {
+        const res = await fetch('/api/licence/super-pin', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ old_pin: getSuperPinCache(), new_pin: newPin })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          sessionStorage.setItem('hdp_super_pin_cache', newPin);
+          document.getElementById('master-input-new-superpin').value = '';
+          alert(`✅ Votre Super-PIN a été modifié avec succès (Nouveau code : ${newPin}).`);
+        } else {
+          alert(`❌ ${data.error || "Erreur"}`);
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    async function forcerDeblocageToutesTables() {
+      if (!confirm("🚨 Débloquer toutes les tables bloquées ?")) return;
+      try {
+        const res = await fetch('/api/admin/master/reset-all-tables', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ super_pin: getSuperPinCache() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Toutes les tables ont été libérées avec succès !");
+          chargerDonneesAdmin();
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    async function purgerToutesDonneesTest() {
+      const confirmStr = prompt("⚠️ PURGE COMPLÈTE : Tapez « EFFACER » en majuscules :");
+      if (confirmStr !== 'EFFACER') return alert("Action annulée.");
+
+      try {
+        const res = await fetch('/api/admin/master/purge-history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ super_pin: getSuperPinCache() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Données complètement purgées !");
+          chargerDonneesAdmin();
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    async function forcerSuppressionCommande(commandeId) {
+      if (!confirm(`Supprimer définitivement la commande #${commandeId} ?`)) return;
+      try {
+        const res = await fetch(`/api/admin/commandes/${commandeId}`, { method: 'DELETE' });
+        if (res.ok) {
+          chargerDonneesAdmin();
+        }
+      } catch (e) {}
     }
 
     async function chargerDonneesAdmin() {
       try {
-        const [resCfg, resPay, resChambres, resMenu, resStock] = await Promise.all([
-          fetch('/api/config/client'),
+        const [resCmds, resServs, resPaiements, resChambres] = await Promise.all([
+          fetch('/api/admin/commandes'),
+          fetch('/api/admin/serveurs'),
           fetch('/api/admin/paiements'),
-          fetch('/api/admin/notes-chambres'),
-          fetch('/api/menu'),
-          fetch('/api/stock/indisponibles')
+          fetch('/api/admin/notes-chambres')
         ]);
+        
+        if (resCmds.ok) allOrders = await resCmds.json();
+        if (resServs.ok) allServeurs = await resServs.json();
+        if (resPaiements.ok) allPaiements = await resPaiements.json();
+        if (resChambres.ok) allChambres = await resChambres.json();
 
-        if (resCfg.ok) {
-          const cfg = await resCfg.json();
-          document.getElementById('admin-header-title').innerText = `📊 ${cfg.etablissement} — Pilotage Direction`;
-          document.title = `${cfg.etablissement} — Administration`;
-        }
-
-        if (resPay.ok) {
-          const paiements = await resPay.json();
-          traiterPaiements(paiements);
-        }
-
-        if (resChambres.ok) {
-          const chambres = await resChambres.json();
-          afficherChambres(chambres);
-        }
-
-        if (resMenu.ok) menuItems = await resMenu.json();
-        if (resStock.ok) indisponibles = await resStock.json();
-        afficherMenuEditor();
-
-      } catch (e) {}
-    }
-
-    function traiterPaiements(paiements) {
-      let total = 0, cb = 0, esp = 0, chambres = 0, tips = 0;
-      paiements.forEach(p => {
-        total += p.montant;
-        tips += (p.pourboire || 0);
-        if (p.mode_reglement === 'CB') cb += p.montant;
-        if (p.mode_reglement === 'Espèces') esp += p.montant;
-        if (p.mode_reglement === 'Note de Chambre') chambres += p.montant;
-      });
-
-      statsData = { ca: total, cb, esp, chambres, tips, count: paiements.length, paiements };
-
-      document.getElementById('kpi-ca').innerText = `${total.toFixed(2)} €`;
-      document.getElementById('kpi-cb').innerText = `${cb.toFixed(2)} €`;
-      document.getElementById('kpi-esp').innerText = `${esp.toFixed(2)} €`;
-      document.getElementById('kpi-chambres').innerText = `${chambres.toFixed(2)} €`;
-      document.getElementById('kpi-tips').innerText = `${tips.toFixed(2)} €`;
-      document.getElementById('kpi-count').innerText = paiements.length;
-
-      // Tableau des paiements
-      const tbody = document.getElementById('paiements-tbody');
-      if (paiements.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:30px;">Aucun encaissement pour le moment.</td></tr>';
-        return;
+        try { calculerKPIsEtAfficher(allOrders, allPaiements, allChambres); } catch(e) {}
+        try { calculerAuditServeurs(allOrders, allServeurs); } catch(e) {}
+        try { renderNotesChambres(allChambres); } catch(e) {}
+      } catch (err) {
+        console.error("Erreur chargement:", err);
       }
-
-      tbody.innerHTML = paiements.map(p => `
-        <tr>
-          <td>${new Date(p.date_paiement).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
-          <td><strong>Table ${p.table_num}</strong></td>
-          <td>${p.mode_reglement}</td>
-          <td style="font-weight:bold; color:#38bdf8;">${p.montant.toFixed(2)} €</td>
-          <td style="color:var(--warning); font-weight:700;">${(p.pourboire || 0).toFixed(2)} €</td>
-          <td>${p.serveur_nom || 'Salle'}</td>
-        </tr>
-      `).join('');
     }
 
-    function afficherChambres(list) {
+    function renderNotesChambres(chambres) {
       const tbody = document.getElementById('chambres-tbody');
-      if (!list || list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">Aucune note de chambre enregistrée aujourd\'hui.</td></tr>';
+      if (!tbody) return;
+      
+      if (!chambres || chambres.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">Aucune note de chambre enregistrée aujourd\'hui.</td></tr>';
         return;
       }
-      tbody.innerHTML = list.map(c => `
-        <tr>
-          <td><strong>Chambre ${c.numero_chambre || '-'}</strong></td>
-          <td>${c.client_nom || 'Client Résident'}</td>
-          <td style="font-weight:bold; color:#38bdf8;">${c.montant.toFixed(2)} €</td>
-          <td>${new Date(c.date_paiement).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
-          <td>${c.serveur_nom || 'Salle'}</td>
-        </tr>
-      `).join('');
-    }
 
-    function afficherMenuEditor() {
-      const container = document.getElementById('menu-editor-container');
-      if (!container || menuItems.length === 0) return;
+      tbody.innerHTML = chambres.map(c => {
+        const d = parseSqliteDate(c.date_fin || c.date_creation);
+        const heure = d ? d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-';
+        const itemsTxt = (c.items || []).map(it => `${it.quantite}x ${it.article_nom}`).join(', ');
 
-      container.innerHTML = menuItems.map(item => {
-        const isOut = indisponibles.includes(item.slug);
         return `
-          <div class="menu-editor-card ${isOut ? 'out' : ''}">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-              <strong style="font-size:0.95rem;">${item.nom}</strong>
-              <span style="color:#38bdf8; font-weight:800;">${item.prix.toFixed(2)} €</span>
-            </div>
-            <div style="font-size:0.78rem; color:var(--text-muted);">${item.categorie || 'Autre'}</div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-              <span style="font-size:0.8rem; font-weight:700; color:${isOut ? 'var(--danger)' : 'var(--success)'};">
-                ${isOut ? '🔴 Épuisé' : '🟢 Disponible'}
-              </span>
-              <button class="btn-action btn-dark" style="padding:4px 10px; font-size:0.75rem;" onclick="toggleStockAdmin('${item.slug}', '${item.nom.replace(/'/g, "\\'")}')">
-                ${isOut ? 'Réactiver' : 'Marquer Épuisé'}
-              </button>
-            </div>
-          </div>
+          <tr>
+            <td><strong style="color:var(--hotel); font-size:1rem;">🏨 Ch. ${c.numero_chambre || '-'}</strong></td>
+            <td><strong>${c.nom_client_chambre || 'Client Hôtel'}</strong></td>
+            <td>${heure}</td>
+            <td>Table ${c.table_num}</td>
+            <td>👤 ${c.serveur_nom || 'Salle'}</td>
+            <td><strong style="color:var(--hotel); font-size:1rem;">${(c.total_paye || 0).toFixed(2)} €</strong></td>
+            <td><div style="font-size:0.8rem; color:#475569; max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${itemsTxt}">${itemsTxt || '-'}</div></td>
+            <td>
+              <button class="btn-print-reception" onclick="imprimerJustificatifChambre(${c.id})">🖨️ Bon Réception</button>
+            </td>
+          </tr>
         `;
       }).join('');
     }
 
-    async function toggleStockAdmin(slug, nom) {
-      try {
-        const res = await fetch('/api/stock/toggle', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ article_id: slug, article_nom: nom })
+    function imprimerJustificatifChambre(commandeId) {
+      const cmd = allChambres.find(c => c.id === commandeId);
+      if (!cmd) return;
+
+      safeSetText('print-ch-date', new Date().toLocaleString('fr-FR'));
+      safeSetText('print-ch-num', cmd.numero_chambre || '-');
+      safeSetText('print-ch-nom', cmd.nom_client_chambre || 'Client Résident');
+      safeSetText('print-ch-table', `Table ${cmd.table_num} (${cmd.serveur_nom || 'Salle'})`);
+      safeSetText('print-ch-total', `${(cmd.total_paye || 0).toFixed(2)} €`);
+
+      const itemsContainer = document.getElementById('print-ch-items');
+      if (itemsContainer) {
+        itemsContainer.innerHTML = (cmd.items || []).map(it => `
+          <div style="display:flex; justify-content:space-between; font-size:11px; padding:2px 0;">
+            <span>${it.quantite}x ${it.article_nom}</span>
+            <strong>${((it.prix || 0) * (it.quantite || 1)).toFixed(2)} €</strong>
+          </div>
+        `).join('');
+      }
+
+      const zBox = document.getElementById('z-caisse-print');
+      const chBox = document.getElementById('chambre-ticket-print');
+      if (zBox) zBox.className = '';
+      if (chBox) chBox.className = 'print-visible';
+      window.print();
+    }
+
+    function calculerKPIsEtAfficher(commandes, paiements, chambres) {
+      const isSuper = (sessionStorage.getItem('hdp_active_role') === 'super_admin');
+      const actives = (commandes || []).filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
+      const encaissees = (commandes || []).filter(c => c.statut === 'encaisse');
+
+      let totalCA = 0;
+      let totalPourboires = 0;
+      let totalChambresMontant = 0;
+
+      encaissees.forEach(c => {
+        let brut = 0;
+        if (c.items) c.items.forEach(it => brut += (it.prix || 0) * (it.quantite || 1));
+        const montantNet = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+        totalCA += montantNet;
+        totalPourboires += (c.pourboire || 0);
+      });
+
+      (chambres || []).forEach(ch => {
+        totalChambresMontant += (ch.total_paye || 0);
+      });
+
+      let totalCB = 0;
+      let totalEsp = 0;
+      let totalTR = 0;
+      let totalChambrePay = 0;
+
+      if (paiements && paiements.length > 0) {
+        paiements.forEach(p => {
+          const mode = p.mode_paiement || '';
+          if (mode === 'CB') totalCB += (p.montant || 0);
+          else if (mode === 'Espèces') totalEsp += (p.montant || 0);
+          else if (mode === 'Titre Resto') totalTR += (p.montant || 0);
+          else if (mode.includes('Chambre') || p.numero_chambre) totalChambrePay += (p.montant || 0);
         });
+      }
+
+      const totalHT = totalCA / 1.10;
+      const totalTVA = totalCA - totalHT;
+      const panierMoyen = encaissees.length > 0 ? (totalCA / encaissees.length) : 0;
+
+      safeSetText('kpi-ca', `${totalCA.toFixed(2)} €`);
+      safeSetText('kpi-tva', `${totalTVA.toFixed(2)} €`);
+      safeSetText('kpi-chambres-total', `${totalChambresMontant.toFixed(2)} €`);
+      safeSetText('kpi-chambres-count', (chambres || []).length);
+      safeSetText('kpi-pourboires', `+${totalPourboires.toFixed(2)} €`);
+      safeSetText('kpi-encaissees', encaissees.length);
+      safeSetText('kpi-panier-moyen', `${panierMoyen.toFixed(2)} €`);
+
+      safeSetText('pay-total-cb', `${totalCB.toFixed(2)} €`);
+      safeSetText('pay-total-esp', `${totalEsp.toFixed(2)} €`);
+      safeSetText('pay-total-tr', `${totalTR.toFixed(2)} €`);
+      safeSetText('pay-total-chambre', `${totalChambrePay.toFixed(2)} €`);
+      safeSetText('pay-total-tips', `+${totalPourboires.toFixed(2)} €`);
+
+      const tbody = document.getElementById('orders-table-body');
+      if (!tbody) return;
+
+      if (!commandes || commandes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${isSuper ? 10 : 9}" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = commandes.map(c => {
+        const d = parseSqliteDate(c.date_creation);
+        const heure = d ? d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-';
+        let brut = 0;
+        let detailsHtml = '';
+        if (c.items) {
+          detailsHtml = c.items.map(it => {
+            brut += (it.prix || 0) * (it.quantite || 1);
+            return `<div><strong>${it.quantite || 1}x</strong> ${it.article_nom}</div>`;
+          }).join('');
+        }
+        const montantAffiche = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+
+        const masterCol = isSuper ? `
+          <td>
+            <button class="btn-del" style="color:#ef4444; font-size:0.8rem; font-weight:800; border:1px solid #fee2e2; border-radius:6px; padding:3px 6px;" onclick="forcerSuppressionCommande(${c.id})">
+              🗑️ Suppr
+            </button>
+          </td>
+        ` : '';
+
+        return `
+          <tr>
+            <td><strong>Table ${c.table_num}</strong></td>
+            <td><strong>👤 ${c.serveur_nom || 'Salle'}</strong></td>
+            <td>${heure}</td>
+            <td><span class="badge-stat stat-${c.statut}">${getLibelleStatut(c.statut)}</span></td>
+            <td><strong style="font-size:0.85rem;">${c.mode_paiement || '-'}</strong></td>
+            <td>${c.numero_chambre ? `<strong style="color:var(--hotel);">Ch. ${c.numero_chambre}</strong>` : '-'}</td>
+            <td><strong style="color:#059669;">${c.pourboire > 0 ? '+' + c.pourboire.toFixed(2) + ' €' : '-'}</strong></td>
+            <td><strong>${montantAffiche > 0 ? montantAffiche.toFixed(2) + ' €' : '0,00 €'}</strong></td>
+            <td><div style="font-size:0.82rem; color:#475569;">${detailsHtml}</div></td>
+            ${masterCol}
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function getLibelleStatut(st) {
+      if (st === 'en_cours' || st === 'en_preparation') return 'En Prépa';
+      if (st === 'pret') return 'Prêt';
+      if (st === 'servi') return 'Servi';
+      if (st === 'encaisse') return 'Encaissé';
+      return 'En Attente';
+    }
+
+    function calculerAuditServeurs(commandes, serveurs) {
+      const tbody = document.getElementById('servers-audit-tbody');
+      if (!tbody) return;
+
+      if (!serveurs || serveurs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px;">Aucun serveur configuré</td></tr>';
+        return;
+      }
+
+      const now = new Date();
+      tbody.innerHTML = serveurs.map(serv => {
+        const sNom = serv.nom || 'Salle';
+        const cmdsServeur = (commandes || []).filter(c => (c.serveur_nom || 'Salle').toLowerCase() === sNom.toLowerCase());
+        const encaissees = cmdsServeur.filter(c => c.statut === 'encaisse');
+        const enCours = cmdsServeur.filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
+
+        let caNet = 0;
+        let tipsTotal = 0;
+        let tempsTotal = 0;
+        let tempsCount = 0;
+        let derniereDate = null;
+
+        cmdsServeur.forEach(c => {
+          const d = parseSqliteDate(c.date_creation);
+          if (d && !isNaN(d.getTime())) {
+            if (!derniereDate || d > derniereDate) derniereDate = d;
+          }
+          if (c.statut === 'encaisse') {
+            let brut = 0;
+            if (c.items) c.items.forEach(it => brut += (it.prix || 0) * (it.quantite || 1));
+            caNet += (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+            tipsTotal += (c.pourboire || 0);
+          }
+          if (c.date_creation && c.date_fin) {
+            const dStart = parseSqliteDate(c.date_creation);
+            const dEnd = parseSqliteDate(c.date_fin);
+            if (dStart && dEnd) {
+              const diff = Math.round((dEnd - dStart) / 60000);
+              if (diff >= 0) { tempsTotal += diff; tempsCount++; }
+            }
+          }
+        });
+
+        let statutBadge = '<span class="badge-perf perf-neutre">⚪ Inactif</span>';
+        let derniereHeureStr = '-';
+
+        if (derniereDate) {
+          derniereHeureStr = derniereDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          const diffMinutes = Math.max(0, Math.round((now - derniereDate) / 60000));
+
+          if (enCours.length > 0) {
+            statutBadge = `<span class="badge-perf perf-actif">🟢 En service (${enCours.length} table${enCours.length > 1 ? 's' : ''})</span>`;
+          } else if (diffMinutes <= 45) {
+            statutBadge = `<span class="badge-perf perf-actif">🟢 Actif (${diffMinutes === 0 ? '1 min' : diffMinutes + ' min'})</span>`;
+          } else {
+            statutBadge = `<span class="badge-perf perf-inactif">🟡 Inactif (${diffMinutes} min)</span>`;
+          }
+        }
+
+        const tempsMoyenStr = tempsCount > 0 ? `${Math.round(tempsTotal / tempsCount)} min` : '-';
+
+        return `
+          <tr>
+            <td><strong>👤 ${sNom}</strong></td>
+            <td>${statutBadge}</td>
+            <td><strong>${derniereHeureStr}</strong></td>
+            <td>${cmdsServeur.length}</td>
+            <td>${encaissees.length}</td>
+            <td><strong style="color:var(--accent);">${caNet.toFixed(2)} €</strong></td>
+            <td><strong style="color:#059669;">+${tipsTotal.toFixed(2)} €</strong></td>
+            <td>${tempsMoyenStr}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function chargerPlanAdmin() {
+      try {
+        const res = await fetch('/api/plan/zones-tables');
         if (res.ok) {
-          const data = await res.json();
-          indisponibles = data.indisponibles;
-          afficherMenuEditor();
+          planData = await res.json();
+          renderPlanAdmin();
         }
       } catch (e) {}
     }
 
-    function imprimerClotureZ() {
-      const z = document.getElementById('printable-z');
-      z.innerHTML = `
-        <div style="text-align:center; margin-bottom:12px;">
-          <h2 style="font-size:1.1rem; margin-bottom:2px;">RAPPORT DE CLÔTURE Z</h2>
-          <p style="font-size:0.8rem;">Hôtel des Pins — POS Cloud</p>
-          <p style="font-size:0.75rem;">Date : ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+    function renderPlanAdmin() {
+      const container = document.getElementById('plan-zones-management');
+      if (!container) return;
+      if (!planData || planData.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">Aucune zone définie.</div>';
+        return;
+      }
+      container.innerHTML = planData.map(z => `
+        <div class="plan-zone-card">
+          <div class="plan-zone-header">
+            <span>${z.nom} (${z.tables.length} table${z.tables.length > 1 ? 's' : ''})</span>
+            <button class="btn-del" onclick="supprimerZone(${z.id}, '${z.nom.replace(/'/g, "\\'")}')">🗑️</button>
+          </div>
+          <div class="plan-tables-chips">${z.tables.map(t => `
+            <div class="table-chip">
+              <span>Table <strong>${t.numero}</strong></span>
+              <button class="btn-del" onclick="supprimerTable(${t.id})">✕</button>
+            </div>
+          `).join('') || '<span style="color:var(--text-muted); font-size:0.75rem;">Aucune table</span>'}</div>
+          <div style="display:flex; gap:6px;">
+            <input type="number" id="input-new-table-${z.id}" class="form-input-short" placeholder="N° table">
+            <button class="btn-action-primary" style="padding:4px 10px; font-size:0.75rem;" onclick="ajouterTableAZone(${z.id})">➕ Ajouter</button>
+          </div>
         </div>
-        <hr style="border-top:1px dashed #000; margin:8px 0;">
-        <p style="font-size:1rem; font-weight:bold; margin:6px 0;">CHIFFRE D'AFFAIRES TTC : ${statsData.ca.toFixed(2)} €</p>
-        <hr style="border-top:1px dashed #000; margin:8px 0;">
-        <p>Total Cartes Bancaires : ${statsData.cb.toFixed(2)} €</p>
-        <p>Total Espèces : ${statsData.esp.toFixed(2)} €</p>
-        <p>Total Notes Chambres : ${statsData.chambres.toFixed(2)} €</p>
-        <p>Total Pourboires : ${statsData.tips.toFixed(2)} €</p>
-        <p>Nombre de tickets : ${statsData.count}</p>
-        <hr style="border-top:1px dashed #000; margin:8px 0;">
-        <p style="text-align:center; font-size:0.75rem; margin-top:10px;">Système SmartView POS — Certifié Conforme</p>
-      `;
+      `).join('');
+    }
+
+    async function ajouterNouvelleZone() {
+      const nom = document.getElementById('new-zone-name').value.trim();
+      if (!nom) return alert("Nom de zone requis.");
+      try {
+        const res = await fetch('/api/admin/zones', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nom })
+        });
+        if (res.ok) {
+          document.getElementById('new-zone-name').value = '';
+          chargerPlanAdmin();
+        }
+      } catch (e) {}
+    }
+
+    async function supprimerZone(id, nom) {
+      if (!confirm(`Supprimer la zone « ${nom} » ?`)) return;
+      try {
+        await fetch(`/api/admin/zones/${id}`, { method: 'DELETE' });
+        chargerPlanAdmin();
+      } catch (e) {}
+    }
+
+    async function ajouterTableAZone(zone_id) {
+      const input = document.getElementById(`input-new-table-${zone_id}`);
+      const numero = parseInt(input.value, 10);
+      if (isNaN(numero) || numero <= 0) return alert("Numéro de table invalide.");
+      try {
+        const res = await fetch('/api/admin/tables', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zone_id, numero })
+        });
+        if (res.ok) {
+          input.value = '';
+          chargerPlanAdmin();
+        }
+      } catch (e) {}
+    }
+
+    async function supprimerTable(id) {
+      try {
+        await fetch(`/api/admin/tables/${id}`, { method: 'DELETE' });
+        chargerPlanAdmin();
+      } catch (e) {}
+    }
+
+    async function chargerServeurs() {
+      try {
+        const res = await fetch('/api/admin/serveurs');
+        if (res.ok) {
+          allServeurs = await res.json();
+          renderServeursList();
+        }
+      } catch (e) {}
+    }
+
+    function renderServeursList() {
+      const container = document.getElementById('servers-list-container');
+      const badge = document.getElementById('server-count-badge');
+      if (badge) badge.innerText = `${allServeurs.length} membre${allServeurs.length > 1 ? 's' : ''}`;
+
+      if (!container) return;
+      container.innerHTML = allServeurs.map(s => `
+        <div class="breakdown-row">
+          <span class="tag-bold">👤 ${s.nom} <span style="font-size:0.75rem; background:#f1f5f9; padding:2px 6px; border-radius:4px; color:#64748b;">PIN: <strong>${s.pin}</strong></span></span>
+          <div class="action-icons-group">
+            <button class="btn-edit-pin" onclick="modifierPinServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}', '${s.pin}')">✏️ Changer PIN</button>
+            <button class="btn-del" onclick="supprimerServeur(${s.id}, '${s.nom.replace(/'/g, "\\'")}')">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function modifierPinServeur(id, nom, currentPin) {
+      const nouveauPin = prompt(`Nouveau code PIN à 4 chiffres pour ${nom} :`, currentPin);
+      if (!nouveauPin || nouveauPin.trim().length !== 4 || !/^\d{4}$/.test(nouveauPin.trim())) return alert("Code PIN 4 chiffres invalide.");
+      try {
+        const res = await fetch(`/api/admin/serveurs/${id}/pin`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: nouveauPin.trim() })
+        });
+        if (res.ok) {
+          alert(`✅ Code PIN mis à jour pour ${nom}.`);
+          chargerServeurs();
+        }
+      } catch (e) {}
+    }
+
+    async function ajouterNouveauServeur() {
+      const nom = document.getElementById('new-server-name').value.trim();
+      const pin = document.getElementById('new-server-pin').value.trim();
+      if (!nom || pin.length !== 4 || !/^\d{4}$/.test(pin)) return alert("Nom et PIN 4 chiffres requis.");
+      try {
+        const res = await fetch('/api/admin/serveurs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nom, pin })
+        });
+        if (res.ok) {
+          document.getElementById('new-server-name').value = '';
+          document.getElementById('new-server-pin').value = '';
+          chargerServeurs();
+          chargerDonneesAdmin();
+        }
+      } catch (e) {}
+    }
+
+    async function supprimerServeur(id, nom) {
+      if (!confirm(`Supprimer « ${nom} » ?`)) return;
+      try {
+        await fetch(`/api/admin/serveurs/${id}`, { method: 'DELETE' });
+        chargerServeurs();
+        chargerDonneesAdmin();
+      } catch (e) {}
+    }
+
+    function exporterExcelCSV() {
+      if (!allOrders || allOrders.length === 0) return alert("Aucune donnée.");
+      let csv = "\uFEFFID;Table;Serveur;Chambre;Nom_Client;Date_Creation;Date_Cloture;Statut;Paiement;Pourboire_EUR;Remise_EUR;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
+      allOrders.forEach(c => {
+        let brut = 0;
+        if (c.items) c.items.forEach(it => { brut += (it.prix || 0) * (it.quantite || 1); });
+        const net = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+        csv += `${c.id};Table ${c.table_num};${c.serveur_nom || 'Salle'};${c.numero_chambre || ''};"${c.nom_client_chambre || ''}";${c.date_creation || ''};${c.date_fin || ''};${c.statut};"${c.mode_paiement || ''}";${(c.pourboire || 0).toFixed(2)};${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${(net/1.1).toFixed(2)};${(net-(net/1.1)).toFixed(2)}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Audit_Direction_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function imprimerZCaisse() {
+      const encaissees = (allOrders || []).filter(c => c.statut === 'encaisse');
+      let totalCA = 0;
+      let totalTips = 0;
+      let totalCB = 0;
+      let totalEsp = 0;
+      let totalTR = 0;
+      let totalChambre = 0;
+
+      encaissees.forEach(c => {
+        let brut = 0;
+        if (c.items) c.items.forEach(it => brut += (it.prix || 0) * (it.quantite || 1));
+        const net = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+        totalCA += net;
+        totalTips += (c.pourboire || 0);
+      });
+
+      if (allPaiements && allPaiements.length > 0) {
+        allPaiements.forEach(p => {
+          const mode = p.mode_paiement || '';
+          if (mode === 'CB') totalCB += (p.montant || 0);
+          else if (mode === 'Espèces') totalEsp += (p.montant || 0);
+          else if (mode === 'Titre Resto') totalTR += (p.montant || 0);
+          else if (mode.includes('Chambre') || p.numero_chambre) totalChambre += (p.montant || 0);
+        });
+      }
+
+      safeSetText('print-z-date', new Date().toLocaleString('fr-FR'));
+      safeSetText('print-z-ca', `${totalCA.toFixed(2)} €`);
+      safeSetText('print-z-ht', `${(totalCA / 1.10).toFixed(2)} €`);
+      safeSetText('print-z-tva', `${(totalCA - (totalCA / 1.10)).toFixed(2)} €`);
+      safeSetText('print-z-tips', `+${totalTips.toFixed(2)} €`);
+      safeSetText('print-z-tables', `${encaissees.length}`);
+      safeSetText('print-z-cb', `${totalCB.toFixed(2)} €`);
+      safeSetText('print-z-esp', `${totalEsp.toFixed(2)} €`);
+      safeSetText('print-z-tr', `${totalTR.toFixed(2)} €`);
+      safeSetText('print-z-chambre', `${totalChambre.toFixed(2)} €`);
+
+      const zBox = document.getElementById('z-caisse-print');
+      const chBox = document.getElementById('chambre-ticket-print');
+      if (chBox) chBox.className = '';
+      if (zBox) zBox.className = 'print-visible';
       window.print();
     }
 
     if (socket) {
+      socket.on('nouvelle_commande', () => chargerDonneesAdmin());
+      socket.on('statut_mis_a_jour', () => chargerDonneesAdmin());
       socket.on('table_status_change', () => chargerDonneesAdmin());
-      socket.on('stock_update', (data) => {
-        indisponibles = data;
-        afficherMenuEditor();
-      });
+      socket.on('plan_update', () => chargerPlanAdmin());
+      socket.on('menu_update', () => chargerMenuAdmin());
+      socket.on('licence_update', () => chargerLicenceStatus());
     }
 
-    chargerDonneesAdmin();
-    setInterval(chargerDonneesAdmin, 15000);
+    setInterval(chargerDonneesAdmin, 5000);
+    checkAdminAuth();
   </script>
 </body>
 </html>
