@@ -89,6 +89,7 @@ app.get('/api/config/client', (req, res) => {
     siret: config.siret,
     telephone: config.telephone,
     wifi: config.wifi,
+    statusPageUrl: config.monitoring ? config.monitoring.statusPageUrl : "https://stats.uptimerobot.com/rnzYHtVN0v",
     theme: config.theme || { couleurPrimary: "#0f172a", couleurAccent: "#2563eb" },
     options: config.options
   });
@@ -330,7 +331,7 @@ app.post('/api/commandes', (req, res) => {
   res.status(201).json(fullOrder);
 });
 
-// 🔔 RÉCLAMER LA SUITE (Broadcast complet + Contrôle Commande Active)
+// 🔔 RÉCLAMER LA SUITE
 app.post('/api/tables/:table_num/suite', (req, res) => {
   const tNum = parseInt(req.params.table_num, 10);
   const activeOrders = db.prepare(`SELECT id, serveur_nom FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(tNum);
@@ -425,14 +426,15 @@ app.get('/api/admin/notes-chambres', (req, res) => {
   res.json(cmds.map(c => ({ ...c, items: getI.all(c.id) })));
 });
 app.get('/api/admin/backup-db', (req, res) => res.download(path.join(__dirname, 'restaurant.db'), `backup_${config.etablissement.replace(/[^a-z0-9]/gi, '_')}.db`));
+
 // Route de contrôle de santé globale (SmartView Cloud + Base de données)
 app.get('/api/health', (req, res) => {
   try {
     db.prepare('SELECT 1').get();
     res.json({
       status: 'healthy',
-      system: 'SmartView POS Cloud',
-      restaurant: 'Hôtel des Pins',
+      system: (config.monitoring && config.monitoring.serviceName) ? config.monitoring.serviceName : 'SmartView Cloud',
+      restaurant: config.etablissement,
       uptime_seconds: Math.floor(process.uptime()),
       timestamp: new Date().toISOString()
     });

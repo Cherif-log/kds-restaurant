@@ -1,29 +1,35 @@
 // config.js — Configuration personnalisée de l'établissement
 module.exports = {
-  // Identité officielle du restaurant
-  etablissement: "Hôtel des Pins",
-  adresse: "23 Rue des Fauvettes, 33970 Lège-Cap-Ferret",
-  siret: "412 655 326 00012",
-  telephone: "05 56 60 60 11",
+  // Identité officielle du restaurant (Dynamique avec repli par défaut)
+  etablissement: process.env.RESTAURANT_NAME || "Hôtel des Pins",
+  adresse: process.env.RESTAURANT_ADDRESS || "23 Rue des Fauvettes, 33970 Lège-Cap-Ferret",
+  siret: process.env.RESTAURANT_SIRET || "412 655 326 00012",
+  telephone: process.env.RESTAURANT_PHONE || "05 56 60 60 11",
   wifi: "HotelDesPins_Guest",
 
-  // 🎨 THÈME & CHARTE GRAPHIQUE (Personnalisable à 100% pour chaque client)
+  // Monitoring UptimeRobot & Statut public
+  monitoring: {
+    serviceName: "SmartView Cloud",
+    statusPageUrl: process.env.UPTIMEROBOT_STATUS_URL || "https://stats.uptimerobot.com/rnzYHtVN0v"
+  },
+
+  // 🎨 THÈME & CHARTE GRAPHIQUE
   theme: {
-    logoUrl: "",                   // Ex: "/logo.png" si tu déposes une image dans le dossier public/
-    couleurPrimary: "#0f172a",     // Couleur dominante / En-têtes (Bleu nuit, vert forêt, bordeaux...)
-    couleurAccent: "#2563eb",      // Couleur des boutons d'action & sélections
-    couleurHeaderTexte: "#ffffff"  // Couleur du texte de l'en-tête
+    logoUrl: "",                   
+    couleurPrimary: "#0f172a",     
+    couleurAccent: "#2563eb",      
+    couleurHeaderTexte: "#ffffff"  
   },
 
   // Modèle économique SaaS & codes d'accès
-  superPin: process.env.SUPER_PIN || "7777", // Ton code maître Support / Éditeur
-  pinDirection: "9999",                     // Code Direction du client
+  superPin: process.env.SUPER_PIN || "7777", 
+  pinDirection: process.env.PIN_DIRECTION || "9999",                     
   tarifMensuel: 49.99,
 
   // Modules et options
   options: {
-    moduleHotel: true,      // true = active les transferts sur chambre / false = restaurant seul
-    tauxTVA: 0.10,          // 10% restauration
+    moduleHotel: process.env.ENABLE_HOTEL ? process.env.ENABLE_HOTEL === "true" : true, // false si restaurant simple
+    tauxTVA: 0.10,          
     devise: "€"
   },
 
