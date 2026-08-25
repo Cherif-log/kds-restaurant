@@ -22,6 +22,21 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
 
+    /* BANDEAU DISCRET D'ARMEMENT SONORE */
+    #sound-warning-bar {
+      background: #b91c1c;
+      color: #fff;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      animation: pulse-warn 1.5s infinite;
+    }
+    @keyframes pulse-warn { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+
     header { background: #1e293b; border-bottom: 2px solid var(--border); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     h1 { font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
     
@@ -60,10 +75,8 @@
     .btn-pret { background: var(--success); color: #fff; }
     .btn-servi { background: #334155; color: #fff; }
 
-    /* 🚨 BANDEAU POPUP ALERTE SUITE RÉCLAMÉE */
-    .suite-alert-overlay { display: none; position: fixed; inset: 0; background: rgba(185, 28, 28, 0.95); z-index: 10000; align-items: center; justify-content: center; padding: 20px; animation: flash-bg 0.8s infinite; }
-    @keyframes flash-bg { 0%, 100% { background: rgba(185, 28, 28, 0.95); } 50% { background: rgba(15, 23, 42, 0.98); } }
-    
+    /* POPUP SUITE RÉCLAMÉE */
+    .suite-alert-overlay { display: none; position: fixed; inset: 0; background: rgba(185, 28, 28, 0.95); z-index: 10000; align-items: center; justify-content: center; padding: 20px; }
     .suite-alert-card { background: #1e293b; border: 3px solid #f87171; border-radius: 16px; padding: 30px; text-align: center; max-width: 520px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
     .suite-alert-title { font-size: 1.8rem; font-weight: 900; color: #f87171; margin-bottom: 10px; text-transform: uppercase; }
     .suite-alert-table { font-size: 2.8rem; font-weight: 900; color: #fff; margin-bottom: 12px; }
@@ -84,9 +97,14 @@
     .btn-toggle-stock.out { background: var(--danger); color: #fff; }
   </style>
 </head>
-<body>
+<body onclick="armerAudio()">
 
-  <!-- POPUP SUITE RÉCLAMÉE -->
+  <!-- BANDEAU DISCRET D'ARMEMENT (Disparaît au 1er clic) -->
+  <div id="sound-warning-bar" onclick="armerAudio()">
+    <span>🔊 AUDIO EN VEILLE : Touchez l'écran une fois pour armer les bips automatiques</span>
+    <span style="text-decoration:underline;">Activer</span>
+  </div>
+
   <div class="suite-alert-overlay" id="suite-alert-modal" onclick="acquitterSuite()">
     <div class="suite-alert-card">
       <div class="suite-alert-title">🔔 Suite Réclamée !</div>
@@ -99,7 +117,7 @@
   <header>
     <h1 id="kds-title">👨‍🍳 Écran Cuisine & Bar</h1>
     <div class="header-btns">
-      <button class="btn-header" style="background:#059669;" onclick="emettreBipAiguFort(1)">🔊 Test Son</button>
+      <button class="btn-header" id="btn-sound-status" style="background:#059669;" onclick="testerBipDirect()">🔊 Test Son</button>
       <button class="btn-header btn-stock" onclick="ouvrirModalStock()">🚫 Ruptures (86-List)</button>
       <a href="/index.html" class="btn-header">📱 Salle & Caisse</a>
       <a href="/admin.html" class="btn-header">📊 Admin</a>
@@ -137,8 +155,9 @@
     let audioCtx = null;
     let alarmInterval = null;
     let autoDismissTimer = null;
+    let audioUnlocked = false;
 
-    // 🔊 MOTEUR AUDIO SILENCIEUX & AUTOMATIQUE (2200 Hz Aigu Ultra-Loud)
+    // 🔊 MOTEUR AUDIO DOUBLE (Web Audio API + AudioContext)
     function getAudioContext() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -149,9 +168,25 @@
       return audioCtx;
     }
 
-    // Déblocage audio discret dès le premier clic/touch n'importe où
-    ['click', 'touchstart', 'keydown'].forEach(evt => {
-      document.addEventListener(evt, () => getAudioContext(), { once: true });
+    function armerAudio() {
+      const ctx = getAudioContext();
+      if (ctx && ctx.state !== 'suspended') {
+        audioUnlocked = true;
+        const bar = document.getElementById('sound-warning-bar');
+        if (bar) bar.style.display = 'none';
+        const b = document.getElementById('btn-sound-status');
+        if (b) b.innerText = '🔊 Bip Actif';
+      }
+    }
+
+    function testerBipDirect() {
+      armerAudio();
+      emettreBipAiguFort(1);
+    }
+
+    // Écoute discrète sur tout touch/clic sur l'écran
+    ['click', 'touchstart', 'mousedown'].forEach(e => {
+      document.addEventListener(e, armerAudio, { passive: true });
     });
 
     function emettreBipAiguFort(repetitions = 3) {
@@ -164,8 +199,8 @@
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
 
-            osc.type = 'square'; // Forme d'onde perçante de bipeur cuisine
-            osc.frequency.setValueAtTime(2200, ctx.currentTime); // 2200 Hz
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(2200, ctx.currentTime);
 
             gain.gain.setValueAtTime(0.95, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.28);
@@ -175,7 +210,9 @@
 
             osc.start(ctx.currentTime);
             osc.stop(ctx.currentTime + 0.3);
-          } catch (e) {}
+          } catch (e) {
+            console.error("Audio bloqué par le navigateur:", e);
+          }
         }, i * 350);
       }
     }
@@ -290,7 +327,6 @@
       } catch (e) {}
     }
 
-    // ALERTE SUITE MAINS-LIBRES (Flash + Bip + Auto-dismiss 12s)
     function afficherAlerteSuite(data) {
       document.getElementById('suite-alert-table-txt').innerText = `TABLE ${data.table_num}`;
       document.getElementById('suite-alert-course-txt').innerHTML = `Lancer : <strong>${data.course.toUpperCase()}</strong><br><small style="color:#cbd5e1; font-size:0.9rem;">Demandé par ${data.serveur_nom || 'Salle'} à ${data.date}</small>`;
@@ -301,7 +337,6 @@
       if (alarmInterval) clearInterval(alarmInterval);
       alarmInterval = setInterval(() => emettreBipAiguFort(2), 2500);
 
-      // Fermeture automatique au bout de 12 secondes sans intervention
       if (autoDismissTimer) clearTimeout(autoDismissTimer);
       autoDismissTimer = setTimeout(() => {
         acquitterSuite();
