@@ -41,9 +41,9 @@
     .btn-key.action { font-size: 0.9rem; font-weight: 700; background: #475569; }
 
     /* BANDEAU INDICATEUR DE SESSION */
-    .session-role-indicator { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.82rem; font-weight: 800; }
-    .session-client { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
-    .session-super { background: #f5f3ff; color: #6d28d9; border: 1.5px solid #a78bfa; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15); }
+    .session-role-indicator { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem; font-weight: 800; }
+    .session-client { background: #f1f5f9; color: #334155; border: 1.5px solid #cbd5e1; }
+    .session-super { background: #f5f3ff; color: #6d28d9; border: 2px solid #8b5cf6; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); }
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
     h1 { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
@@ -213,13 +213,13 @@
 
   <div class="container" id="admin-main-container" style="display:none;">
     
-    <!-- BANDEAU INDICATEUR DU RÔLE ACTIF -->
+    <!-- BANDEAU INDICATEUR DU RÔLE ACTIF (DÉTERMINÉ EN TEMPS RÉEL) -->
     <div class="session-role-indicator" id="session-role-badge">
       <span id="session-role-text">👤 Session : Direction du Restaurant (Mode Client)</span>
       <span id="session-role-tag" style="font-size:0.75rem; text-transform:uppercase;">LECTURE SEULE</span>
     </div>
 
-    <!-- BANNIÈRE DE STATUT POUR LE RESTAURANT (LECTURE SEULE POUR LE CLIENT) -->
+    <!-- BANNIÈRE DE STATUT POUR LE RESTAURANT -->
     <div class="saas-license-banner" id="saas-banner">
       <div>
         <div class="saas-title">
@@ -235,7 +235,7 @@
       </div>
     </div>
 
-    <!-- 👑 CONSOLE MASTER ÉDITEUR (AFFICHÉE UNIQUEMENT EN MODE SUPER-ADMIN) -->
+    <!-- 👑 CONSOLE MASTER ÉDITEUR (AFFICHÉE STRICTEMENT EN MODE SUPER-ADMIN) -->
     <div class="master-admin-box" id="master-admin-panel">
       <div class="master-head">
         <h2>🛠️ Console Master Éditeur (Plein Pouvoir Support)</h2>
@@ -572,15 +572,15 @@
     }
 
     function checkAdminAuth() {
-      const isAuth = sessionStorage.getItem('hdp_admin_auth');
-      const role = sessionStorage.getItem('hdp_role');
-      const isSuper = (role === 'super_admin');
+      const isAuth = (sessionStorage.getItem('hdp_admin_auth') === 'true');
+      const activeRole = sessionStorage.getItem('hdp_active_role');
+      const isSuper = (activeRole === 'super_admin');
 
-      if (isAuth === 'true') {
+      if (isAuth && (activeRole === 'direction' || activeRole === 'super_admin')) {
         document.getElementById('admin-lock-overlay').style.display = 'none';
         document.getElementById('admin-main-container').style.display = 'block';
 
-        // 1. GESTION DU BANDEAU DE RÔLE VISIBLE
+        // 1. BANDEAU DE SESSION OFFICIEL
         const roleBadge = document.getElementById('session-role-badge');
         const roleText = document.getElementById('session-role-text');
         const roleTag = document.getElementById('session-role-tag');
@@ -595,7 +595,7 @@
           roleTag.innerText = 'LECTURE SEULE';
         }
 
-        // 2. CONSOLE MASTER : VISIBLE STRICTEMENT ET UNIQUEMENT EN MODE SUPER-ADMIN
+        // 2. CONSOLE MASTER : ACTIVÉE OU STRICTEMENT MASQUÉE
         const masterPanel = document.getElementById('master-admin-panel');
         if (masterPanel) {
           masterPanel.style.display = isSuper ? 'block' : 'none';
@@ -641,34 +641,34 @@
     }
 
     async function verifierAdminPin() {
+      const pinToTest = enteredAdminPin;
       try {
         const res = await fetch('/api/auth/pin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pin: enteredAdminPin })
+          body: JSON.stringify({ pin: pinToTest })
         });
         const data = await res.json();
         
         if (res.ok && data.success) {
-          // Si le code est un code Super-Admin
-          if (data.isSuperAdmin) {
+          // RÉINITIALISATION COMPLÈTE DE LA SESSION PRÉCÉDENTE
+          sessionStorage.clear();
+
+          if (data.isSuperAdmin || data.role === 'super_admin') {
             sessionStorage.setItem('hdp_admin_auth', 'true');
-            sessionStorage.setItem('hdp_role', 'super_admin');
-            sessionStorage.setItem('hdp_super_pin_cache', enteredAdminPin);
-            clearAdminPin();
-            checkAdminAuth();
-          } 
-          // Si le code est le code Direction client (9999)
-          else if (data.role === 'direction' || enteredAdminPin === '9999') {
+            sessionStorage.setItem('hdp_active_role', 'super_admin');
+            sessionStorage.setItem('hdp_super_pin_cache', pinToTest);
+          } else if (data.role === 'direction' || pinToTest === '9999') {
             sessionStorage.setItem('hdp_admin_auth', 'true');
-            sessionStorage.setItem('hdp_role', 'direction');
-            sessionStorage.removeItem('hdp_super_pin_cache');
-            clearAdminPin();
-            checkAdminAuth();
+            sessionStorage.setItem('hdp_active_role', 'direction');
           } else {
             alert("⛔ Ce code serveur n'a pas accès à l'Espace Direction.");
             clearAdminPin();
+            return;
           }
+
+          clearAdminPin();
+          checkAdminAuth();
         } else if (enteredAdminPin.length >= 4) {
           alert("⛔ Code PIN incorrect !");
           clearAdminPin();
@@ -690,9 +690,10 @@
       })
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.isSuperAdmin) {
+        if (data.success && (data.isSuperAdmin || data.role === 'super_admin')) {
+          sessionStorage.clear();
           sessionStorage.setItem('hdp_admin_auth', 'true');
-          sessionStorage.setItem('hdp_role', 'super_admin');
+          sessionStorage.setItem('hdp_active_role', 'super_admin');
           sessionStorage.setItem('hdp_super_pin_cache', sPin.trim());
           alert("👑 Mode Super-Admin activé ! La console Master Plein Pouvoir est maintenant ouverte.");
           checkAdminAuth();
@@ -704,7 +705,6 @@
     }
 
     function verrouillerAdmin() {
-      // Nettoyage complet de la session pour ne rien laisser en mémoire
       sessionStorage.clear();
       enteredAdminPin = '';
       checkAdminAuth();
@@ -779,6 +779,8 @@
         if (res.ok) {
           alert(`✅ Licence prolongée de +${jours} jours !`);
           chargerLicenceStatus();
+        } else {
+          alert(`❌ ${data.error || "Erreur"}`);
         }
       } catch (e) {
         alert("Erreur de connexion.");
@@ -1036,7 +1038,7 @@
     }
 
     function calculerKPIsEtAfficher(commandes, paiements, chambres) {
-      const isSuper = (sessionStorage.getItem('hdp_role') === 'super_admin');
+      const isSuper = (sessionStorage.getItem('hdp_active_role') === 'super_admin');
       const actives = (commandes || []).filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
       const encaissees = (commandes || []).filter(c => c.statut === 'encaisse');
 
