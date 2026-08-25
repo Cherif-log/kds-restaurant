@@ -154,7 +154,6 @@
     .receipt-tax-table { font-size: 0.75rem; margin-top: 6px; }
     .receipt-split-box { display: none; justify-content: space-between; border-top: 1px dashed #000; margin-top: 6px; padding-top: 4px; font-size: 0.85rem; font-weight: 700; }
     .receipt-footer { text-align: center; font-size: 0.75rem; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; }
-
     .receipt-chambre-sign { display: none; margin-top: 12px; border-top: 1px dashed #000; padding-top: 8px; font-size: 0.78rem; }
 
     .caisse-controls-box { margin-top: 14px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
@@ -303,17 +302,22 @@
 
   </div>
 
-  <!-- MODAL SUITE -->
+  <!-- MODAL SUITE AVEC RECAPITULATIF EN DIRECT -->
   <div class="modal-overlay" id="suite-modal">
-    <div class="modal-card" style="max-width: 400px;">
+    <div class="modal-card" style="max-width: 420px;">
       <div class="modal-head" style="background:#ea580c;">
         <span>🔔 Réclamer la Suite — Table <span id="suite-modal-table-num">1</span></span>
         <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalSuite()">✕</button>
       </div>
       <div class="modal-body">
-        <p style="font-size:0.88rem; color:#475569; margin-bottom:14px; line-height:1.4;">
-          Sélectionnez l'étape à envoyer immédiatement sur l'écran du chef pour la <strong>Table <span id="suite-modal-table-bold">1</span></strong> :
+        <p style="font-size:0.88rem; color:#475569; margin-bottom:12px; line-height:1.4;">
+          Sélectionnez l'étape à lancer immédiatement en cuisine pour la <strong>Table <span id="suite-modal-table-bold">1</span></strong> :
         </p>
+
+        <div id="suite-order-recap" style="background:#f1f5f9; padding:8px 10px; border-radius:6px; font-size:0.8rem; color:#334155; margin-bottom:12px; font-weight:600;">
+          Chargement des commandes en cours...
+        </div>
+
         <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
           <button class="btn-send" style="background:#2563eb; padding:12px; font-size:0.95rem;" onclick="envoyerSuite('Plats (Suite)')">
             🍽️ Lancer les Plats (Suite)
@@ -330,7 +334,7 @@
     </div>
   </div>
 
-  <!-- MODAL OPTIONS -->
+  <!-- MODAL OPTIONS DE PREPARATION -->
   <div class="modal-overlay" id="options-modal">
     <div class="modal-card">
       <div class="modal-head">
@@ -373,11 +377,11 @@
     </div>
   </div>
 
-  <!-- MODAL TRANSFERT -->
+  <!-- MODAL TRANSFERT DE TABLE -->
   <div class="modal-overlay" id="transfer-modal">
     <div class="modal-card">
       <div class="modal-head">
-        <span>🔀 Transférer / Fusionner la Table <span id="transfer-source-num">1</span></span>
+        <span>🔀 Déplacer / Fusionner la Table <span id="transfer-source-num">1</span></span>
         <button style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;" onclick="fermerModalTransfert()">✕</button>
       </div>
       <div class="modal-body">
@@ -562,6 +566,7 @@
     let selectedCuisson = 'Saignant';
     let selectedGarnitures = ['Frites'];
 
+    // 🎨 APPLICATION DU THÈME & IDENTITÉ
     async function chargerThemeEtMarqueBlanche() {
       try {
         const res = await fetch('/api/config/client');
@@ -1090,31 +1095,56 @@
       }
     }
 
-    function ouvrirModalSuite() {
+    // 🔔 GESTION DE LA SUITE AVEC VÉRIFICATION DE COMMANDE ACTIVE
+    async function ouvrirModalSuite() {
       document.getElementById('suite-modal-table-num').innerText = currentTable;
       document.getElementById('suite-modal-table-bold').innerText = currentTable;
-      document.getElementById('suite-modal').classList.add('open');
+
+      try {
+        const res = await fetch(`/api/tables/${currentTable}/addition`);
+        const data = await res.json();
+
+        if (!data.items || data.items.length === 0) {
+          alert(`⚠️ La Table ${currentTable} est vide : aucune commande en cours à réclamer.`);
+          return;
+        }
+
+        const recapTxt = data.items.map(it => `${it.quantite}x ${it.article_nom}`).join(', ');
+        document.getElementById('suite-order-recap').innerHTML = `📋 <strong>Articles actifs :</strong> ${recapTxt}`;
+        document.getElementById('suite-modal').classList.add('open');
+      } catch (e) {
+        alert("Impossible de vérifier l'état de la table.");
+      }
     }
 
-    function fermerModalSuite() { document.getElementById('suite-modal').classList.remove('open'); }
+    function fermerModalSuite() { 
+      document.getElementById('suite-modal').classList.remove('open'); 
+    }
 
     async function envoyerSuite(course) {
       try {
         const res = await fetch(`/api/tables/${currentTable}/suite`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ course: course, serveur_nom: currentServeur || 'Salle' })
+          body: JSON.stringify({ 
+            course: course, 
+            serveur_nom: currentServeur || 'Salle' 
+          })
         });
+        
         const data = await res.json();
         if (res.ok) {
-          alert(`🔔 Suite « ${course} » envoyée en cuisine pour la Table ${currentTable} !`);
+          alert(`🔔 Suite « ${course} » transmise avec succès au chef pour la Table ${currentTable} !`);
           fermerModalSuite();
         } else {
-          alert(`❌ ${data.error || "Impossible d'envoyer la suite."}`);
+          alert(`❌ ${data.error || "Erreur lors de l'envoi de la suite."}`);
         }
-      } catch (e) { alert("Erreur de connexion."); }
+      } catch (e) { 
+        alert("Erreur de communication avec le serveur."); 
+      }
     }
 
+    // Addition & Multi-Paiements
     async function ouvrirModalAddition() {
       document.getElementById('modal-table-num').innerText = currentTable;
       document.getElementById('receipt-table-num').innerText = currentTable;
@@ -1419,9 +1449,9 @@
       }
     }
 
+    // 🔀 DÉPLACEMENT / FUSION DE TABLE
     function ouvrirModalTransfert() {
       document.getElementById('transfer-source-num').innerText = currentTable;
-      document.getElementById('transfer-source-bold').innerText = currentTable;
 
       const select = document.getElementById('transfer-target-select');
       select.innerHTML = '';
@@ -1502,6 +1532,7 @@
 
     init();
 
+    // Maintien écran allumé
     let wakeLock = null;
     async function requestWakeLock() {
       try {
