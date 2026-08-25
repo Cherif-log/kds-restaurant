@@ -425,5 +425,24 @@ app.get('/api/admin/notes-chambres', (req, res) => {
   res.json(cmds.map(c => ({ ...c, items: getI.all(c.id) })));
 });
 app.get('/api/admin/backup-db', (req, res) => res.download(path.join(__dirname, 'restaurant.db'), `backup_${config.etablissement.replace(/[^a-z0-9]/gi, '_')}.db`));
+// Route de contrôle de santé globale (SmartView Cloud + Base de données)
+app.get('/api/health', (req, res) => {
+  try {
+    db.prepare('SELECT 1').get();
+    res.json({
+      status: 'healthy',
+      system: 'SmartView POS Cloud',
+      restaurant: 'Hôtel des Pins',
+      uptime_seconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Base de données inaccessible',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 server.listen(PORT, () => console.log(`Serveur POS [${config.etablissement}] lancé sur le port ${PORT}`));
