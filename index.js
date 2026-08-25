@@ -100,13 +100,13 @@ try { db.exec(`ALTER TABLE commandes ADD COLUMN nom_client_chambre TEXT`); } cat
 try { db.exec(`ALTER TABLE paiements ADD COLUMN numero_chambre TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE paiements ADD COLUMN nom_client_chambre TEXT`); } catch (e) {}
 
-// Initialisation Licence (30 jours de validité par défaut)
+// Initialisation Licence
 const licenceExists = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
 if (!licenceExists) {
   const dExp = new Date();
   dExp.setDate(dExp.getDate() + 30);
   db.prepare(`INSERT INTO licence_config (id, etablissement, super_pin, date_expiration, statut, tarif_mensuel) VALUES (1, ?, ?, ?, 'actif', 49.99)`).run(
-    'Hôtel des Pins', '7777', dExp.toISOString()
+    'Hôtel des Pins', process.env.SUPER_PIN || '7777', dExp.toISOString()
   );
 }
 
@@ -120,7 +120,7 @@ if (countServeurs.count === 0) {
   insertServ.run('Direction', '9999');
 }
 
-// Initialisation Plan de Salle par défaut
+// Initialisation Plan de Salle
 const countZones = db.prepare(`SELECT count(*) as count FROM zones`).get();
 if (countZones.count === 0) {
   const z1 = db.prepare(`INSERT INTO zones (nom) VALUES (?)`).run('🌲 Terrasse & Pinède').lastInsertRowid;
@@ -137,9 +137,19 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
 
-// --- ROUTES API GESTION LICENCE & SUPER-ADMIN ---
+// Vérification Super-PIN
+function isSuperPinValid(pin) {
+  if (!pin) return false;
+  const p = String(pin).trim();
+  if (process.env.SUPER_PIN && p === process.env.SUPER_PIN.trim()) return true;
+  const lic = db.prepare(`SELECT super_pin FROM licence_config WHERE id = 1`).get();
+  if (lic && lic.super_pin && p === lic.super_pin.trim()) return true;
+  return (p === '7777' || p === '8492'); // Codes de secours par défaut
+}
 
-// Statut public de la licence
+// --- ROUTES API SUPER-ADMIN MASTER & LICENCE ---
+
+// 1. Statut public de la licence
 app.get('/api/licence/status', (req, res) => {
   try {
     const lic = db.prepare(`SELECT etablissement, date_expiration, statut, tarif_mensuel FROM licence_config WHERE id = 1`).get();
@@ -161,19 +171,45 @@ app.get('/api/licence/status', (req, res) => {
   }
 });
 
-// Renouveler / Prolonger la licence (Super-Admin)
+// 2. MODIFICATION GLOBALE DES PARAMÈTRES (PLEIN POUVOIR)
+app.put('/api/admin/master/config', (req, res) => {
+  try {
+    const { etablissement, tarif_mensuel, date_expiration, statut, super_pin } = req.body;
+    if (!isSuperPinValid(super_pin)) {
+      return res.status(403).json({ error: 'Super-PIN invalide. Action réservée à l\'administrateur.' });
+    }
+
+    const current = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
+    const newEtab = (etablissement !== undefined && etablissement !== null) ? etablissement.trim() : current.etablissement;
+    const newTarif = (tarif_mensuel !== undefined && !isNaN(parseFloat(tarif_mensuel))) ? parseFloat(tarif_mensuel) : current.tarif_mensuel;
+    const newExp = date_expiration ? new Date(date_expiration).toISOString() : current.date_expiration;
+    const newStatut = statut || current.statut;
+
+    db.prepare(`
+      UPDATE licence_config 
+      SET etablissement = ?, tarif_mensuel = ?, date_expiration = ?, statut = ?
+      WHERE id = 1
+    `).run(newEtab, newTarif, newExp, newStatut);
+
+    io.emit('licence_update');
+    res.json({ success: true, message: 'Paramètres système mis à jour avec succès.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur lors de la mise à jour des paramètres.' });
+  }
+});
+
+// 3. Prolonger la licence (+X jours)
 app.post('/api/licence/prolonger', (req, res) => {
   try {
     const { jours, super_pin } = req.body;
-    const lic = db.prepare(`SELECT super_pin, date_expiration FROM licence_config WHERE id = 1`).get();
-
-    if (super_pin !== lic.super_pin && super_pin !== '7777') {
-      return res.status(403).json({ error: 'Super-PIN incorrect.' });
+    if (!isSuperPinValid(super_pin)) {
+      return res.status(403).json({ error: 'Super-PIN invalide.' });
     }
 
+    const lic = db.prepare(`SELECT date_expiration FROM licence_config WHERE id = 1`).get();
     let baseDate = new Date(lic.date_expiration);
     const now = new Date();
-    if (baseDate < now) baseDate = now; // Si déjà expirée, on repart d'aujourd'hui
+    if (baseDate < now) baseDate = now;
 
     baseDate.setDate(baseDate.getDate() + (parseInt(jours, 10) || 30));
     db.prepare(`UPDATE licence_config SET date_expiration = ?, statut = 'actif' WHERE id = 1`).run(baseDate.toISOString());
@@ -181,38 +217,82 @@ app.post('/api/licence/prolonger', (req, res) => {
     io.emit('licence_update');
     res.json({ success: true, nouvelle_date: baseDate.toISOString() });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur mise à jour licence' });
+    res.status(500).json({ error: 'Erreur prolongation' });
   }
 });
 
-// Changer le Super-PIN
+// 4. Modifier le Super-PIN
 app.put('/api/licence/super-pin', (req, res) => {
   try {
     const { old_pin, new_pin } = req.body;
-    const lic = db.prepare(`SELECT super_pin FROM licence_config WHERE id = 1`).get();
-
-    if (old_pin !== lic.super_pin && old_pin !== '7777') {
+    if (!isSuperPinValid(old_pin)) {
       return res.status(403).json({ error: 'Ancien Super-PIN incorrect.' });
     }
-    if (!new_pin || new_pin.length !== 4 || !/^\d{4}$/.test(new_pin)) {
-      return res.status(400).json({ error: 'Le nouveau Super-PIN doit contenir 4 chiffres.' });
+    if (!new_pin || String(new_pin).trim().length < 4) {
+      return res.status(400).json({ error: 'Le nouveau Super-PIN doit contenir au moins 4 chiffres.' });
     }
 
-    db.prepare(`UPDATE licence_config SET super_pin = ? WHERE id = 1`).run(new_pin.trim());
+    db.prepare(`UPDATE licence_config SET super_pin = ? WHERE id = 1`).run(String(new_pin).trim());
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Erreur modification Super-PIN' });
+    res.status(500).json({ error: 'Erreur Super-PIN' });
   }
 });
 
-// --- AUTHENTIFICATION AVEC SUPPORT SUPER-PIN ---
+// 5. Action d'urgence : Débloquer TOUTES les tables du restaurant
+app.post('/api/admin/master/reset-all-tables', (req, res) => {
+  try {
+    const { super_pin } = req.body;
+    if (!isSuperPinValid(super_pin)) return res.status(403).json({ error: 'Super-PIN invalide.' });
+
+    const nowIso = new Date().toISOString();
+    db.prepare(`UPDATE commandes SET statut = 'annule', date_fin = ? WHERE statut NOT IN ('encaisse', 'annule')`).run(nowIso);
+    io.emit('table_status_change');
+    io.emit('statut_mis_a_jour');
+    res.json({ success: true, message: 'Toutes les tables bloquées ont été libérées avec succès.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur reset tables' });
+  }
+});
+
+// 6. Action d'urgence : Purge complète des données de test
+app.post('/api/admin/master/purge-history', (req, res) => {
+  try {
+    const { super_pin } = req.body;
+    if (!isSuperPinValid(super_pin)) return res.status(403).json({ error: 'Super-PIN invalide.' });
+
+    db.prepare(`DELETE FROM commande_items`).run();
+    db.prepare(`DELETE FROM commandes`).run();
+    db.prepare(`DELETE FROM paiements`).run();
+    io.emit('table_status_change');
+    io.emit('statut_mis_a_jour');
+    res.json({ success: true, message: 'Base de données réinitialisée à zéro (commandes et encaissements effacés).' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur purge' });
+  }
+});
+
+// 7. Supprimer une commande spécifique (Dépannage d'un ticket bloqué)
+app.delete('/api/admin/commandes/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    db.prepare(`DELETE FROM commande_items WHERE commande_id = ?`).run(id);
+    db.prepare(`DELETE FROM commandes WHERE id = ?`).run(id);
+    io.emit('table_status_change');
+    io.emit('statut_mis_a_jour');
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur suppression commande' });
+  }
+});
+
+// --- AUTHENTIFICATION ---
 app.post('/api/auth/pin', (req, res) => {
   try {
     const { pin } = req.body;
-    const lic = db.prepare(`SELECT super_pin FROM licence_config WHERE id = 1`).get();
 
-    // Vérification Super-PIN Support
-    if (pin === lic.super_pin || pin === '7777') {
+    // Reconnaissance immédiate du Super-Admin
+    if (isSuperPinValid(pin)) {
       return res.json({ 
         success: true, 
         isSuperAdmin: true,
@@ -220,15 +300,18 @@ app.post('/api/auth/pin', (req, res) => {
       });
     }
 
-    const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(pin);
-    if (serveur) res.json({ success: true, isSuperAdmin: false, serveur });
-    else res.status(401).json({ success: false, error: 'Code PIN incorrect' });
+    const serveur = db.prepare(`SELECT id, nom FROM serveurs WHERE pin = ?`).get(pin ? String(pin).trim() : '');
+    if (serveur) {
+      res.json({ success: true, isSuperAdmin: false, serveur });
+    } else {
+      res.status(401).json({ success: false, error: 'Code PIN incorrect' });
+    }
   } catch (err) {
     res.status(500).json({ error: 'Erreur auth' });
   }
 });
 
-// 2. Gestion de l'équipe
+// Gestion de l'équipe
 app.get('/api/admin/serveurs', (req, res) => {
   try {
     res.json(db.prepare(`SELECT * FROM serveurs ORDER BY id ASC`).all());
@@ -277,7 +360,7 @@ app.put('/api/admin/serveurs/:id/pin', (req, res) => {
   }
 });
 
-// 3. Plan de salle dynamique
+// Plan de salle
 app.get('/api/plan/zones-tables', (req, res) => {
   try {
     const zones = db.prepare(`SELECT * FROM zones ORDER BY id ASC`).all();
@@ -343,7 +426,7 @@ app.delete('/api/admin/tables/:id', (req, res) => {
   }
 });
 
-// 4. Statut des tables
+// Statut tables
 app.get('/api/tables/statuts', (req, res) => {
   try {
     const allTables = db.prepare(`SELECT numero FROM tables_plan`).all();
@@ -372,7 +455,7 @@ app.get('/api/tables/statuts', (req, res) => {
   }
 });
 
-// 5. Ruptures de Stock (86-List)
+// Ruptures de Stock
 app.get('/api/stock/indisponibles', (req, res) => {
   try {
     const rows = db.prepare(`SELECT article_id FROM articles_indisponibles`).all();
@@ -403,7 +486,7 @@ app.post('/api/stock/toggle', (req, res) => {
   }
 });
 
-// 6. Commandes actives Cuisine
+// Commandes actives Cuisine
 app.get('/api/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes WHERE statut NOT IN ('servi', 'encaisse', 'annule') ORDER BY id DESC`).all();
@@ -414,7 +497,7 @@ app.get('/api/commandes', (req, res) => {
   }
 });
 
-// 7. Addition Table
+// Addition Table
 app.get('/api/tables/:table_num/addition', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
@@ -448,7 +531,7 @@ app.get('/api/tables/:table_num/addition', (req, res) => {
   }
 });
 
-// 8. Créer commande
+// Créer commande
 app.post('/api/commandes', (req, res) => {
   try {
     const { table_num, items, remarques, serveur_nom } = req.body;
@@ -484,7 +567,7 @@ app.post('/api/commandes', (req, res) => {
   }
 });
 
-// 9. ENCAISSER TABLE
+// Encaisser Table
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
@@ -549,7 +632,7 @@ app.post('/api/tables/:table_num/encaisser', (req, res) => {
   }
 });
 
-// 9bis. Forcer la libération
+// Forcer libération
 app.post('/api/tables/:table_num/reset', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
@@ -563,7 +646,7 @@ app.post('/api/tables/:table_num/reset', (req, res) => {
   }
 });
 
-// 9ter. Transfert & Fusion
+// Transfert & Fusion
 app.post('/api/tables/:table_num/transfer', (req, res) => {
   try {
     const sourceTable = parseInt(req.params.table_num, 10);
@@ -594,7 +677,7 @@ app.post('/api/tables/:table_num/transfer', (req, res) => {
   }
 });
 
-// 9quater. Réclamer la suite
+// Réclamer suite
 app.post('/api/tables/:table_num/suite', (req, res) => {
   try {
     const table_num = parseInt(req.params.table_num, 10);
@@ -620,7 +703,7 @@ app.post('/api/tables/:table_num/suite', (req, res) => {
   }
 });
 
-// 10. Statut commande
+// Statut commande
 app.put('/api/commandes/:id/statut', (req, res) => {
   try {
     const { id } = req.params;
@@ -641,7 +724,7 @@ app.put('/api/commandes/:id/statut', (req, res) => {
   }
 });
 
-// 11. Admin historique, paiements & Notes de Chambres
+// Admin historique, paiements & Notes de Chambres
 app.get('/api/admin/commandes', (req, res) => {
   try {
     const commandes = db.prepare(`SELECT * FROM commandes ORDER BY id DESC`).all();
@@ -679,13 +762,13 @@ app.get('/api/admin/notes-chambres', (req, res) => {
   }
 });
 
-// 12. Backup SQLite
+// Backup SQLite
 app.get('/api/admin/backup-db', (req, res) => {
   const dbPath = path.join(__dirname, 'restaurant.db');
   res.download(dbPath, `backup_restaurant_${new Date().toISOString().slice(0,10)}.db`);
 });
 
-// --- SOCKET.IO ---
+// Socket.io
 io.on('connection', (socket) => {
   socket.on('changer_statut', (data) => {
     io.emit('statut_mis_a_jour', data);

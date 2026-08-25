@@ -50,15 +50,31 @@
     .btn-print-z { background: var(--primary); color: #fff; border: 1px solid #475569; padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
     .btn-logout { background: #b91c1c; color: #fff; border: none; padding: 9px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
 
-    /* BANNIÈRE SAAS / STATUT D'ABONNEMENT */
-    .saas-license-banner { background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08); }
+    /* BANNIÈRE STATUT CLIENT */
+    .saas-license-banner { background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .saas-title { font-size: 1rem; font-weight: 800; color: #6d28d9; display: flex; align-items: center; gap: 8px; }
     .saas-info { font-size: 0.88rem; color: #5b21b6; }
     .saas-badge-valid { background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #86efac; }
     .saas-badge-warn { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.78rem; border: 1px solid #fca5a5; }
 
-    .btn-renew-saas { background: var(--saas); color: #fff; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-renew-saas:hover { background: #7c3aed; }
+    /* 👑 CONSOLE MASTER PLEIN POUVOIR (RÉSERVÉE AU SUPER-ADMIN) */
+    .master-admin-box { display: none; background: #1e1b4b; color: #fff; border: 2px solid #818cf8; border-radius: 14px; padding: 20px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(30, 27, 75, 0.4); }
+    .master-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #3730a3; padding-bottom: 12px; margin-bottom: 16px; }
+    .master-head h2 { font-size: 1.15rem; font-weight: 800; color: #a5b4fc; display: flex; align-items: center; gap: 8px; }
+    .master-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .master-card { background: #312e81; border: 1px solid #4338ca; border-radius: 10px; padding: 14px; }
+    .master-card-title { font-size: 0.82rem; font-weight: 800; text-transform: uppercase; color: #c7d2fe; margin-bottom: 10px; letter-spacing: 0.5px; }
+
+    .master-field-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .master-label { font-size: 0.75rem; color: #a5b4fc; font-weight: 700; }
+    .master-input { background: #1e1b4b; border: 1px solid #6366f1; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; outline: none; }
+
+    .btn-master-action { background: #4f46e5; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+    .btn-master-action:hover { background: #4338ca; }
+    .btn-master-danger { background: #b91c1c; }
+    .btn-master-danger:hover { background: #991b1b; }
+    .btn-master-success { background: #16a34a; }
+    .btn-master-success:hover { background: #15803d; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
@@ -189,7 +205,7 @@
 
   <div class="container" id="admin-main-container" style="display:none;">
     
-    <!-- BANNIÈRE SAAS : VISIBLE POUR TOUS, MAIS BOUTONS VISIBLES SEULEMENT POUR VOUS -->
+    <!-- BANNIÈRE DE STATUT POUR LE RESTAURANT -->
     <div class="saas-license-banner" id="saas-banner">
       <div>
         <div class="saas-title">
@@ -200,22 +216,84 @@
           Établissement : <strong id="saas-client-name">Hôtel des Pins</strong> — Prochaine échéance : <strong id="saas-exp-date">--/--/----</strong> (<span id="saas-days-left">--</span> jours restants)
         </div>
       </div>
+      <div style="display:flex; align-items:center; font-size:0.82rem; color:#6d28d9; font-weight:700;">
+        <span>ℹ️ Mises à jour & support technique inclus</span>
+      </div>
+    </div>
 
-      <!-- BOUTONS RÉSERVÉS EXCLUSIVEMENT À VOUS (SUPER-ADMIN) -->
-      <div id="saas-admin-actions" style="display:none; gap:8px;">
-        <button class="btn-renew-saas" onclick="prolongerAbonnementClient(30)">➕ +30 Jours (+49,99 €)</button>
-        <button class="btn-renew-saas" style="background:#475569;" onclick="prolongerAbonnementClient(365)">📅 +1 An</button>
+    <!-- 👑 CONSOLE MASTER ÉDITEUR (AFFICHÉE UNIQUEMENT POUR VOUS) -->
+    <div class="master-admin-box" id="master-admin-panel">
+      <div class="master-head">
+        <h2>🛠️ Console Master Éditeur (Plein Pouvoir Support)</h2>
+        <span style="background:#4338ca; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:800;">ADMINISTRATEUR LOGICIEL</span>
       </div>
 
-      <!-- NOTE INFORMATIVE AFFICHÉE POUR LE CLIENT -->
-      <div id="saas-client-note" style="display:flex; align-items:center; font-size:0.82rem; color:#6d28d9; font-weight:700;">
-        <span>ℹ️ Mises à jour & support technique inclus</span>
+      <div class="master-grid">
+        
+        <!-- 1. GESTION CONTRAT & LICENCE -->
+        <div class="master-card">
+          <div class="master-card-title">📝 Paramètres Contrat & Échéance</div>
+          <div class="master-field-row">
+            <span class="master-label">Nom de l'établissement :</span>
+            <input type="text" id="master-input-etab" class="master-input" value="Hôtel des Pins">
+          </div>
+          <div class="master-field-row">
+            <span class="master-label">Tarif mensuel (€) :</span>
+            <input type="number" step="0.01" id="master-input-tarif" class="master-input" value="49.99">
+          </div>
+          <div class="master-field-row">
+            <span class="master-label">Date d'échéance exacte :</span>
+            <input type="date" id="master-input-date" class="master-input">
+          </div>
+          <div style="display:flex; gap:6px; margin-top:10px;">
+            <button class="btn-master-action btn-master-success" style="flex:1;" onclick="enregistrerConfigMaster()">💾 Enregistrer</button>
+            <button class="btn-master-action" style="background:#6366f1;" onclick="prolongerAbonnementDirect(30)">+30j</button>
+            <button class="btn-master-action" style="background:#475569;" onclick="prolongerAbonnementDirect(365)">+1 An</button>
+          </div>
+        </div>
+
+        <!-- 2. SÉCURITÉ & SUPER-PIN -->
+        <div class="master-card">
+          <div class="master-card-title">🔑 Sécurité & Super-PIN</div>
+          <div class="master-field-row">
+            <span class="master-label">Nouveau Super-PIN (4 chiffres) :</span>
+            <input type="text" id="master-input-new-superpin" class="master-input" maxlength="6" placeholder="Ex: 8492">
+          </div>
+          <button class="btn-master-action" style="width:100%; margin-top:4px;" onclick="changerMonSuperPin()">
+            🔒 Mettre à jour le Super-PIN
+          </button>
+          
+          <div style="margin-top:14px; border-top:1px dashed #4338ca; padding-top:10px;">
+            <span class="master-label">État du logiciel :</span>
+            <div style="display:flex; gap:6px; margin-top:4px;">
+              <button class="btn-master-action btn-master-success" style="flex:1;" onclick="basculerStatutLogiciel('actif')">🟢 Actif</button>
+              <button class="btn-master-action btn-master-danger" style="flex:1;" onclick="basculerStatutLogiciel('suspendu')">🔴 Suspendre</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. ACTIONS DE DÉPANNAGE D'URGENCE -->
+        <div class="master-card">
+          <div class="master-card-title">🚨 Outils de Dépannage & Réparation</div>
+          <p style="font-size:0.75rem; color:#c7d2fe; margin-bottom:10px; line-height:1.4;">
+            Actions immédiates pour corriger les blocages sur place ou à distance :
+          </p>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button class="btn-master-action" style="background:#d97706;" onclick="forcerDeblocageToutesTables()">
+              🔓 Débloquer TOUTES les tables bloquées
+            </button>
+            <button class="btn-master-action btn-master-danger" onclick="purgerToutesDonneesTest()">
+              🧹 Purge complète des données de test
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
 
     <header>
       <div>
-        <h1>Hôtel des Pins — Espace Direction & Audit</h1>
+        <h1 id="page-restaurant-title">Hôtel des Pins — Espace Direction & Audit</h1>
         <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2px;">Surveillance de l'activité du personnel et pilotage financier</p>
       </div>
       <div class="header-actions">
@@ -390,15 +468,16 @@
             <th>Serveur</th>
             <th>Heure</th>
             <th>Statut</th>
-            <th>Paiement / Panachage</th>
+            <th>Paiement</th>
             <th>Chambre</th>
             <th>Pourboire</th>
             <th>Total TTC</th>
             <th>Détail</th>
+            <th id="th-master-action" style="display:none;">Action Master</th>
           </tr>
         </thead>
         <tbody id="orders-table-body">
-          <tr><td colspan="9" style="text-align:center; padding:30px;">Chargement...</td></tr>
+          <tr><td colspan="10" style="text-align:center; padding:30px;">Chargement...</td></tr>
         </tbody>
       </table>
     </div>
@@ -473,6 +552,10 @@
       if (el) el.innerText = txt;
     }
 
+    function getSuperPinCache() {
+      return sessionStorage.getItem('hdp_super_pin_cache') || '7777';
+    }
+
     function checkAdminAuth() {
       const isAuth = sessionStorage.getItem('hdp_admin_auth');
       const isSuper = sessionStorage.getItem('hdp_is_super') === 'true';
@@ -481,15 +564,12 @@
         document.getElementById('admin-lock-overlay').style.display = 'none';
         document.getElementById('admin-main-container').style.display = 'block';
 
-        // 1. LA BANNIÈRE D'INFORMATION EST VISIBLE POUR TOUT LE MONDE
-        const saasBanner = document.getElementById('saas-banner');
-        if (saasBanner) saasBanner.style.display = 'flex';
+        // CONSOLE MASTER : VISIBLE SEULEMENT POUR VOUS
+        const masterPanel = document.getElementById('master-admin-panel');
+        if (masterPanel) masterPanel.style.display = isSuper ? 'block' : 'none';
 
-        // 2. LES BOUTONS D'ACTION NE SONT VISIBLES QUE POUR VOUS (SUPER-ADMIN)
-        const saasActions = document.getElementById('saas-admin-actions');
-        const clientNote = document.getElementById('saas-client-note');
-        if (saasActions) saasActions.style.display = isSuper ? 'flex' : 'none';
-        if (clientNote) clientNote.style.display = isSuper ? 'none' : 'flex';
+        const thMaster = document.getElementById('th-master-action');
+        if (thMaster) thMaster.style.display = isSuper ? 'table-cell' : 'none';
 
         chargerDonneesAdmin();
         chargerServeurs();
@@ -502,10 +582,10 @@
     }
 
     function pressAdminPin(num) {
-      if (enteredAdminPin.length < 4) {
+      if (enteredAdminPin.length < 6) {
         enteredAdminPin += num;
         updateAdminPinDots();
-        if (enteredAdminPin.length === 4) verifierAdminPin();
+        if (enteredAdminPin.length === 4 || enteredAdminPin.length === 6) verifierAdminPin();
       }
     }
 
@@ -535,8 +615,9 @@
           sessionStorage.setItem('hdp_super_pin_cache', data.isSuperAdmin ? enteredAdminPin : '');
           clearAdminPin();
           checkAdminAuth();
-        } else {
-          alert("⛔ Accès refusé : Code Direction incorrect !");
+        } else if (enteredAdminPin.length >= 4 && !data.success) {
+          // Si 4 chiffres tapés et faux
+          alert("⛔ Code PIN incorrect !");
           clearAdminPin();
         }
       } catch (e) {
@@ -552,57 +633,171 @@
       checkAdminAuth();
     }
 
-    // --- GESTION SAAS ---
+    // --- ACTIONS MASTER CONSOLE ---
     async function chargerLicenceStatus() {
       try {
         const res = await fetch('/api/licence/status');
         if (res.ok) {
           const lic = await res.json();
           safeSetText('saas-client-name', lic.etablissement);
+          safeSetText('page-restaurant-title', `${lic.etablissement} — Espace Direction & Audit`);
+          
           const dExp = new Date(lic.date_expiration);
           safeSetText('saas-exp-date', dExp.toLocaleDateString('fr-FR'));
           safeSetText('saas-days-left', lic.jours_restants);
 
           const badge = document.getElementById('saas-status-badge');
           if (badge) {
-            if (lic.est_valide) {
-              badge.className = 'saas-badge-valid';
-              badge.innerText = `🟢 Abonnement à jour (${lic.tarif_mensuel.toFixed(2)} € / mois)`;
-            } else {
-              badge.className = 'saas-badge-warn';
-              badge.innerText = `🔴 Échu (${lic.jours_restants} j)`;
-            }
+            badge.className = lic.est_valide ? 'saas-badge-valid' : 'saas-badge-warn';
+            badge.innerText = lic.est_valide ? `🟢 Abonnement à jour (${lic.tarif_mensuel.toFixed(2)} € / mois)` : `🔴 Échu (${lic.jours_restants} j)`;
           }
+
+          // Pré-remplir les champs de la console Master
+          const inEtab = document.getElementById('master-input-etab');
+          const inTarif = document.getElementById('master-input-tarif');
+          const inDate = document.getElementById('master-input-date');
+          if (inEtab) inEtab.value = lic.etablissement;
+          if (inTarif) inTarif.value = lic.tarif_mensuel;
+          if (inDate) inDate.value = dExp.toISOString().slice(0, 10);
         }
       } catch (e) {}
     }
 
-    async function prolongerAbonnementClient(jours) {
-      let superPin = sessionStorage.getItem('hdp_super_pin_cache');
-      if (!superPin) {
-        superPin = prompt("Saisissez votre Super-PIN personnel :");
-      }
-      if (!superPin) return;
+    async function enregistrerConfigMaster() {
+      const etab = document.getElementById('master-input-etab').value.trim();
+      const tarif = parseFloat(document.getElementById('master-input-tarif').value);
+      const dateVal = document.getElementById('master-input-date').value;
 
       try {
-        const res = await fetch('/api/licence/prolonger', {
-          method: 'POST',
+        const res = await fetch('/api/admin/master/config', {
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jours, super_pin: superPin })
+          body: JSON.stringify({
+            etablissement: etab,
+            tarif_mensuel: tarif,
+            date_expiration: dateVal ? new Date(dateVal).toISOString() : null,
+            super_pin: getSuperPinCache()
+          })
         });
         const data = await res.json();
         if (res.ok) {
-          alert(`✅ Abonnement prolongé avec succès (+${jours} jours) !`);
+          alert("✅ Paramètres contractuels enregistrés !");
           chargerLicenceStatus();
         } else {
-          alert(`❌ ${data.error || "Erreur de renouvellement"}`);
+          alert(`❌ ${data.error || "Erreur"}`);
         }
       } catch (e) {
         alert("Erreur de connexion.");
       }
     }
 
-    // --- CHARGEMENT GLOBAL ---
+    async function prolongerAbonnementDirect(jours) {
+      try {
+        const res = await fetch('/api/licence/prolonger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jours, super_pin: getSuperPinCache() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Licence prolongée de +${jours} jours !`);
+          chargerLicenceStatus();
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    async function basculerStatutLogiciel(nouveauStatut) {
+      if (!confirm(`Confirmer le passage du logiciel en statut « ${nouveauStatut.toUpperCase()} » ?`)) return;
+      try {
+        const res = await fetch('/api/admin/master/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ statut: nouveauStatut, super_pin: getSuperPinCache() })
+        });
+        if (res.ok) {
+          alert(`✅ Statut logiciel mis à jour (${nouveauStatut}).`);
+          chargerLicenceStatus();
+        }
+      } catch (e) {}
+    }
+
+    async function changerMonSuperPin() {
+      const newPin = document.getElementById('master-input-new-superpin').value.trim();
+      if (!newPin || newPin.length < 4) return alert("Le nouveau Super-PIN doit comporter au moins 4 caractères.");
+
+      try {
+        const res = await fetch('/api/licence/super-pin', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ old_pin: getSuperPinCache(), new_pin: newPin })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          sessionStorage.setItem('hdp_super_pin_cache', newPin);
+          document.getElementById('master-input-new-superpin').value = '';
+          alert(`✅ Votre Super-PIN a été modifié avec succès (Nouveau code : ${newPin}).`);
+        } else {
+          alert(`❌ ${data.error || "Erreur"}`);
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    async function forcerDeblocageToutesTables() {
+      if (!confirm("🚨 Attention : Vous allez forcer la libération de TOUTES les tables occupées en salle et en cuisine. Continuer ?")) return;
+      try {
+        const res = await fetch('/api/admin/master/reset-all-tables', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ super_pin: getSuperPinCache() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Toutes les tables ont été libérées avec succès !");
+          chargerDonneesAdmin();
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    async function purgerToutesDonneesTest() {
+      const confirmStr = prompt("⚠️ PURGE COMPLÈTE : Tapez « EFFACER » en majuscules pour confirmer la suppression de tout l'historique et des commandes :");
+      if (confirmStr !== 'EFFACER') return alert("Action annulée.");
+
+      try {
+        const res = await fetch('/api/admin/master/purge-history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ super_pin: getSuperPinCache() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("✅ Historique et commandes complètement purgés. Le système est remis à neuf !");
+          chargerDonneesAdmin();
+        }
+      } catch (e) {
+        alert("Erreur de connexion.");
+      }
+    }
+
+    async function forcerSuppressionCommande(commandeId) {
+      if (!confirm(`Supprimer définitivement la commande #${commandeId} de la base de données ?`)) return;
+      try {
+        const res = await fetch(`/api/admin/commandes/${commandeId}`, { method: 'DELETE' });
+        if (res.ok) {
+          alert(`✅ Commande #${commandeId} supprimée.`);
+          chargerDonneesAdmin();
+        }
+      } catch (e) {
+        alert("Erreur de suppression.");
+      }
+    }
+
+    // --- CHARGEMENT GLOBAL & STATISTIQUES ---
     async function chargerDonneesAdmin() {
       try {
         const [resCmds, resServs, resPaiements, resChambres] = await Promise.all([
@@ -764,6 +959,7 @@
     }
 
     function calculerKPIsEtAfficher(commandes, paiements, chambres) {
+      const isSuper = sessionStorage.getItem('hdp_is_super') === 'true';
       const actives = (commandes || []).filter(c => c.statut !== 'encaisse' && c.statut !== 'annule');
       const encaissees = (commandes || []).filter(c => c.statut === 'encaisse');
 
@@ -821,7 +1017,7 @@
       if (!tbody) return;
 
       if (!commandes || commandes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>';
         return;
       }
 
@@ -838,6 +1034,14 @@
         }
         const montantAffiche = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
 
+        const masterCol = isSuper ? `
+          <td>
+            <button class="btn-del" style="color:#ef4444; font-size:0.8rem; font-weight:800; border:1px solid #fee2e2; border-radius:6px; padding:3px 6px;" onclick="forcerSuppressionCommande(${c.id})">
+              🗑️ Suppr
+            </button>
+          </td>
+        ` : '';
+
         return `
           <tr>
             <td><strong>Table ${c.table_num}</strong></td>
@@ -849,6 +1053,7 @@
             <td><strong style="color:#059669;">${c.pourboire > 0 ? '+' + c.pourboire.toFixed(2) + ' €' : '-'}</strong></td>
             <td><strong>${montantAffiche > 0 ? montantAffiche.toFixed(2) + ' €' : '0,00 €'}</strong></td>
             <td><div style="font-size:0.82rem; color:#475569;">${detailsHtml}</div></td>
+            ${masterCol}
           </tr>
         `;
       }).join('');
