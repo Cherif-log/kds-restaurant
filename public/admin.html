@@ -438,9 +438,9 @@
         <a href="/index.html" class="btn-nav-link">📱 Salle & Caisse</a>
         <a href="/cuisine.html" class="btn-nav-link">👨‍🍳 Cuisine</a>
         <a href="https://stats.uptimerobot.com/rnzYHtVN0v" target="_blank" style="display:inline-flex; align-items:center; gap:8px; background:#064e3b; border:1px solid #059669; color:#6ee7b7; padding:6px 12px; border-radius:8px; font-size:0.82rem; text-decoration:none; font-weight:700;">
-  <span style="width:8px; height:8px; background-color:#34d399; border-radius:50%;"></span>
-  <span>SmartView Cloud : <strong>100 %</strong></span>
-</a>
+          <span style="width:8px; height:8px; background-color:#34d399; border-radius:50%;"></span>
+          <span>SmartView Cloud : <strong>100 %</strong></span>
+        </a>
         <button class="btn-header-sos" onclick="ouvrirModalSOS()">🆘 S.O.S Support</button>
         <button class="btn-elevate-super" id="btn-elevate-bar" onclick="passerEnModeSuperAdmin()">🔑 Mode Éditeur</button>
         <a href="/api/admin/backup-db" class="btn-export" style="background:#4338ca; text-decoration:none;">💾 Sauvegarder</a>
@@ -585,11 +585,12 @@
             <th>Pourboire</th>
             <th>Total TTC</th>
             <th>Détail</th>
+            <th>Empreinte Fiscale</th>
             <th id="th-master-action" style="display:none;">Action Master</th>
           </tr>
         </thead>
         <tbody id="orders-table-body">
-          <tr><td colspan="10" style="text-align:center; padding:30px;">Chargement...</td></tr>
+          <tr><td colspan="11" style="text-align:center; padding:30px;">Chargement...</td></tr>
         </tbody>
       </table>
     </div>
@@ -616,7 +617,7 @@
       <div style="display:flex; justify-content:space-between;"><span>- Notes de Chambre :</span><span id="print-z-chambre">0,00 €</span></div>
     </div>
     <div style="text-align:center; border-top:1px dashed #000; padding-top:6px; font-size:10px;">
-      *** Clôture Journalière de Caisse ***
+      *** Clôture Journalière de Caisse — Art. 286 CGI ***
     </div>
   </div>
 
@@ -916,12 +917,11 @@
             entree_prix: isNaN(entreePrix) ? 8.5 : entreePrix,
             plat_jour: plat, 
             plat_prix: isNaN(platPrix) ? 17.5 : platPrix,
-            dessert_jour: dessert,
+            dessert_jour: dessert, 
             dessert_prix: isNaN(dessertPrix) ? 7.5 : dessertPrix,
             inclure_dans_menu_40: inclure40
           })
         });
-        const data = await res.json();
         if (res.ok) {
           alert("✨ L'Ardoise du Jour et ses tarifs ont été mis à jour en direct !");
           chargerMenuAdmin();
@@ -1290,7 +1290,7 @@
       if (!tbody) return;
 
       if (!commandes || commandes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${isSuper ? 10 : 9}" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${isSuper ? 11 : 10}" style="text-align:center; padding:30px;">Aucune commande enregistrée</td></tr>`;
         return;
       }
 
@@ -1306,6 +1306,10 @@
           }).join('');
         }
         const montantAffiche = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
+
+        const fiscalHashDisplay = c.signature_fiscale 
+          ? `<span style="font-family: monospace; font-size: 11px; background: #e2e8f0; color: #0f172a; padding: 3px 6px; border-radius: 4px; border: 1px solid #cbd5e1;" title="${c.signature_fiscale}">🔒 ${c.signature_fiscale.substring(0, 8)}...</span>` 
+          : `<span style="color: #94a3b8; font-size: 12px;">En attente</span>`;
 
         const masterCol = isSuper ? `
           <td>
@@ -1326,6 +1330,7 @@
             <td><strong style="color:#059669;">${c.pourboire > 0 ? '+' + c.pourboire.toFixed(2) + ' €' : '-'}</strong></td>
             <td><strong>${montantAffiche > 0 ? montantAffiche.toFixed(2) + ' €' : '0,00 €'}</strong></td>
             <td><div style="font-size:0.82rem; color:#475569;">${detailsHtml}</div></td>
+            <td>${fiscalHashDisplay}</td>
             ${masterCol}
           </tr>
         `;
@@ -1574,12 +1579,12 @@
 
     function exporterExcelCSV() {
       if (!allOrders || allOrders.length === 0) return alert("Aucune donnée.");
-      let csv = "\uFEFFID;Table;Serveur;Chambre;Nom_Client;Date_Creation;Date_Cloture;Statut;Paiement;Pourboire_EUR;Remise_EUR;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR\n";
+      let csv = "\uFEFFID;Table;Serveur;Chambre;Nom_Client;Date_Creation;Date_Cloture;Statut;Paiement;Pourboire_EUR;Remise_EUR;Total_TTC_EUR;Total_HT_EUR;TVA_10_EUR;Signature_Fiscale\n";
       allOrders.forEach(c => {
         let brut = 0;
         if (c.items) c.items.forEach(it => { brut += (it.prix || 0) * (it.quantite || 1); });
         const net = (c.total_paye !== null && c.total_paye !== undefined) ? c.total_paye : (brut - (c.remise_montant || 0));
-        csv += `${c.id};Table ${c.table_num};${c.serveur_nom || 'Salle'};${c.numero_chambre || ''};"${c.nom_client_chambre || ''}";${c.date_creation || ''};${c.date_fin || ''};${c.statut};"${c.mode_paiement || ''}";${(c.pourboire || 0).toFixed(2)};${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${(net/1.1).toFixed(2)};${(net-(net/1.1)).toFixed(2)}\n`;
+        csv += `${c.id};Table ${c.table_num};${c.serveur_nom || 'Salle'};${c.numero_chambre || ''};"${c.nom_client_chambre || ''}";${c.date_creation || ''};${c.date_fin || ''};${c.statut};"${c.mode_paiement || ''}";${(c.pourboire || 0).toFixed(2)};${(c.remise_montant || 0).toFixed(2)};${net.toFixed(2)};${(net/1.1).toFixed(2)};${(net-(net/1.1)).toFixed(2)};"${c.signature_fiscale || ''}"\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
@@ -1639,6 +1644,7 @@
       socket.on('nouvelle_commande', () => chargerDonneesAdmin());
       socket.on('statut_mis_a_jour', () => chargerDonneesAdmin());
       socket.on('table_status_change', () => chargerDonneesAdmin());
+      socket.on('checkout_success', () => chargerDonneesAdmin());
       socket.on('plan_update', () => chargerPlanAdmin());
       socket.on('menu_update', () => chargerMenuAdmin());
       socket.on('licence_update', () => chargerLicenceStatus());
