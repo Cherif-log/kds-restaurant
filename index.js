@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const Database = require('better-sqlite3');
 const config = require('./config');
+const { signAndRecordTicket, generateClosingZ } = require('./fiscalEngine');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,7 +19,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS tables_plan (id INTEGER PRIMARY KEY AUTOINCREMENT, zone_id INTEGER NOT NULL, numero INTEGER UNIQUE NOT NULL, FOREIGN KEY(zone_id) REFERENCES zones(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS menu_articles (id TEXT PRIMARY KEY, slug TEXT NOT NULL, nom TEXT NOT NULL, cat TEXT NOT NULL, section TEXT NOT NULL, prix REAL DEFAULT 0, has_options INTEGER DEFAULT 0, has_cuisson INTEGER DEFAULT 0, actif INTEGER DEFAULT 1);
-  CREATE TABLE IF NOT EXISTS commandes (id INTEGER PRIMARY KEY AUTOINCREMENT, table_num INTEGER NOT NULL, statut TEXT DEFAULT 'en_attente', serveur_nom TEXT DEFAULT 'Salle', mode_paiement TEXT, remise_montant REAL DEFAULT 0, pourboire REAL DEFAULT 0, total_paye REAL, numero_chambre TEXT, nom_client_chambre TEXT, paiements_details TEXT, remarques TEXT, date_creation DATETIME DEFAULT CURRENT_TIMESTAMP, date_fin DATETIME);
+  CREATE TABLE IF NOT EXISTS commandes (id INTEGER PRIMARY KEY AUTOINCREMENT, table_num INTEGER NOT NULL, statut TEXT DEFAULT 'en_attente', serveur_nom TEXT DEFAULT 'Salle', mode_paiement TEXT, remise_montant REAL DEFAULT 0, pourboire REAL DEFAULT 0, total_paye REAL, numero_chambre TEXT, nom_client_chambre TEXT, paiements_details TEXT, remarques TEXT, signature_fiscale TEXT, date_creation DATETIME DEFAULT CURRENT_TIMESTAMP, date_fin DATETIME);
   CREATE TABLE IF NOT EXISTS commande_items (id INTEGER PRIMARY KEY AUTOINCREMENT, commande_id INTEGER, article_nom TEXT NOT NULL, prix REAL DEFAULT 0, quantite INTEGER DEFAULT 1, remarques TEXT, FOREIGN KEY(commande_id) REFERENCES commandes(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS articles_indisponibles (article_id TEXT PRIMARY KEY, article_nom TEXT);
   CREATE TABLE IF NOT EXISTS paiements (id INTEGER PRIMARY KEY AUTOINCREMENT, table_num INTEGER NOT NULL, serveur_nom TEXT DEFAULT 'Salle', mode_paiement TEXT NOT NULL, montant REAL NOT NULL, pourboire REAL DEFAULT 0, numero_chambre TEXT, nom_client_chambre TEXT, date_paiement DATETIME DEFAULT CURRENT_TIMESTAMP);
@@ -28,6 +29,7 @@ db.exec(`
 // Migrations
 try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_tel TEXT`); } catch (e) {}
 try { db.exec(`ALTER TABLE licence_config ADD COLUMN support_email TEXT`); } catch (e) {}
+try { db.exec(`ALTER TABLE commandes ADD COLUMN signature_fiscale TEXT`); } catch (e) {}
 
 // Initialisation Licence
 const licenceExists = db.prepare(`SELECT * FROM licence_config WHERE id = 1`).get();
@@ -382,22 +384,76 @@ app.get('/api/tables/:table_num/addition', (req, res) => {
   const ids = cmds.map(c => c.id).join(',');
   const items = db.prepare(`SELECT article_nom, prix, SUM(quantite) as quantite, (prix * SUM(quantite)) as total_ligne FROM commande_items WHERE commande_id IN (${ids}) GROUP BY article_nom, prix`).all();
   const total = items.reduce((acc, it) => acc + it.total_ligne, 0);
-  res.json({ table_num: tNum, items, serveur_nom: cmds[0].serveur_nom || 'Salle', total: parseFloat(total.toFixed(2)), total_ht: parseFloat((total / (1 + config.options.tauxTVA)).toFixed(2)), tva: parseFloat((total - (total / (1 + config.options.tauxTVA))).toFixed(2)) });
+  const tauxTVA = (config.options && config.options.tauxTVA) ? config.options.tauxTVA : 0.10;
+  res.json({ 
+    table_num: tNum, 
+    items, 
+    serveur_nom: cmds[0].serveur_nom || 'Salle', 
+    total: parseFloat(total.toFixed(2)), 
+    total_ht: parseFloat((total / (1 + tauxTVA)).toFixed(2)), 
+    tva: parseFloat((total - (total / (1 + tauxTVA))).toFixed(2)) 
+  });
 });
 
+// 💳 ENCAISSEMENT CERTIFIÉ (Norme Fiscale Art. 286 CGI)
 app.post('/api/tables/:table_num/encaisser', (req, res) => {
   const tNum = parseInt(req.params.table_num, 10);
   const nowIso = new Date().toISOString();
   const { paiements, mode_paiement, remise_montant, pourboire, total_paye, serveur_nom, numero_chambre, nom_client_chambre } = req.body;
+  
+  // 1. Récupération des articles pour le scellement cryptographique
+  const cmds = db.prepare(`SELECT id FROM commandes WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).all(tNum);
+  let ticketItems = [];
+  if (cmds.length > 0) {
+    const ids = cmds.map(c => c.id).join(',');
+    ticketItems = db.prepare(`SELECT article_nom as name, prix as priceTTC, SUM(quantite) as qty FROM commande_items WHERE commande_id IN (${ids}) GROUP BY article_nom, prix`).all();
+  }
+
   const payList = (paiements && paiements.length > 0) ? paiements : [{ mode: mode_paiement || 'CB', montant: total_paye, numero_chambre, nom_client: nom_client_chambre }];
   const modeTxt = payList.length === 1 ? payList[0].mode : 'Panaché (' + payList.map(p => `${p.mode}: ${p.montant}€`).join(', ') + ')';
+
+  // 2. Calcul des montants HT et TVA (Restauration standard 10%)
+  const montantTTC = parseFloat(total_paye) || ticketItems.reduce((acc, it) => acc + (it.priceTTC * it.qty), 0);
+  const montantHT = parseFloat((montantTTC / 1.10).toFixed(2));
+  const montantTVA = parseFloat((montantTTC - montantHT).toFixed(2));
+
+  // 3. Signature cryptographique inaltérable (Multi-établissements)
+  const restaurantId = config.etablissement ? config.etablissement.toLowerCase().replace(/[^a-z0-9]/g, '') : 'hoteldespins';
+  const certifiedTicket = signAndRecordTicket(restaurantId, {
+    ticketId: `TICK-${Date.now()}`,
+    items: ticketItems,
+    totals: {
+      ht: montantHT,
+      ttc: montantTTC,
+      tva_10: montantTVA
+    },
+    paymentMethod: modeTxt,
+    cashierId: serveur_nom || 'Salle'
+  });
+
+  // 4. Enregistrement en base de données
   const insPay = db.prepare(`INSERT INTO paiements (table_num, serveur_nom, mode_paiement, montant, pourboire, numero_chambre, nom_client_chambre, date_paiement) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
   payList.forEach((p, idx) => insPay.run(tNum, serveur_nom || 'Salle', p.mode, p.montant, idx === 0 ? (pourboire || 0) : 0, p.numero_chambre || numero_chambre, p.nom_client || nom_client_chambre, nowIso));
-  db.prepare(`UPDATE commandes SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, pourboire = ?, total_paye = ?, numero_chambre = ?, nom_client_chambre = ?, date_fin = ? WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).run(
-    modeTxt, remise_montant || 0, pourboire || 0, total_paye || 0, numero_chambre, nom_client_chambre, nowIso, tNum
+  
+  db.prepare(`UPDATE commandes SET statut = 'encaisse', mode_paiement = ?, remise_montant = ?, pourboire = ?, total_paye = ?, numero_chambre = ?, nom_client_chambre = ?, signature_fiscale = ?, date_fin = ? WHERE table_num = ? AND statut NOT IN ('encaisse', 'annule')`).run(
+    modeTxt, remise_montant || 0, pourboire || 0, total_paye || 0, numero_chambre, nom_client_chambre, certifiedTicket.signature, nowIso, tNum
   );
+
   io.emit('table_status_change');
-  res.json({ success: true });
+  io.emit('checkout_success', certifiedTicket);
+  res.json({ success: true, certifiedTicket });
+});
+
+// 🧾 CLÔTURE JOURNALIÈRE SCIELLÉE (TICKET Z)
+app.post('/api/caisse/cloture-z', (req, res) => {
+  try {
+    const restaurantId = config.etablissement ? config.etablissement.toLowerCase().replace(/[^a-z0-9]/g, '') : 'hoteldespins';
+    const zReport = generateClosingZ(restaurantId);
+    io.emit('z_report_generated', zReport);
+    res.json({ success: true, zReport });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur lors de la génération du Ticket Z' });
+  }
 });
 
 app.put('/api/commandes/:id/statut', (req, res) => {
@@ -445,6 +501,15 @@ app.get('/api/health', (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
+});
+
+// Écouteurs Socket.io temps réel
+io.on('connection', (socket) => {
+  socket.on('request_closing_z', () => {
+    const restaurantId = config.etablissement ? config.etablissement.toLowerCase().replace(/[^a-z0-9]/g, '') : 'hoteldespins';
+    const zReport = generateClosingZ(restaurantId);
+    socket.emit('closing_z_ready', zReport);
+  });
 });
 
 server.listen(PORT, () => console.log(`Serveur POS [${config.etablissement}] lancé sur le port ${PORT}`));
